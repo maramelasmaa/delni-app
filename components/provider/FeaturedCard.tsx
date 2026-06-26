@@ -15,7 +15,7 @@ const W = 240;
 const H = 270;
 const R = 20;
 const COVER_H = 120;
-const LOGO = 50;
+const LOGO = 56;
 
 const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
   const { colors } = useTheme();
@@ -73,7 +73,7 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
           />
         </View>
 
-        <Text numberOfLines={1} style={[styles.name, { color: text }]}>
+        <Text numberOfLines={2} style={[styles.name, { color: text }]}>
           {provider.name}
         </Text>
 
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
 
   body: {
-    flex: 1,
+    height: H - COVER_H,
     position: 'relative',
     paddingHorizontal: 14,
     paddingTop: LOGO / 2 + 10,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   name: {
     textAlign: 'right',
     fontSize: 15,
-    lineHeight: 22,
+    lineHeight: 20,
     fontFamily: 'Cairo-Bold',
     writingDirection: 'rtl',
     marginBottom: 8,

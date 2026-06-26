@@ -1110,7 +1110,7 @@ export default function ProviderScreen() {
 
   const profile = mapProviderProfile(provider);
   const HERO_HEIGHT = 250;
-  const AVATAR_SIZE = 96;
+  const AVATAR_SIZE = 120;
 
   const translatedType = (() => {
     if (!profile.providerType) return null;
@@ -1219,7 +1219,7 @@ export default function ProviderScreen() {
           }}
         >
           {/* Avatar & Name Header */}
-          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 20, marginTop: -20 }}>
+          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 24, marginTop: -20 }}>
             <View
               style={{
                 width: AVATAR_SIZE,
