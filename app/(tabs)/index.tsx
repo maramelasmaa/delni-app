@@ -117,32 +117,68 @@ export default function HomeScreen() {
 
         {/* ─── Categories ─── */}
         {categories.length > 0 && (
-          <View style={{ marginTop: 30, paddingHorizontal: 20 }}>
-            <View style={{ alignItems: 'flex-end', marginBottom: 14 }}>
+          <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
+            <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
               <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4 }}>
                 اكتشف حسب المجال
               </Text>
               <Text style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
-                التخصصات
+                التخصصات الرئيسية
               </Text>
             </View>
 
-            <FlatList
-              data={categories}
-              horizontal
-              inverted
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                gap: 14,
-                paddingLeft: 4,
-                paddingRight: 2,
-                paddingVertical: 4,
+            <View
+              style={{
+                flexDirection: 'row-reverse',
+                flexWrap: 'wrap',
+                gap: 12,
+                justifyContent: 'space-between',
               }}
-              renderItem={({ item }) => (
-                <HomeCategoryCard category={item} colors={colors} />
-              )}
-              keyExtractor={(item) => item.id.toString()}
-            />
+            >
+              {categories.slice(0, 4).map((item) => (
+                <HomeCategoryCard key={item.id} category={item} colors={colors} />
+              ))}
+
+              <Pressable
+                onPress={() => router.push('/categories')}
+                style={({ pressed }) => [
+                  {
+                    width: '100%',
+                    height: 54,
+                    flexDirection: 'row-reverse',
+                    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.surface,
+                    borderColor: pressed ? colors.gold : colors.border,
+                    borderStyle: 'dashed',
+                    borderRadius: 16,
+                    borderWidth: 1,
+                    gap: 8,
+                    marginTop: 4,
+                    paddingHorizontal: 12,
+                    alignItems: 'center',
+                    opacity: pressed ? 0.9 : 1,
+                    transform: [{ scale: pressed ? 0.98 : 1 }],
+                  },
+                ]}
+              >
+                <View
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 10,
+                    backgroundColor: 'rgba(234,179,8,0.1)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Ionicons name="grid-outline" size={16} color={colors.gold} />
+                </View>
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>
+                  عرض جميع التخصصات والخدمات
+                </Text>
+                <View style={{ flex: 1 }} />
+                <Ionicons name="chevron-back" size={16} color={colors.textSecondary} />
+              </Pressable>
+            </View>
           </View>
         )}
 
@@ -171,51 +207,112 @@ export default function HomeScreen() {
         )}
 
         {/* ─── Business CTA ─── */}
-        <View style={{ marginHorizontal: 20, marginTop: 32, borderRadius: 24, overflow: 'hidden' }}>
+        <View style={{ marginHorizontal: 20, marginTop: 42, borderRadius: 24, overflow: 'hidden' }}>
           <LinearGradient
-            colors={isDark ? ['#1A1D36', '#0B0D19'] : ['#0F152B', '#1E2548']}
+            colors={isDark ? ['#1E293B', '#0F172A'] : [colors.surface, colors.bg]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={{ padding: 24 }}
+            style={{
+              borderWidth: 1,
+              borderColor: isDark ? 'rgba(255,255,255,0.06)' : colors.border,
+              borderRadius: 24,
+              paddingVertical: 36,
+              paddingHorizontal: 24,
+              position: 'relative',
+              overflow: 'hidden',
+              shadowColor: colors.shadow,
+              shadowOffset: { width: 0, height: 10 },
+              shadowOpacity: isDark ? 0.3 : 0.06,
+              shadowRadius: 20,
+              elevation: 4,
+            }}
           >
-            <View style={{ alignItems: 'flex-end' }}>
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <View style={{ width: 3, height: 14, backgroundColor: colors.gold, borderRadius: 2 }} />
-                <Text style={{ color: colors.gold, fontSize: 12, fontFamily: 'Cairo-Bold' }}>
-                  دلني للأعمال
+            {/* Decorative background glow element */}
+            <View
+              style={{
+                position: 'absolute',
+                top: -60,
+                left: -60,
+                width: 160,
+                height: 160,
+                borderRadius: 80,
+                backgroundColor: colors.primary,
+                opacity: isDark ? 0.15 : 0.05,
+              }}
+            />
+
+            <View style={{ alignItems: 'flex-end', gap: 10 }}>
+              <View
+                style={{
+                  flexDirection: 'row-reverse',
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : 'rgba(234,179,8,0.08)',
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  borderRadius: 20
+                }}
+              >
+                <Ionicons name="briefcase" size={12} color={colors.gold} />
+                <Text style={{ color: colors.gold, fontSize: 11, fontFamily: 'Cairo-Bold', letterSpacing: 0.3 }}>
+                  شريك النجاح
                 </Text>
               </View>
 
-              <Text style={{ textAlign: 'right', fontSize: 20, fontFamily: 'Cairo-Black', color: '#FFFFFF', lineHeight: 28 }}>
-                سجّل نشاطك في <Text style={{ color: colors.gold }}>دلني</Text>
+              <Text
+                style={{
+                  textAlign: 'right',
+                  fontSize: 24,
+                  fontFamily: 'Cairo-Black',
+                  color: colors.textPrimary,
+                  lineHeight: 34,
+                  marginTop: 4,
+                }}
+              >
+                هل أنت صاحب عمل أو مستقل؟
               </Text>
 
-              <Text style={{ textAlign: 'right', fontSize: 13, lineHeight: 20, fontFamily: 'Cairo-Regular', color: 'rgba(255,255,255,0.7)', marginTop: 8, maxWidth: '85%' }}>
-                انضم إلى دليلنا المهني واظهر أمام الباحثين عن خدماتك في مدينتك.
+              <Text
+                style={{
+                  textAlign: 'right',
+                  fontSize: 14,
+                  lineHeight: 24,
+                  fontFamily: 'Cairo-Regular',
+                  color: colors.textSecondary,
+                  maxWidth: '92%',
+                }}
+              >
+                حوّل خبرتك ومجالك إلى مصدر دخل مستدام. انضم إلى نُخبة المتخصصين واجعل العملاء يصلون إليك بكبسة زر.
               </Text>
             </View>
 
-            <Pressable
-              onPress={() => router.push('/contact')}
-              style={({ pressed }) => ({
-                marginTop: 20,
-                alignSelf: 'flex-start',
-                flexDirection: 'row-reverse',
-                alignItems: 'center',
-                gap: 8,
-                backgroundColor: colors.gold,
-                borderRadius: 14,
-                paddingVertical: 12,
-                paddingHorizontal: 20,
-                opacity: pressed ? 0.9 : 1,
-                transform: [{ scale: pressed ? 0.98 : 1 }],
-              })}
-            >
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: '#0F152B' }}>
-                تواصل معنا للتسجيل
-              </Text>
-              <Ionicons name="arrow-back" size={16} color="#0F152B" />
-            </Pressable>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-start', marginTop: 26 }}>
+              <Pressable
+                onPress={() => router.push('/contact')}
+                style={({ pressed }) => ({
+                  flexDirection: 'row-reverse',
+                  alignItems: 'center',
+                  gap: 8,
+                  backgroundColor: colors.primary,
+                  borderRadius: 16,
+                  paddingVertical: 14,
+                  paddingHorizontal: 26,
+                  opacity: pressed ? 0.9 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                  shadowColor: colors.primary,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 8,
+                  elevation: 2,
+                })}
+              >
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
+                  ابدأ رحلتك
+                </Text>
+                {/* RTL directional layout arrow */}
+                <Ionicons name="arrow-back" size={16} color={colors.textOnPrimary} />
+              </Pressable>
+            </View>
           </LinearGradient>
         </View>
       </ScrollView>
@@ -257,8 +354,8 @@ const HomeCategoryCard = memo(function HomeCategoryCard({
         {
           backgroundColor: colors.surface,
           borderColor: pressed ? gold : 'rgba(255,255,255,0.16)',
-          opacity: pressed ? 0.92 : 1,
-          transform: [{ scale: pressed ? 0.965 : 1 }],
+          opacity: pressed ? 0.9 : 1,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
     >
@@ -293,21 +390,21 @@ const HomeCategoryCard = memo(function HomeCategoryCard({
 
 const styles = StyleSheet.create({
   categoryCard: {
-    width: 128,
-    height: 138,
-    borderRadius: 28,
-    borderWidth: 1.5,
+    width: '48.2%',
+    height: 116,
+    borderRadius: 20,
+    borderWidth: 1,
     paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
 
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
 
     ...(Platform.OS === 'ios' && {
       borderCurve: 'continuous',
@@ -321,13 +418,13 @@ const styles = StyleSheet.create({
   },
 
   categoryIconBox: {
-    width: 62,
-    height: 62,
-    borderRadius: 23,
-    borderWidth: 1,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
 
     ...(Platform.OS === 'ios' && {
       borderCurve: 'continuous',
@@ -335,16 +432,16 @@ const styles = StyleSheet.create({
   },
 
   categoryImageIcon: {
-    width: 36,
-    height: 36,
+    width: 28,
+    height: 28,
   },
 
   categoryTitle: {
     width: '100%',
-    minHeight: 40,
-    fontSize: 13.5,
-    lineHeight: 20,
-    fontFamily: 'Cairo-Bold',
+    minHeight: 32,
+    fontSize: 12,
+    lineHeight: 16,
+    fontFamily: 'Cairo-SemiBold',
     textAlign: 'center',
     writingDirection: 'rtl',
   },

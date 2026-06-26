@@ -12,881 +12,20 @@ import { useProvider, useProviderReviews, useToggleFavorite, useSubmitReview, us
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { PortfolioItem, Review, Provider, ProviderCredential } from '../../src/types';
+import type { PortfolioItem, Review, Provider } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
-import { formatRelativeTime, formatIssueDate } from '../../src/utils/date';
+import { mapProviderProfile, getAvatarTheme } from '../../src/utils/providerMappers';
+import {
+  SectionHeader,
+  AboutSection,
+  ServicesSection,
+  PortfolioSection,
+  CredentialsSection,
+  ReviewCard,
+  ReviewsSection,
+} from './ProviderSections';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-interface MappedProvider {
-  id: number;
-  slug: string;
-  name: string;
-  providerType: string | null;
-  coverUrl: string | null;
-  coverBlur: boolean;
-  avatarUrl: string | null;
-  categoryName: string | null;
-  cityName: string | null;
-  rating: number;
-  reviewsCount: number;
-  whatsappUrl: string | null;
-  phone: string | null;
-  email: string | null;
-  socialLinks: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string }>;
-  about: string | null;
-  services: Array<{ id: number; name: string; slug: string }> | null;
-  projects: PortfolioItem[] | null;
-  credentials: ProviderCredential[] | null;
-  yearsExperience: number | null;
-  serviceAreaNote: string | null;
-  yearsExperienceText: string | null;
-  worksRemotely: boolean;
-  isFeatured: boolean;
-  isFavorited: boolean;
-  canReview: boolean;
-  reviewStatusMessage: string | null;
-}
-
-function mapProviderProfile(provider: Provider): MappedProvider {
-  let coverUrl: string | null = null;
-  let coverBlur = false;
-  if (
-    provider.cover_url &&
-    !provider.cover_url.includes('placeholder') &&
-    !provider.cover_url.includes('default') &&
-    provider.cover_url.trim() !== "" &&
-    !provider.cover_url.includes('localhost:8000')
-  ) {
-    coverUrl = provider.cover_url;
-  } else if (
-    provider.portfolio_items &&
-    provider.portfolio_items.length > 0 &&
-    provider.portfolio_items[0].images &&
-    provider.portfolio_items[0].images.length > 0
-  ) {
-    coverUrl = provider.portfolio_items[0].images[0];
-  } else if (
-    provider.logo_url &&
-    !provider.logo_url.includes('placeholder') &&
-    !provider.logo_url.includes('default') &&
-    provider.logo_url.trim() !== "" &&
-    !provider.logo_url.includes('localhost:8000')
-  ) {
-    coverUrl = provider.logo_url;
-    coverBlur = true;
-  }
-
-  let avatarUrl: string | null = null;
-  if (
-    provider.logo_url &&
-    !provider.logo_url.includes('placeholder') &&
-    !provider.logo_url.includes('default') &&
-    provider.logo_url.trim() !== "" &&
-    !provider.logo_url.includes('localhost:8000')
-  ) {
-    avatarUrl = provider.logo_url;
-  }
-
-  let categoryName: string | null = null;
-  if (provider.category?.name) {
-    categoryName = provider.category.name;
-  } else if (provider.subcategories && provider.subcategories.length > 0) {
-    categoryName = provider.subcategories[0].name;
-  }
-
-  const cityName = provider.city?.name || null;
-  const whatsappUrl = provider.whatsapp_url || null;
-  const phone = provider.phone || null;
-  const anyProvider = provider as any;
-  const email = anyProvider.email || null;
-
-  const socialLinks: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string }> = [];
-  if (provider.website) {
-    const webUrl = buildSocialUrl('website', provider.website);
-    if (webUrl) socialLinks.push({ id: 'website', icon: 'globe-outline', color: '#60A5FA', url: webUrl });
-  }
-  const rawSocials = provider.social_links || {};
-  if (rawSocials.facebook) {
-    const fbUrl = buildSocialUrl('facebook', rawSocials.facebook);
-    if (fbUrl) socialLinks.push({ id: 'facebook', icon: 'logo-facebook', color: '#1877F2', url: fbUrl });
-  }
-  if (rawSocials.instagram) {
-    const instUrl = buildSocialUrl('instagram', rawSocials.instagram);
-    if (instUrl) socialLinks.push({ id: 'instagram', icon: 'logo-instagram', color: '#E1306C', url: instUrl });
-  }
-  if (rawSocials.linkedin) {
-    const liUrl = buildSocialUrl('linkedin', rawSocials.linkedin);
-    if (liUrl) socialLinks.push({ id: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2', url: liUrl });
-  }
-  if (rawSocials.github) {
-    const ghUrl = buildSocialUrl('github', rawSocials.github);
-    if (ghUrl) socialLinks.push({ id: 'github', icon: 'logo-github', color: '#F1F5F9', url: ghUrl });
-  }
-  const mapUrl = (rawSocials as any).map_url || anyProvider.map_url;
-  if (mapUrl) {
-    socialLinks.push({ id: 'map', icon: 'map-outline', color: '#34D399', url: mapUrl });
-  }
-
-  const yearsExp = (provider.years_experience !== undefined && provider.years_experience !== null) ? provider.years_experience : null;
-
-  return {
-    id: provider.id,
-    slug: provider.slug,
-    name: provider.name,
-    providerType: provider.provider_type || null,
-    coverUrl,
-    coverBlur,
-    avatarUrl,
-    categoryName,
-    cityName,
-    rating: provider.rating_average ?? 0,
-    reviewsCount: provider.reviews_count ?? 0,
-    whatsappUrl,
-    phone,
-    email,
-    socialLinks,
-    about: provider.description || null,
-    services: provider.subcategories || null,
-    projects: provider.portfolio_items || null,
-    credentials: provider.credentials || null,
-    yearsExperience: yearsExp,
-    yearsExperienceText: (() => {
-      if (yearsExp === null || yearsExp <= 0) return null;
-      if (yearsExp === 1) return 'سنة خبرة';
-      if (yearsExp === 2) return 'سنتين خبرة';
-      if (yearsExp >= 3 && yearsExp <= 10) return `${yearsExp} سنوات خبرة`;
-      return `${yearsExp} سنة خبرة`;
-    })(),
-    worksRemotely: !!(provider as any).offers_remote_work,
-    serviceAreaNote: provider.service_area_note || null,
-    isFeatured: !!provider.is_featured,
-    isFavorited: !!provider.is_favorited,
-    canReview: !!provider.can_review,
-    reviewStatusMessage: provider.review_status_message || null,
-  };
-}
-
-function getAvatarTheme(name: string, isDark: boolean) {
-  const cleanName = name?.trim() || 'U';
-  const colorsList = isDark ? [
-    { bg: 'rgba(235, 94, 40, 0.15)', text: '#EB5E28' },
-    { bg: 'rgba(74, 115, 232, 0.15)', text: '#4A73E8' },
-    { bg: 'rgba(38, 166, 154, 0.15)', text: '#26A69A' },
-    { bg: 'rgba(156, 39, 176, 0.15)', text: '#9C27B0' },
-    { bg: 'rgba(233, 30, 99, 0.15)', text: '#E91E63' },
-    { bg: 'rgba(76, 175, 80, 0.15)', text: '#4CAF50' },
-  ] : [
-    { bg: '#FFEBE5', text: '#EB5E28' },
-    { bg: '#EBF0FF', text: '#4A73E8' },
-    { bg: '#E0F2F1', text: '#00695C' },
-    { bg: '#F3E5F5', text: '#6A1B9A' },
-    { bg: '#FCE4EC', text: '#C2185B' },
-    { bg: '#E8F5E9', text: '#2E7D32' },
-  ];
-  let sum = 0;
-  for (let i = 0; i < cleanName.length; i++) {
-    sum += cleanName.charCodeAt(i);
-  }
-  return colorsList[sum % colorsList.length];
-}
-
-function getServiceIcon(serviceName: string | undefined): keyof typeof Ionicons.glyphMap {
-  if (!serviceName) return 'construct-outline';
-  const lower = serviceName.toLowerCase();
-  if (lower.includes('شعار') || lower.includes('لوجو')) return 'color-palette-outline';
-  if (lower.includes('تصوير') || lower.includes('كاميرا') || lower.includes('فيديو')) return 'camera-outline';
-  if (lower.includes('هوية') || lower.includes('بصري')) return 'document-text-outline';
-  if (lower.includes('إعلان') || lower.includes('تسويق') || lower.includes('سوشيال')) return 'megaphone-outline';
-  if (lower.includes('مطبوع') || lower.includes('طباعة')) return 'print-outline';
-  if (lower.includes('برمج') || lower.includes('موقع') || lower.includes('تطبيق')) return 'code-slash-outline';
-  if (lower.includes('تصميم') || lower.includes('رسم')) return 'brush-outline';
-  return 'construct-outline';
-}
-
-function SectionHeader({ title, colors }: { title: string; colors: ThemeColors }) {
-  return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 16, width: '100%' }}>
-      <View style={{ width: 4, height: 18, backgroundColor: colors.primary, borderRadius: 2 }} />
-      <Text style={{ fontSize: 16, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
-        {title}
-      </Text>
-    </View>
-  );
-}
-
-interface AboutSectionProps {
-  about: string | null;
-  colors: ThemeColors;
-}
-function AboutSection({ about, colors }: AboutSectionProps) {
-  const [expanded, setExpanded] = useState(false);
-  if (!about) return null;
-  const shouldShowToggle = about.length > 180;
-
-  return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
-      <SectionHeader title="نبذة عنا" colors={colors} />
-      <View
-        style={{
-          borderRadius: 20,
-          backgroundColor: colors.surface,
-          padding: 16,
-          borderWidth: 1,
-          borderColor: colors.border,
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.02,
-          shadowRadius: 8,
-          elevation: 1,
-        }}
-      >
-        <Text
-          numberOfLines={expanded ? undefined : 4}
-          style={{
-            textAlign: 'right',
-            fontSize: 14,
-            lineHeight: 24,
-            color: colors.textSecondary,
-            fontFamily: 'Cairo-Regular',
-            writingDirection: 'rtl',
-          }}
-        >
-          {about}
-        </Text>
-        {shouldShowToggle && (
-          <Pressable
-            onPress={() => setExpanded(!expanded)}
-            style={{
-              marginTop: 10,
-              alignSelf: 'flex-start',
-              flexDirection: 'row-reverse',
-              alignItems: 'center',
-              gap: 4,
-            }}
-          >
-            <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.primary }}>
-              {expanded ? 'عرض أقل' : 'عرض المزيد'}
-            </Text>
-            <Ionicons
-              name={expanded ? 'chevron-up' : 'chevron-down'}
-              size={14}
-              color={colors.primary}
-            />
-          </Pressable>
-        )}
-      </View>
-    </View>
-  );
-}
-
-interface ServicesSectionProps {
-  services: Array<{ id: number; name: string; slug: string }> | null;
-  colors: ThemeColors;
-}
-function ServicesSection({ services, colors }: ServicesSectionProps) {
-  if (!services || services.length === 0) return null;
-
-  return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
-      <SectionHeader title="الخدمات المقدمة" colors={colors} />
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
-        {services.map((svc) => (
-          <View
-            key={svc.id}
-            style={{
-              flexDirection: 'row-reverse',
-              alignItems: 'center',
-              gap: 10,
-              width: '48%',
-              flexGrow: 1,
-              minWidth: 140,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 16,
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
-              shadowRadius: 4,
-              elevation: 1,
-            }}
-          >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: colors.primarySoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name={getServiceIcon(svc.name)} size={16} color={colors.primary} />
-            </View>
-            <Text
-              numberOfLines={2}
-              style={{
-                fontFamily: 'Cairo-Bold',
-                fontSize: 12.5,
-                color: colors.textPrimary,
-                textAlign: 'right',
-                writingDirection: 'rtl',
-                flex: 1,
-              }}
-            >
-              {svc.name}
-            </Text>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-interface PortfolioSectionProps {
-  projects: PortfolioItem[] | null;
-  colors: ThemeColors;
-  onImagePress: (item: PortfolioItem, index: number) => void;
-}
-function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionProps) {
-  const [activeIndex, setActiveIndex] = useState(0);
-  if (!projects || projects.length === 0) return null;
-
-  const cardWidth = SCREEN_WIDTH - 32;
-  const gapSize = 12;
-
-  const handleScroll = (event: any) => {
-    const xOffset = event.nativeEvent.contentOffset.x;
-    const index = Math.round(xOffset / (cardWidth + gapSize));
-    const boundedIndex = Math.max(0, Math.min(projects.length - 1, index));
-    setActiveIndex(boundedIndex);
-  };
-
-  return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
-      <SectionHeader title="معرض الأعمال" colors={colors} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={cardWidth + gapSize}
-        decelerationRate="fast"
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-        contentContainerStyle={{
-          flexDirection: 'row-reverse',
-          gap: gapSize,
-        }}
-        style={{ width: '100%' }}
-      >
-        {projects.map((project, idx) => {
-          const imageCount = project.images?.length || 0;
-          return (
-            <View
-              key={project.id || idx}
-              style={{
-                width: cardWidth,
-                borderRadius: 20,
-                backgroundColor: colors.surface,
-                borderWidth: 1,
-                borderColor: colors.border,
-                overflow: 'hidden',
-                shadowColor: colors.shadow,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.03,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              {project.images?.[0] && (
-                <View style={{ position: 'relative', width: '100%', height: 200 }}>
-                  <Pressable onPress={() => onImagePress(project, 0)} style={{ width: '100%', height: '100%' }}>
-                    <Image
-                      source={{ uri: project.images[0] }}
-                      style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
-                    />
-                  </Pressable>
-                  {imageCount > 1 && (
-                    <View
-                      style={{
-                        position: 'absolute',
-                        bottom: 12,
-                        left: 12,
-                        backgroundColor: 'rgba(0,0,0,0.65)',
-                        borderRadius: 12,
-                        paddingHorizontal: 10,
-                        paddingVertical: 5,
-                        flexDirection: 'row-reverse',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Ionicons name="images-outline" size={13} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontFamily: 'Cairo-Bold', fontSize: 11 }}>
-                        {imageCount} صور
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-              <View style={{ padding: 16, alignItems: 'flex-end', width: '100%' }}>
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontFamily: 'Cairo-Bold',
-                    color: colors.textPrimary,
-                    textAlign: 'right',
-                    writingDirection: 'rtl',
-                  }}
-                >
-                  {project.title}
-                </Text>
-                {project.short_description && (
-                  <Text
-                    style={{
-                      marginTop: 6,
-                      fontSize: 13,
-                      fontFamily: 'Cairo-Regular',
-                      color: colors.textSecondary,
-                      textAlign: 'right',
-                      writingDirection: 'rtl',
-                      lineHeight: 20,
-                    }}
-                  >
-                    {project.short_description}
-                  </Text>
-                )}
-              </View>
-            </View>
-          );
-        })}
-      </ScrollView>
-
-      {projects.length > 1 && (
-        <View
-          style={{
-            flexDirection: 'row-reverse',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: 6,
-            marginTop: 14,
-          }}
-        >
-          {projects.map((_, idx) => {
-            const isActive = activeIndex === idx;
-            return (
-              <View
-                key={idx}
-                style={{
-                  width: isActive ? 18 : 6,
-                  height: 6,
-                  borderRadius: 3,
-                  backgroundColor: isActive ? colors.primary : colors.borderStrong,
-                }}
-              />
-            );
-          })}
-        </View>
-      )}
-    </View>
-  );
-}
-
-interface CredentialsSectionProps {
-  credentials: ProviderCredential[] | null;
-  colors: ThemeColors;
-}
-function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
-  if (!credentials || credentials.length === 0) return null;
-  return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
-      <SectionHeader title="الشهادات والمؤهلات" colors={colors} />
-      <View style={{ gap: 12, width: '100%' }}>
-        {credentials.map((cred) => (
-          <View
-            key={cred.id}
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: 16,
-              padding: 16,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRightWidth: 4,
-              borderRightColor: colors.gold,
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
-              shadowRadius: 4,
-              elevation: 1,
-            }}
-          >
-            <Text
-              style={{
-                fontFamily: 'Cairo-Bold',
-                fontSize: 14,
-                color: colors.textPrimary,
-                textAlign: 'right',
-                writingDirection: 'rtl',
-                marginBottom: 4,
-              }}
-            >
-              {cred.title}
-            </Text>
-            {cred.issuer && (
-              <Text
-                style={{
-                  fontFamily: 'Cairo-SemiBold',
-                  fontSize: 12.5,
-                  color: colors.textSecondary,
-                  textAlign: 'right',
-                  writingDirection: 'rtl',
-                  marginBottom: 2,
-                }}
-              >
-                جهة الإصدار: {cred.issuer}
-              </Text>
-            )}
-            {cred.issue_date && (
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
-                <Text
-                  style={{
-                    fontFamily: 'Cairo-Regular',
-                    fontSize: 11,
-                    color: colors.textMuted,
-                    textAlign: 'right',
-                    writingDirection: 'rtl',
-                  }}
-                >
-                  تاريخ الإصدار: {formatIssueDate(cred.issue_date)}
-                </Text>
-              </View>
-            )}
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colors: ThemeColors; onReport: (reviewId: number) => void; isLast?: boolean }) {
-  const { isDark } = useTheme();
-  const avatarTheme = getAvatarTheme(review.user_name, isDark);
-  const initial = (review.user_name || 'U').trim().charAt(0).toUpperCase();
-  return (
-    <View
-      style={{
-        flexDirection: 'row-reverse',
-        paddingBottom: 16,
-        marginBottom: 16,
-        borderBottomWidth: isLast ? 0 : 1,
-        borderColor: colors.border,
-        width: '100%',
-      }}
-    >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: 22,
-          backgroundColor: avatarTheme.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginLeft: 12
-        }}
-      >
-        <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 18, color: avatarTheme.text }}>
-          {initial}
-        </Text>
-      </View>
-
-      <View style={{ flex: 1, alignItems: 'flex-end' }}>
-        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
-            {review.user_name}
-          </Text>
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
-              {formatRelativeTime(review.created_at)}
-            </Text>
-            <Pressable
-              onPress={() => onReport(review.id)}
-              hitSlop={12}
-              style={({ pressed }) => ({
-                padding: 4,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row-reverse', marginTop: 2, marginBottom: 6 }}>
-          <StarRating value={review.rating} size={13} />
-        </View>
-        {review.comment ? (
-          <Text
-            style={{
-              textAlign: 'right',
-              fontSize: 14,
-              color: colors.textSecondary,
-              fontFamily: 'Cairo-Regular',
-              writingDirection: 'rtl',
-              lineHeight: 22,
-              width: '100%'
-            }}
-          >
-            {review.comment}
-          </Text>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function ReviewsSection({
-  reviews,
-  rating,
-  reviewsCount,
-  colors,
-  isDark,
-  isAuthenticated,
-  canWriteReview,
-  reviewStatusMessage,
-  user,
-  onWriteReviewPress,
-  onUnauthenticatedWriteReview,
-  onReportReview,
-  isFetching,
-  hasMore,
-  onLoadMore,
-}: {
-  reviews: Review[];
-  rating: number;
-  reviewsCount: number;
-  colors: ThemeColors;
-  isDark: boolean;
-  isAuthenticated: boolean;
-  canWriteReview: boolean;
-  reviewStatusMessage: string | null;
-  user: any;
-  onWriteReviewPress: () => void;
-  onUnauthenticatedWriteReview: () => void;
-  onReportReview: (reviewId: number) => void;
-  isFetching: boolean;
-  hasMore: boolean;
-  onLoadMore: () => void;
-}) {
-  const [showAll, setShowAll] = useState(false);
-  const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
-  return (
-    <View style={{ width: '100%', marginTop: 28 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <View style={{ width: 14, height: 3, backgroundColor: colors.gold, borderRadius: 2 }} />
-        <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
-          التقييمات ({reviewsCount})
-        </Text>
-      </View>
-      {reviewsCount > 0 && (
-        <View
-          style={{
-            marginBottom: 20,
-            borderRadius: 20,
-            backgroundColor: colors.surface,
-            padding: 16,
-            borderWidth: 1,
-            borderColor: colors.border,
-            flexDirection: 'row-reverse',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <View style={{ alignItems: 'center', width: '35%' }}>
-            <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.textPrimary, lineHeight: 46 }}>
-              {rating.toFixed(1)}
-            </Text>
-            <StarRating value={rating} size={16} />
-            <Text style={{ fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
-              بناءً على {reviewsCount} تقييم
-            </Text>
-          </View>
-          <View style={{ width: '60%', gap: 4 }}>
-            {[5, 4, 3, 2, 1].map((stars) => {
-              let weight = 0.1;
-              if (stars === Math.round(rating)) weight = 0.8;
-              else if (stars === Math.round(rating) - 1) weight = 0.4;
-              else if (stars === Math.round(rating) + 1) weight = 0.2;
-              return (
-                <View key={stars} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, width: 14 }}>
-                    {stars}
-                  </Text>
-                  <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.surfaceAlt, overflow: 'hidden' }}>
-                    <View style={{ width: `${weight * 100}%`, height: '100%', borderRadius: 4, backgroundColor: colors.gold }} />
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        </View>
-      )}
-      {isAuthenticated ? (
-        canWriteReview ? (
-          <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: getAvatarTheme(user?.name || '?', isDark).bg,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginLeft: 10
-              }}
-            >
-              <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: getAvatarTheme(user?.name || '?', isDark).text }}>
-                {((user?.name || '?').trim().charAt(0).toUpperCase())}
-              </Text>
-            </View>
-            <Pressable
-              onPress={onWriteReviewPress}
-              style={{
-                flex: 1,
-                flexDirection: 'row-reverse',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderRadius: 24,
-                borderWidth: 1,
-                borderColor: colors.border,
-                backgroundColor: colors.surface,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-              }}
-            >
-              <Text style={{ fontSize: 15, fontFamily: 'Cairo-Regular', color: colors.textMuted }}>
-                شارك الآخرين تجربتك، أضف تقييماً...
-              </Text>
-              <Ionicons name="create-outline" size={18} color={colors.textMuted} />
-            </Pressable>
-          </View>
-        ) : (
-          reviewStatusMessage ? (
-            <View
-              style={{
-                marginBottom: 20,
-                flexDirection: 'row-reverse',
-                alignItems: 'center',
-                gap: 10,
-                borderRadius: 16,
-                backgroundColor: colors.surfaceAlt,
-                paddingHorizontal: 16,
-                paddingVertical: 12
-              }}
-            >
-              <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
-              <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl', lineHeight: 20 }}>
-                {reviewStatusMessage}
-              </Text>
-            </View>
-          ) : null
-        )
-      ) : (
-        <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
-          <View
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.surfaceAlt,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginLeft: 10
-            }}
-          >
-            <Ionicons name="person-outline" size={18} color={colors.textMuted} />
-          </View>
-          <Pressable
-            onPress={onUnauthenticatedWriteReview}
-            style={{
-              flex: 1,
-              flexDirection: 'row-reverse',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderRadius: 24,
-              borderWidth: 1,
-              borderColor: colors.border,
-              backgroundColor: colors.surfaceAlt,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-            }}
-          >
-            <Text style={{ fontSize: 15, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
-              سجل دخولك لكتابة تقييم...
-            </Text>
-            <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
-          </Pressable>
-        </View>
-      )}
-      {displayedReviews.length === 0 && !isFetching ? (
-        <Text style={{ textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular', marginVertical: 16 }}>
-          لا توجد تقييمات بعد
-        </Text>
-      ) : (
-        displayedReviews.map((review, index) => (
-          <ReviewCard
-            key={review.id}
-            review={review}
-            colors={colors}
-            onReport={onReportReview}
-            isLast={index === displayedReviews.length - 1}
-          />
-        ))
-      )}
-      {reviews.length > 3 && !showAll && (
-        <Pressable
-          onPress={() => setShowAll(true)}
-          style={{
-            marginTop: 8,
-            alignItems: 'center',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.primary,
-            paddingVertical: 12,
-          }}
-        >
-          <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
-            عرض كل التقييمات ({reviews.length})
-          </Text>
-        </Pressable>
-      )}
-      {showAll && hasMore && (
-        <Pressable
-          onPress={onLoadMore}
-          disabled={isFetching}
-          style={{
-            marginTop: 8,
-            alignItems: 'center',
-            borderRadius: 16,
-            borderWidth: 1,
-            borderColor: colors.primary,
-            paddingVertical: 12,
-          }}
-        >
-          {isFetching ? (
-            <ActivityIndicator size="small" color={colors.primary} />
-          ) : (
-            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
-              تحميل المزيد من التقييمات
-            </Text>
-          )}
-        </Pressable>
-      )}
-    </View>
-  );
-}
 
 export default function ProviderScreen() {
   const { colors, isDark } = useTheme();
@@ -1148,7 +287,7 @@ export default function ProviderScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
 
-        {/* ═══ HERO SECTION ═══ */}
+        {/* ═══ HERO SECTION WITH OVERLAY AVATAR ═══ */}
         <View style={{ position: 'relative', width: '100%', height: HERO_HEIGHT, backgroundColor: colors.surface }}>
           {profile.coverUrl ? (
             <Image
@@ -1173,7 +312,6 @@ export default function ProviderScreen() {
 
           {/* Navigation Controls (Strict RTL) */}
           <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
-            {/* Back Button (Top-Right) */}
             <Pressable
               onPress={() => router.back()}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
@@ -1182,7 +320,6 @@ export default function ProviderScreen() {
               <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             </Pressable>
 
-            {/* Favorite Button (Top-Left) */}
             <Pressable
               onPress={handleFavorite}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
@@ -1191,33 +328,13 @@ export default function ProviderScreen() {
               <Ionicons
                 name={profile.isFavorited ? 'heart' : 'heart-outline'}
                 size={20}
-                color={profile.isFavorited ? '#EF4444' : '#FFFFFF'}
+                color={profile.isFavorited ? colors.gold : '#FFFFFF'}
               />
             </Pressable>
           </View>
-        </View>
 
-        {/* ═══ MAIN PROFILE INFO CARD ═══ */}
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            marginTop: -50,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            marginHorizontal: 16,
-            paddingHorizontal: 20,
-            paddingBottom: 20,
-            borderWidth: 1,
-            borderColor: colors.border,
-            shadowColor: colors.shadow,
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.05,
-            shadowRadius: 16,
-            elevation: 4,
-          }}
-        >
-          {/* Avatar & Name Header */}
-          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 16, marginTop: -44 }}>
+          {/* Avatar Overlay on Background - Centered */}
+          <View style={{ position: 'absolute', top: '50%', left: '50%', marginTop: -AVATAR_SIZE / 2, marginLeft: -AVATAR_SIZE / 2, zIndex: 20 }}>
             <View
               style={{
                 width: AVATAR_SIZE,
@@ -1227,10 +344,10 @@ export default function ProviderScreen() {
                 borderColor: colors.surface,
                 backgroundColor: colors.surface,
                 shadowColor: colors.shadow,
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.12,
-                shadowRadius: 10,
-                elevation: 6,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
                 overflow: 'hidden',
               }}
             >
@@ -1244,28 +361,50 @@ export default function ProviderScreen() {
                 </View>
               )}
             </View>
+          </View>
+        </View>
 
-            <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
-              <Text numberOfLines={2} style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl', lineHeight: 28 }}>
-                {profile.name}
+        {/* ═══ MAIN PROFILE INFO CARD ═══ */}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            marginTop: 32,
+            marginHorizontal: 16,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 20,
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.05,
+            shadowRadius: 16,
+            elevation: 4,
+          }}
+        >
+          {/* Name & Type Header - Centered */}
+          <View style={{ width: '100%', alignItems: 'center', paddingTop: 12 }}>
+            <Text numberOfLines={2} style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', writingDirection: 'rtl', lineHeight: 28 }}>
+              {profile.name}
+            </Text>
+
+            {translatedType && (
+              <Text style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'center', writingDirection: 'rtl', marginTop: 2 }}>
+                {translatedType} {profile.categoryName ? `• ${profile.categoryName}` : ''}
               </Text>
-              
-              {translatedType && (
-                <Text style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'right', writingDirection: 'rtl', marginTop: 2 }}>
-                  {translatedType} {profile.categoryName ? `• ${profile.categoryName}` : ''}
-                </Text>
-              )}
+            )}
 
-              {/* Rating block */}
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                <Ionicons name="star" size={14} color={colors.gold} />
-                <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
-                  {profile.rating > 0 ? profile.rating.toFixed(1) : '0.0'}
-                </Text>
-                <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 12, color: colors.textMuted }}>
-                  ({profile.reviewsCount} تقييم)
-                </Text>
-              </View>
+            {/* Rating block - Centered */}
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'center' }}>
+              <Ionicons name="star" size={14} color={colors.gold} />
+              <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
+                {profile.rating > 0 ? profile.rating.toFixed(1) : '0.0'}
+              </Text>
+              <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 12, color: colors.textMuted }}>
+                ({profile.reviewsCount} تقييم)
+              </Text>
             </View>
           </View>
 

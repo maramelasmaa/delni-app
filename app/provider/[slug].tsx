@@ -49,86 +49,53 @@ interface MappedProvider {
 }
 
 function mapProviderProfile(provider: Provider): MappedProvider {
+  const anyProvider = provider as any;
+
   let coverUrl: string | null = null;
   let coverBlur = false;
-  if (
-    provider.cover_url &&
-    !provider.cover_url.includes('placeholder') &&
-    !provider.cover_url.includes('default') &&
-    provider.cover_url.trim() !== "" &&
-    !provider.cover_url.includes('localhost:8000')
-  ) {
-    coverUrl = provider.cover_url;
-  } else if (
-    provider.portfolio_items &&
-    provider.portfolio_items.length > 0 &&
-    provider.portfolio_items[0].images &&
-    provider.portfolio_items[0].images.length > 0
-  ) {
+
+  const isValidUrl = (url?: string | null) =>
+    url && !url.includes('placeholder') && !url.includes('default') && url.trim() !== "" && !url.includes('localhost:8000');
+
+  if (isValidUrl(provider.cover_url)) {
+    coverUrl = provider.cover_url!;
+  } else if (provider.portfolio_items?.[0]?.images?.[0]) {
     coverUrl = provider.portfolio_items[0].images[0];
-  } else if (
-    provider.logo_url &&
-    !provider.logo_url.includes('placeholder') &&
-    !provider.logo_url.includes('default') &&
-    provider.logo_url.trim() !== "" &&
-    !provider.logo_url.includes('localhost:8000')
-  ) {
-    coverUrl = provider.logo_url;
+  } else if (isValidUrl(provider.logo_url)) {
+    coverUrl = provider.logo_url!;
     coverBlur = true;
   }
 
-  let avatarUrl: string | null = null;
-  if (
-    provider.logo_url &&
-    !provider.logo_url.includes('placeholder') &&
-    !provider.logo_url.includes('default') &&
-    provider.logo_url.trim() !== "" &&
-    !provider.logo_url.includes('localhost:8000')
-  ) {
-    avatarUrl = provider.logo_url;
-  }
+  const avatarUrl = isValidUrl(provider.logo_url) ? provider.logo_url! : null;
+  const categoryName = provider.category?.name || provider.subcategories?.[0]?.name || null;
+  const yearsExp = provider.years_experience ?? null;
 
-  let categoryName: string | null = null;
-  if (provider.category?.name) {
-    categoryName = provider.category.name;
-  } else if (provider.subcategories && provider.subcategories.length > 0) {
-    categoryName = provider.subcategories[0].name;
-  }
-
-  const cityName = provider.city?.name || null;
-  const whatsappUrl = provider.whatsapp_url || null;
-  const phone = provider.phone || null;
-  const anyProvider = provider as any;
-  const email = anyProvider.email || null;
-
-  const socialLinks: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; color: string; url: string }> = [];
+  const socialLinks: MappedProvider['socialLinks'] = [];
   if (provider.website) {
     const webUrl = buildSocialUrl('website', provider.website);
     if (webUrl) socialLinks.push({ id: 'website', icon: 'globe-outline', color: '#60A5FA', url: webUrl });
   }
+
   const rawSocials = provider.social_links || {};
-  if (rawSocials.facebook) {
-    const fbUrl = buildSocialUrl('facebook', rawSocials.facebook);
-    if (fbUrl) socialLinks.push({ id: 'facebook', icon: 'logo-facebook', color: '#1877F2', url: fbUrl });
-  }
-  if (rawSocials.instagram) {
-    const instUrl = buildSocialUrl('instagram', rawSocials.instagram);
-    if (instUrl) socialLinks.push({ id: 'instagram', icon: 'logo-instagram', color: '#E1306C', url: instUrl });
-  }
-  if (rawSocials.linkedin) {
-    const liUrl = buildSocialUrl('linkedin', rawSocials.linkedin);
-    if (liUrl) socialLinks.push({ id: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2', url: liUrl });
-  }
-  if (rawSocials.github) {
-    const ghUrl = buildSocialUrl('github', rawSocials.github);
-    if (ghUrl) socialLinks.push({ id: 'github', icon: 'logo-github', color: '#F1F5F9', url: ghUrl });
-  }
+  const platforms: Array<{ key: 'facebook' | 'instagram' | 'linkedin' | 'github'; icon: keyof typeof Ionicons.glyphMap; color: string }> = [
+    { key: 'facebook', icon: 'logo-facebook', color: '#1877F2' },
+    { key: 'instagram', icon: 'logo-instagram', color: '#E1306C' },
+    { key: 'linkedin', icon: 'logo-linkedin', color: '#0A66C2' },
+    { key: 'github', icon: 'logo-github', color: '#F1F5F9' },
+  ];
+
+  platforms.forEach(({ key, icon, color }) => {
+    const value = rawSocials[key];
+    if (value) {
+      const url = buildSocialUrl(key, value);
+      if (url) socialLinks.push({ id: key, icon, color, url });
+    }
+  });
+
   const mapUrl = (rawSocials as any).map_url || anyProvider.map_url;
   if (mapUrl) {
     socialLinks.push({ id: 'map', icon: 'map-outline', color: '#34D399', url: mapUrl });
   }
-
-  const yearsExp = (provider.years_experience !== undefined && provider.years_experience !== null) ? provider.years_experience : null;
 
   return {
     id: provider.id,
@@ -139,12 +106,12 @@ function mapProviderProfile(provider: Provider): MappedProvider {
     coverBlur,
     avatarUrl,
     categoryName,
-    cityName,
+    cityName: provider.city?.name || null,
     rating: provider.rating_average ?? 0,
     reviewsCount: provider.reviews_count ?? 0,
-    whatsappUrl,
-    phone,
-    email,
+    whatsappUrl: provider.whatsapp_url || null,
+    phone: provider.phone || null,
+    email: anyProvider.email || null,
     socialLinks,
     about: provider.description || null,
     services: provider.subcategories || null,
@@ -158,7 +125,7 @@ function mapProviderProfile(provider: Provider): MappedProvider {
       if (yearsExp >= 3 && yearsExp <= 10) return `${yearsExp} سنوات خبرة`;
       return `${yearsExp} سنة خبرة`;
     })(),
-    worksRemotely: !!(provider as any).offers_remote_work,
+    worksRemotely: !!anyProvider.offers_remote_work,
     serviceAreaNote: provider.service_area_note || null,
     isFeatured: !!provider.is_featured,
     isFavorited: !!provider.is_favorited,
@@ -1110,7 +1077,7 @@ export default function ProviderScreen() {
 
   const profile = mapProviderProfile(provider);
   const HERO_HEIGHT = 250;
-  const AVATAR_SIZE = 120;
+  const AVATAR_SIZE = 140;
 
   const translatedType = (() => {
     if (!profile.providerType) return null;
@@ -1149,7 +1116,7 @@ export default function ProviderScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
 
-        {/* ═══ HERO SECTION ═══ */}
+        {/* ═══ HERO SECTION WITH CENTERED AVATAR ═══ */}
         <View style={{ position: 'relative', width: '100%', height: HERO_HEIGHT, backgroundColor: colors.surface }}>
           {profile.coverUrl ? (
             <Image
@@ -1172,9 +1139,8 @@ export default function ProviderScreen() {
             style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 100 }}
           />
 
-          {/* Navigation Controls (Strict RTL) */}
+          {/* Navigation Controls */}
           <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
-            {/* Back Button (Top-Right) */}
             <Pressable
               onPress={() => router.back()}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
@@ -1183,7 +1149,6 @@ export default function ProviderScreen() {
               <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             </Pressable>
 
-            {/* Favorite Button (Top-Left) */}
             <Pressable
               onPress={handleFavorite}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
@@ -1192,34 +1157,13 @@ export default function ProviderScreen() {
               <Ionicons
                 name={profile.isFavorited ? 'heart' : 'heart-outline'}
                 size={20}
-                color={profile.isFavorited ? '#EF4444' : '#FFFFFF'}
+                color={profile.isFavorited ? colors.gold : '#FFFFFF'}
               />
             </Pressable>
           </View>
-        </View>
 
-        {/* ═══ MAIN PROFILE INFO CARD ═══ */}
-        <View
-          style={{
-            backgroundColor: colors.surface,
-            marginTop: -20,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            marginHorizontal: 16,
-            paddingHorizontal: 24,
-            paddingTop: 28,
-            paddingBottom: 28,
-            borderWidth: 1,
-            borderColor: colors.border,
-            shadowColor: colors.shadow,
-            shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.05,
-            shadowRadius: 16,
-            elevation: 4,
-          }}
-        >
-          {/* Avatar & Name Header */}
-          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 24, marginTop: -20 }}>
+          {/* Avatar Overlapping Hero & Card */}
+          <View style={{ position: 'absolute', bottom: -AVATAR_SIZE / 2, left: '50%', marginLeft: -AVATAR_SIZE / 2, zIndex: 20 }}>
             <View
               style={{
                 width: AVATAR_SIZE,
@@ -1229,10 +1173,10 @@ export default function ProviderScreen() {
                 borderColor: colors.surface,
                 backgroundColor: colors.surface,
                 shadowColor: colors.shadow,
-                shadowOffset: { width: 0, height: 6 },
-                shadowOpacity: 0.12,
-                shadowRadius: 10,
-                elevation: 6,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+                elevation: 8,
                 overflow: 'hidden',
               }}
             >
@@ -1246,28 +1190,61 @@ export default function ProviderScreen() {
                 </View>
               )}
             </View>
+          </View>
+        </View>
 
-            <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
-              <Text numberOfLines={3} style={{ fontSize: 19, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl', lineHeight: 26 }}>
-                {profile.name}
-              </Text>
-              
+        {/* ═══ MAIN PROFILE INFO CARD ═══ */}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            marginTop: AVATAR_SIZE / 2 + 8,
+            marginHorizontal: 16,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+            paddingHorizontal: 20,
+            paddingTop: 20,
+            paddingBottom: 20,
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: colors.shadow,
+            shadowOffset: { width: 0, height: 10 },
+            shadowOpacity: 0.05,
+            shadowRadius: 16,
+            elevation: 4,
+          }}
+        >
+          {/* Name & Info - Centered */}
+          <View style={{ width: '100%', alignItems: 'center', gap: 12 }}>
+            <Text numberOfLines={2} style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', writingDirection: 'rtl', lineHeight: 28 }}>
+              {profile.name}
+            </Text>
+
+            {/* Type & Category & Rating Badges - Same Line */}
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
               {translatedType && (
-                <Text style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 }}>
-                  {translatedType} {profile.categoryName ? `• ${profile.categoryName}` : ''}
-                </Text>
+                <View style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.primary }}>
+                    {translatedType}
+                  </Text>
+                </View>
               )}
 
-              {/* Rating block */}
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 10 }}>
-                <Ionicons name="star" size={14} color={colors.gold} />
-                <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
-                  {profile.rating > 0 ? profile.rating.toFixed(1) : '0.0'}
-                </Text>
-                <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 12, color: colors.textMuted }}>
-                  ({profile.reviewsCount} تقييم)
-                </Text>
-              </View>
+              {profile.categoryName && (
+                <View style={{ backgroundColor: 'rgba(59,130,246,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-SemiBold', color: colors.primary }}>
+                    {profile.categoryName}
+                  </Text>
+                </View>
+              )}
+
+              {profile.rating > 0 && (
+                <View style={{ backgroundColor: 'rgba(234,179,8,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 3 }}>
+                  <Ionicons name="star" size={11} color={colors.gold} />
+                  <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 11, color: colors.gold }}>
+                    {profile.rating.toFixed(1)}
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 

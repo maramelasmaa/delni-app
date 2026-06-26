@@ -69,11 +69,21 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
 
           {/* Actions (Left) */}
           <View style={styles.actions}>
-            <Pressable onPress={handleFavorite} hitSlop={10}>
+            <Pressable
+              onPress={handleFavorite}
+              hitSlop={12}
+              style={({ pressed }) => [
+                styles.favoriteButton,
+                {
+                  backgroundColor: isFav ? colors.gold : colors.surfaceAlt,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+            >
               <Ionicons
                 name={isFav ? 'heart' : 'heart-outline'}
-                size={22}
-                color={isFav ? '#EAB308' : colors.textMuted}
+                size={18}
+                color={isFav ? '#0F172A' : colors.textMuted}
               />
             </Pressable>
           </View>
@@ -210,6 +220,7 @@ function makeStyles(colors: ThemeColors, isDark: boolean) {
       fontFamily: 'Cairo-Bold',
       writingDirection: 'rtl',
       lineHeight: 22,
+      maxWidth: 160,
     },
     categoryBadge: {
       backgroundColor: 'rgba(59, 130, 246, 0.12)',
@@ -230,7 +241,14 @@ function makeStyles(colors: ThemeColors, isDark: boolean) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 16,
-      width: 32,
+      width: 40,
+    },
+    favoriteButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     actionPressed: {
       transform: [{ scale: 0.90 }],

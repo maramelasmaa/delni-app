@@ -1,9 +1,11 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { Pressable, Text, View, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
+import { useToggleFavorite } from '../../src/hooks/useApi';
+import { useAuthStore } from '../../src/store/auth';
 import type { Provider } from '../../src/types';
 import { getProviderCover, getProviderLogo } from '../../src/utils/imageFallback';
 
@@ -15,10 +17,13 @@ const W = 240;
 const H = 270;
 const R = 20;
 const COVER_H = 120;
-const LOGO = 56;
+const LOGO = 88;
 
 const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
   const { colors } = useTheme();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const toggleFavorite = useToggleFavorite();
+  const [isFavorited, setIsFavorited] = useState(!!provider.is_favorited);
 
   const rating = provider.rating_average ?? 0;
   const gold = colors.gold ?? '#EAB308';
@@ -28,6 +33,15 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
   const go = useCallback(() => {
     router.push(`/provider/${provider.slug}`);
   }, [provider.slug]);
+
+  const handleFavorite = useCallback(() => {
+    if (!isAuthenticated) {
+      router.push({ pathname: '/(auth)/login', params: { redirectTo: '/(tabs)/' } });
+      return;
+    }
+    setIsFavorited(!isFavorited);
+    toggleFavorite.mutate({ slug: provider.slug, isFavorited });
+  }, [isAuthenticated, provider.slug, isFavorited, toggleFavorite]);
 
   return (
     <Pressable
@@ -54,6 +68,24 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
           <Text style={styles.featuredText}>مميز</Text>
           <Ionicons name="star" size={11} color="#0F172A" />
         </View>
+
+        <Pressable
+          onPress={handleFavorite}
+          style={({ pressed }) => [
+            styles.heartButton,
+            {
+              backgroundColor: isFavorited ? gold : 'rgba(0,0,0,0.3)',
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+          hitSlop={12}
+        >
+          <Ionicons
+            name={isFavorited ? 'heart' : 'heart-outline'}
+            size={16}
+            color={isFavorited ? '#0F172A' : '#FFFFFF'}
+          />
+        </Pressable>
       </View>
 
       <View style={styles.body}>
@@ -73,34 +105,30 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
           />
         </View>
 
-        <Text numberOfLines={2} style={[styles.name, { color: text }]}>
+        <Text numberOfLines={2} style={[styles.name, { color: text, maxWidth: 110 }]}>
           {provider.name}
         </Text>
 
         <View style={styles.metaRow}>
           {provider.category?.name && (
-            <View style={styles.categoryPill}>
-              <Ionicons name="briefcase-outline" size={11} color="#60A5FA" />
-              <Text numberOfLines={1} style={styles.categoryText}>
+            <View style={[styles.badge, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
+              <Ionicons name="briefcase-outline" size={10} color="#60A5FA" />
+              <Text numberOfLines={1} style={[styles.badgeText, { color: '#60A5FA' }]}>
                 {provider.category.name}
               </Text>
             </View>
           )}
 
           {rating > 0 && (
-            <View style={styles.ratingPill}>
-              <Ionicons name="star" size={11} color={gold} />
-              <Text style={[styles.ratingText, { color: gold }]}>
+            <View style={[styles.badge, { backgroundColor: 'rgba(234,179,8,0.12)' }]}>
+              <Ionicons name="star" size={10} color={gold} />
+              <Text numberOfLines={1} style={[styles.badgeText, { color: gold }]}>
                 {rating.toFixed(1)}
               </Text>
             </View>
           )}
         </View>
 
-        <View style={styles.footerHint}>
-          <Text style={styles.footerText}>عرض الملف</Text>
-          <Ionicons name="arrow-back" size={14} color="rgba(248,250,252,0.65)" />
-        </View>
       </View>
     </Pressable>
   );
@@ -169,6 +197,18 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
 
+  heartButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+
   body: {
     height: H - COVER_H,
     position: 'relative',
@@ -207,68 +247,39 @@ const styles = StyleSheet.create({
 
   name: {
     textAlign: 'right',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 13,
+    lineHeight: 18,
     fontFamily: 'Cairo-Bold',
     writingDirection: 'rtl',
+    height: 36,
     marginBottom: 8,
   },
 
   metaRow: {
+    height: 28,
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    gap: 6,
   },
 
-  categoryPill: {
+  badge: {
     flex: 1,
     minWidth: 0,
+    height: 28,
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 3,
+    paddingHorizontal: 9,
     borderRadius: 999,
-    backgroundColor: 'rgba(59,130,246,0.12)',
+    justifyContent: 'center',
   },
 
-  categoryText: {
+  badgeText: {
     flex: 1,
     textAlign: 'right',
-    fontSize: 11,
-    fontFamily: 'Cairo-SemiBold',
-    color: '#60A5FA',
-    writingDirection: 'rtl',
-  },
-
-  ratingPill: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: 'rgba(234,179,8,0.12)',
-  },
-
-  ratingText: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: 'Cairo-Bold',
-  },
-
-  footerHint: {
-    marginTop: 'auto',
-    alignSelf: 'flex-start',
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 4,
-  },
-
-  footerText: {
-    fontSize: 11,
-    fontFamily: 'Cairo-SemiBold',
-    color: 'rgba(248,250,252,0.65)',
     writingDirection: 'rtl',
   },
+
 });
