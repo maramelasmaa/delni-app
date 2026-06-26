@@ -225,13 +225,13 @@ function AboutSection({ about, colors }: AboutSectionProps) {
   const shouldShowToggle = about.length > 180;
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 36, width: '100%' }}>
       <SectionHeader title="نبذة عنا" colors={colors} />
       <View
         style={{
           borderRadius: 20,
           backgroundColor: colors.surface,
-          padding: 16,
+          padding: 18,
           borderWidth: 1,
           borderColor: colors.border,
           shadowColor: colors.shadow,
@@ -258,11 +258,11 @@ function AboutSection({ about, colors }: AboutSectionProps) {
           <Pressable
             onPress={() => setExpanded(!expanded)}
             style={{
-              marginTop: 10,
+              marginTop: 14,
               alignSelf: 'flex-start',
               flexDirection: 'row-reverse',
               alignItems: 'center',
-              gap: 4,
+              gap: 6,
             }}
           >
             <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.primary }}>
@@ -288,16 +288,16 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
   if (!services || services.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 36, width: '100%' }}>
       <SectionHeader title="الخدمات المقدمة" colors={colors} />
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
+      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 12, width: '100%' }}>
         {services.map((svc) => (
           <View
             key={svc.id}
             style={{
               flexDirection: 'row-reverse',
               alignItems: 'center',
-              gap: 10,
+              gap: 12,
               width: '48%',
               flexGrow: 1,
               minWidth: 140,
@@ -305,8 +305,8 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
               borderWidth: 1,
               borderColor: colors.border,
               borderRadius: 16,
-              paddingHorizontal: 12,
-              paddingVertical: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 14,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.02,
@@ -366,7 +366,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
   };
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 36, width: '100%' }}>
       <SectionHeader title="معرض الأعمال" colors={colors} />
       <ScrollView
         horizontal
@@ -432,7 +432,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                   )}
                 </View>
               )}
-              <View style={{ padding: 16, alignItems: 'flex-end', width: '100%' }}>
+              <View style={{ padding: 18, alignItems: 'flex-end', width: '100%' }}>
                 <Text
                   style={{
                     fontSize: 15,
@@ -446,14 +446,15 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                 </Text>
                 {project.short_description && (
                   <Text
+                    numberOfLines={3}
                     style={{
-                      marginTop: 6,
-                      fontSize: 13,
+                      marginTop: 10,
+                      fontSize: 13.5,
                       fontFamily: 'Cairo-Regular',
                       color: colors.textSecondary,
                       textAlign: 'right',
                       writingDirection: 'rtl',
-                      lineHeight: 20,
+                      lineHeight: 21,
                     }}
                   >
                     {project.short_description}
@@ -502,16 +503,16 @@ interface CredentialsSectionProps {
 function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
   if (!credentials || credentials.length === 0) return null;
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 36, width: '100%' }}>
       <SectionHeader title="الشهادات والمؤهلات" colors={colors} />
-      <View style={{ gap: 12, width: '100%' }}>
+      <View style={{ gap: 14, width: '100%' }}>
         {credentials.map((cred) => (
           <View
             key={cred.id}
             style={{
               backgroundColor: colors.surface,
               borderRadius: 16,
-              padding: 16,
+              padding: 18,
               borderWidth: 1,
               borderColor: colors.border,
               borderRightWidth: 4,
@@ -1201,12 +1202,13 @@ export default function ProviderScreen() {
         <View
           style={{
             backgroundColor: colors.surface,
-            marginTop: -50,
+            marginTop: -20,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             marginHorizontal: 16,
-            paddingHorizontal: 20,
-            paddingBottom: 20,
+            paddingHorizontal: 24,
+            paddingTop: 28,
+            paddingBottom: 28,
             borderWidth: 1,
             borderColor: colors.border,
             shadowColor: colors.shadow,
@@ -1217,7 +1219,7 @@ export default function ProviderScreen() {
           }}
         >
           {/* Avatar & Name Header */}
-          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 16, marginTop: -44 }}>
+          <View style={{ flexDirection: 'row-reverse', width: '100%', alignItems: 'center', gap: 20, marginTop: -20 }}>
             <View
               style={{
                 width: AVATAR_SIZE,
@@ -1246,18 +1248,18 @@ export default function ProviderScreen() {
             </View>
 
             <View style={{ flex: 1, alignItems: 'flex-end', justifyContent: 'center' }}>
-              <Text numberOfLines={2} style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl', lineHeight: 28 }}>
+              <Text numberOfLines={3} style={{ fontSize: 19, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl', lineHeight: 26 }}>
                 {profile.name}
               </Text>
               
               {translatedType && (
-                <Text style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'right', writingDirection: 'rtl', marginTop: 2 }}>
+                <Text style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'right', writingDirection: 'rtl', marginTop: 6 }}>
                   {translatedType} {profile.categoryName ? `• ${profile.categoryName}` : ''}
                 </Text>
               )}
 
               {/* Rating block */}
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 6 }}>
+              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 10 }}>
                 <Ionicons name="star" size={14} color={colors.gold} />
                 <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
                   {profile.rating > 0 ? profile.rating.toFixed(1) : '0.0'}
@@ -1275,9 +1277,9 @@ export default function ProviderScreen() {
             width: '100%',
             backgroundColor: colors.surfaceAlt,
             borderRadius: 18,
-            paddingVertical: 12,
-            paddingHorizontal: 8,
-            marginTop: 18,
+            paddingVertical: 18,
+            paddingHorizontal: 12,
+            marginTop: 24,
             alignItems: 'center',
             justifyContent: 'space-around',
           }}>
@@ -1301,7 +1303,7 @@ export default function ProviderScreen() {
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
-            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 12, marginTop: 16 }}>
+            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 14, marginTop: 24 }}>
               {profile.whatsappUrl && (
                 <Pressable
                   onPress={handleWhatsApp}
@@ -1355,7 +1357,7 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 18, marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
               {profile.socialLinks.map((item) => (
                 <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
                   <Ionicons name={item.icon} size={18} color={item.color} />
@@ -1366,7 +1368,7 @@ export default function ProviderScreen() {
         </View>
 
         {/* ═══ CORE SECTIONS (About, Services, Portfolio, Credentials) ═══ */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
           {profile.about && <AboutSection about={profile.about} colors={colors} />}
           <ServicesSection services={profile.services} colors={colors} />
           <PortfolioSection projects={profile.projects} colors={colors} onImagePress={(item, idx) => { setGalleryItem(item); setGalleryIndex(idx); }} />
@@ -1374,7 +1376,7 @@ export default function ProviderScreen() {
         </View>
 
         {/* ═══ REVIEWS SECTION (Pasted Old Design) ═══ */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 40, marginTop: 12 }}>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 40, marginTop: 32 }}>
           <ReviewsSection
             reviews={allReviews}
             rating={profile.rating}

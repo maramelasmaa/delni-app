@@ -1,0 +1,199 @@
+export interface Banner {
+  id: number;
+  title: string | null;
+  subtitle: string | null;
+  image_url: string;
+  link_type: 'none' | 'category' | 'provider' | 'url';
+  link_value: string | null;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  is_provider: boolean;
+  created_at?: string;
+}
+
+export interface City {
+  id: number;
+  name: string;
+  slug: string;
+  discoverable_profiles_count?: number;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  icon_url?: string | null;
+  providers_count?: number;
+  subcategories_count?: number;
+  subcategories?: Subcategory[];
+}
+
+export interface ProviderType {
+  code: string;
+  name: string;
+}
+
+export interface Subcategory {
+  id: number;
+  name: string;
+  slug: string;
+  category_id: number;
+  icon_url?: string | null;
+  providers_count?: number;
+  category?: Category;
+}
+
+export interface PortfolioItem {
+  id: number;
+  title: string;
+  short_description?: string;
+  description?: string;
+  link?: string;
+  images: string[];
+}
+
+export interface ProviderCredential {
+  id: number;
+  title: string;
+  issuer?: string;
+  verification_url?: string;
+  issue_date?: string;
+  notes?: string;
+}
+
+export interface Review {
+  id: number;
+  rating: number;
+  comment?: string;
+  user_name: string;
+  user_id: number;
+  user_avatar?: string | null;
+  status?: string;
+  created_at: string;
+}
+
+export interface Provider {
+  id: number;
+  slug: string;
+  name: string;
+  provider_type?: string | null;
+  logo_url?: string | null;
+  cover_url?: string | null;
+  city?: City;
+  category?: Category;
+  subcategories?: Subcategory[];
+  rating_average: number;
+  reviews_count: number;
+  is_featured?: boolean;
+  whatsapp_url?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  is_favorited?: boolean;
+  // Detail-only fields
+  description?: string;
+  portfolio_items?: PortfolioItem[];
+  portfolio_images?: string[];
+  credentials?: ProviderCredential[];
+  years_experience?: number;
+  website?: string | null;
+  social_links?: {
+    facebook?: string | null;
+    instagram?: string | null;
+    linkedin?: string | null;
+    github?: string | null;
+    map_url?: string | null;
+  };
+  service_area_note?: string | null;
+  offers_remote_work?: boolean;
+  can_review?: boolean;
+  review_status_message?: string | null;
+}
+
+export interface HomeStats {
+  visible_providers_count: number;
+  categories_count: number;
+  cities_count: number;
+  reviews_count: number;
+}
+
+export interface HomeData {
+  stats: HomeStats;
+  banners: Banner[];
+  categories: Category[];
+  featured_providers: Provider[];
+  suggested_providers: Provider[];
+}
+
+export interface SearchFilters {
+  keyword?: string;
+  city?: string;
+  city_id?: number;
+  category?: string;
+  category_id?: number;
+  subcategory?: string;
+  subcategory_id?: number;
+  provider_type?: string;
+  remote?: boolean;
+  sort?: 'rating' | 'newest';
+  page?: number;
+  per_page?: number;
+}
+
+export interface PaginationMeta {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+  has_more?: boolean;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  pagination?: PaginationMeta;
+  errors?: Record<string, string[]>;
+}
+
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export interface RegisterData {
+  name: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface ContactInfo {
+  whatsapp?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  facebook?: string;
+}
+
+export interface PaginatedData<T> {
+  data: T[];
+  pagination: PaginationMeta;
+}
+
+export interface CategoryDetailData {
+  category: Category;
+  providers: Provider[];
+  pagination: PaginationMeta;
+}
+
+export interface SubcategoryDetailData {
+  subcategory: Subcategory;
+  providers: Provider[];
+  related_subcategories: Subcategory[];
+  pagination: PaginationMeta;
+}
