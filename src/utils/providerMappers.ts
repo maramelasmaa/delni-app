@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { Provider, PortfolioItem, ProviderCredential } from '../types';
+import { isValidImageUrl } from './imageValidation';
 
 export interface MappedProvider {
   id: number;
@@ -22,7 +23,6 @@ export interface MappedProvider {
   projects: PortfolioItem[] | null;
   credentials: ProviderCredential[] | null;
   yearsExperience: number | null;
-  serviceAreaNote: string | null;
   yearsExperienceText: string | null;
   worksRemotely: boolean;
   isFeatured: boolean;
@@ -31,25 +31,36 @@ export interface MappedProvider {
   reviewStatusMessage: string | null;
 }
 
+export function getOffersRemoteWork(provider: Provider | Record<string, any> | null | undefined): boolean {
+  if (!provider) return false;
+
+  const anyProvider = provider as any;
+  const rawValue =
+    anyProvider.offers_remote_work ??
+    anyProvider.works_remotely ??
+    anyProvider.remote_work ??
+    anyProvider.is_remote ??
+    anyProvider.remote;
+
+  return rawValue === true || rawValue === 1 || rawValue === '1' || rawValue === 'true';
+}
+
 export function mapProviderProfile(provider: Provider): MappedProvider {
   const anyProvider = provider as any;
 
   let coverUrl: string | null = null;
   let coverBlur = false;
 
-  const isValidUrl = (url?: string | null) =>
-    url && !url.includes('placeholder') && !url.includes('default') && url.trim() !== "" && !url.includes('localhost:8000');
-
-  if (isValidUrl(provider.cover_url)) {
+  if (isValidImageUrl(provider.cover_url)) {
     coverUrl = provider.cover_url!;
   } else if (provider.portfolio_items?.[0]?.images?.[0]) {
     coverUrl = provider.portfolio_items[0].images[0];
-  } else if (isValidUrl(provider.logo_url)) {
+  } else if (isValidImageUrl(provider.logo_url)) {
     coverUrl = provider.logo_url!;
     coverBlur = true;
   }
 
-  const avatarUrl = isValidUrl(provider.logo_url) ? provider.logo_url! : null;
+  const avatarUrl = isValidImageUrl(provider.logo_url) ? provider.logo_url! : null;
   const categoryName = provider.category?.name || provider.subcategories?.[0]?.name || null;
   const yearsExp = provider.years_experience ?? null;
 
@@ -109,8 +120,7 @@ export function mapProviderProfile(provider: Provider): MappedProvider {
       if (yearsExp >= 3 && yearsExp <= 10) return `${yearsExp} سنوات خبرة`;
       return `${yearsExp} سنة خبرة`;
     })(),
-    worksRemotely: !!anyProvider.offers_remote_work,
-    serviceAreaNote: provider.service_area_note || null,
+    worksRemotely: getOffersRemoteWork(provider),
     isFeatured: !!provider.is_featured,
     isFavorited: !!provider.is_favorited,
     canReview: !!provider.can_review,

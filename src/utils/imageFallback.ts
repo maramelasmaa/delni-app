@@ -1,3 +1,5 @@
+import { isValidImageUrl } from './imageValidation';
+
 const LOGO_PLACEHOLDERS = [
   'https://images.unsplash.com/photo-1626785774573-4b799315345d?w=250&auto=format&fit=crop&q=80', // Abstract branding line art
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=250&auto=format&fit=crop&q=80', // 3D fluid shape
@@ -29,15 +31,15 @@ function getFallbackCover(providerId: number): string {
 }
 
 export function getProviderLogo(logoUrl: string | null | undefined, providerId: number): string {
-  if (!logoUrl || logoUrl.includes('placeholder') || logoUrl.includes('default') || logoUrl.trim() === '' || logoUrl.includes('localhost:8000')) {
+  if (!isValidImageUrl(logoUrl)) {
     return getFallbackLogo(providerId);
   }
-  return logoUrl;
+  return logoUrl as string;
 }
 
 export function getProviderCover(coverUrl: string | null | undefined, providerId: number): string {
-  if (!coverUrl || coverUrl.includes('placeholder') || coverUrl.includes('default') || coverUrl.trim() === '' || coverUrl.includes('localhost:8000')) {
+  if (!isValidImageUrl(coverUrl)) {
     return getFallbackCover(providerId);
   }
-  return coverUrl;
+  return coverUrl as string;
 }
