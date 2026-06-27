@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -8,13 +8,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StarRating } from '../../components/ui/StarRating';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
-import { useProvider, useProviderReviews, useToggleFavorite, useSubmitReview, useFlagReview } from '../../src/hooks/useApi';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/store/auth';
+import { useProviderDetail } from '../../src/hooks/useProviderDetail';
+import { useReviewModal } from '../../src/hooks/useReviewModal';
+import { useReportModal } from '../../src/hooks/useReportModal';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { PortfolioItem, Review, Provider } from '../../src/types';
+import type { PortfolioItem } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
-import { mapProviderProfile, getAvatarTheme } from '../../src/utils/providerMappers';
+import { getAvatarTheme } from '../../src/utils/providerMappers';
 import { toEnglishNumbers } from '../../src/utils/numberFormatter';
 import {
   SectionHeader,
@@ -31,33 +32,14 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function ProviderScreen() {
   const { colors, isDark } = useTheme();
   const { slug, writeReview, reportReviewId } = useLocalSearchParams<{ slug: string; writeReview?: string; reportReviewId?: string }>();
-  const { data: provider, isLoading, isError, refetch } = useProvider(slug);
-  const [reviewPage, setReviewPage] = useState(1);
-  const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const prevSlugRef = useRef(slug);
-  const { data: reviewsData, isFetching: isFetchingReviews } = useProviderReviews(slug, reviewPage);
-
-  if (prevSlugRef.current !== slug) {
-    prevSlugRef.current = slug;
-    setReviewPage(1);
-    setAllReviews([]);
-  }
-
-  useEffect(() => {
-    const fresh = reviewsData?.data;
-    if (!fresh?.length) return;
-    setAllReviews((prev) =>
-      reviewPage === 1 ? fresh : [...prev, ...fresh.filter((r) => !prev.some((x) => x.id === r.id))]
-    );
-  }, [reviewsData?.data, reviewPage]);
-
-  const toggleFavorite = useToggleFavorite();
-  const submitReview = useSubmitReview();
-  const flagReview = useFlagReview();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const user = useAuthStore((s) => s.user);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Hooks for business logic
+  const detail = useProviderDetail(slug as string);
+  const reviewModal = useReviewModal(slug as string);
+  const reportModal = useReportModal();
+
+  // Custom alert state
   const [customAlert, setCustomAlert] = useState<{
     visible: boolean;
     title: string;
@@ -78,48 +60,8 @@ export default function ProviderScreen() {
     setCustomAlert({ visible: true, title, message, buttons });
   }, []);
 
-  const [showReportModal, setShowReportModal] = useState(false);
-  const [reportReviewIdState, setReportReviewIdState] = useState<number | null>(null);
-  const [reportReasonType, setReportReasonType] = useState<'offensive' | 'misleading' | 'spam' | 'other'>('offensive');
-  const [customReportReason, setCustomReportReason] = useState("");
-  const [reportError, setReportError] = useState("");
-
-  const handleReportSubmit = useCallback(() => {
-    if (!reportReviewIdState) return;
-    const label = reportReasonType === 'offensive' ? 'محتوى مسيء أو غير لائق' :
-                  reportReasonType === 'misleading' ? 'معلومات مضللة أو كاذبة' :
-                  reportReasonType === 'spam' ? 'رسائل مزعجة (سبام)' : 'سبب آخر';
-    const combinedReason = customReportReason.trim() ? `${label}: ${customReportReason.trim()}` : `تم الإبلاغ من مستخدم التطبيق - ${label}`;
-
-    if (combinedReason.length < 10) {
-      setReportError('تفاصيل البلاغ يجب أن تكون 10 أحرف على الأقل.');
-      return;
-    }
-    if (reportReasonType === 'other' && !customReportReason.trim()) {
-      setReportError('يرجى كتابة تفاصيل السبب الآخر.');
-      return;
-    }
-
-    flagReview.mutate(
-      { reviewId: reportReviewIdState, reason: combinedReason },
-      {
-        onSuccess: () => {
-          setShowReportModal(false);
-          setReportReviewIdState(null);
-          setCustomReportReason("");
-          setReportReasonType('offensive');
-          setReportError("");
-          showRTLAlert('تم الإبلاغ', 'شكراً لك. سيراجع فريقنا هذا التقييم.', [{ text: 'حسناً', style: 'default' }]);
-        },
-        onError: () => {
-          setReportError('تعذر إرسال البلاغ، يرجى المحاولة مجدداً.');
-        }
-      }
-    );
-  }, [reportReviewIdState, reportReasonType, customReportReason, flagReview, showRTLAlert]);
-
   const handleReportReview = useCallback((reviewId: number) => {
-    if (!isAuthenticated) {
+    if (!detail.isAuthenticated) {
       showRTLAlert(
         'تسجيل الدخول مطلوب',
         'يجب عليك تسجيل الدخول لتتمكن من الإبلاغ عن هذا التقييم. هل تريد الانتقال إلى صفحة تسجيل الدخول؟',
@@ -136,35 +78,35 @@ export default function ProviderScreen() {
       );
       return;
     }
-    setReportReviewIdState(reviewId);
-    setShowReportModal(true);
-  }, [isAuthenticated, slug, showRTLAlert]);
+    reportModal.setReportReviewIdState(reviewId);
+    reportModal.setShowReportModal(true);
+  }, [detail.isAuthenticated, slug, showRTLAlert, reportModal]);
 
-  useEffect(() => {
-    if (writeReview === 'true' && isAuthenticated && provider) {
-      if (!provider.can_review) {
-        showRTLAlert('تعذر كتابة تقييم', provider.review_status_message ?? "", [{ text: 'حسناً', style: 'default' }]);
+  React.useEffect(() => {
+    if (writeReview === 'true' && detail.isAuthenticated && detail.provider) {
+      if (!detail.provider.can_review) {
+        showRTLAlert('تعذر كتابة تقييم', detail.provider.review_status_message ?? "", [{ text: 'حسناً', style: 'default' }]);
         router.setParams({ writeReview: undefined });
         return;
       }
-      setShowReviewModal(true);
+      reviewModal.setShowReviewModal(true);
       const timer = setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: true });
       }, 500);
       router.setParams({ writeReview: undefined });
       return () => clearTimeout(timer);
     }
-  }, [writeReview, isAuthenticated, provider, showRTLAlert]);
+  }, [writeReview, detail.isAuthenticated, detail.provider, reviewModal, showRTLAlert]);
 
-  useEffect(() => {
-    if (reportReviewId && isAuthenticated && provider) {
+  React.useEffect(() => {
+    if (reportReviewId && detail.isAuthenticated && detail.provider) {
       const id = Number(reportReviewId);
       if (!isNaN(id)) {
         handleReportReview(id);
       }
     }
     router.setParams({ reportReviewId: undefined });
-  }, [reportReviewId, isAuthenticated, provider, handleReportReview]);
+  }, [reportReviewId, detail.isAuthenticated, detail.provider, handleReportReview]);
 
   const handleUnauthenticatedWriteReview = useCallback(() => {
     showRTLAlert(
@@ -184,70 +126,21 @@ export default function ProviderScreen() {
   }, [slug, showRTLAlert]);
 
   const insets = useSafeAreaInsets();
-  const [showReviewModal, setShowReviewModal] = useState(false);
-  const [reviewRating, setReviewRating] = useState(0);
-  const [reviewComment, setReviewComment] = useState("");
-  const [reviewError, setReviewError] = useState("");
   const [galleryItem, setGalleryItem] = useState<PortfolioItem | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
 
-  const reviewPagination = reviewsData?.pagination;
-  const hasMoreReviews = reviewPagination ? reviewPagination.current_page < reviewPagination.last_page : false;
-
-  const handleFavorite = useCallback(() => {
-    if (!isAuthenticated) {
-      router.push({ pathname: '/(auth)/login', params: { redirectTo: `/provider/${String(slug)}` } });
-      return;
-    }
-    if (provider) {
-      toggleFavorite.mutate({ slug: String(slug), isFavorited: !!provider.is_favorited });
-    }
-  }, [isAuthenticated, slug, provider, toggleFavorite]);
-
-  const handleWhatsApp = useCallback(() => {
-    if (provider?.whatsapp_url) {
-      openExternalUrl(provider.whatsapp_url, { errorMessage: 'تعذر فتح واتساب، تأكد من تثبيت التطبيق.' });
-    }
-  }, [provider?.whatsapp_url]);
-
-  const handlePhone = useCallback(() => {
-    if (provider?.phone) {
-      openExternalUrl(`tel:${provider.phone}`, { errorMessage: 'تعذر إجراء الاتصال.' });
-    }
-  }, [provider?.phone]);
-
-  const handleReviewSubmit = useCallback(() => {
-    if (!provider?.can_review) return;
-    setReviewError("");
-    submitReview.mutate(
-      { slug: String(slug), rating: reviewRating, comment: reviewComment },
-      {
-        onSuccess: () => {
-          setShowReviewModal(false);
-          setReviewRating(0);
-          setReviewComment("");
-          setReviewError("");
-        },
-        onError: (err: unknown) => {
-          const axiosErr = err as { response?: { data?: { message?: string } } };
-          setReviewError(axiosErr?.response?.data?.message || 'حدث خطأ أثناء إرسال التقييم، حاول مجدداً.');
-        }
-      }
-    );
-  }, [provider?.can_review, slug, reviewRating, reviewComment, submitReview]);
-
   const handleWriteReviewPress = useCallback(() => {
-    if (!provider?.can_review) {
-      showRTLAlert('تعذر كتابة تقييم', provider?.review_status_message ?? "", [{ text: 'حسناً', style: 'default' }]);
+    if (!detail.provider?.can_review) {
+      showRTLAlert('تعذر كتابة تقييم', detail.provider?.review_status_message ?? "", [{ text: 'حسناً', style: 'default' }]);
       return;
     }
-    setShowReviewModal(true);
-  }, [provider?.can_review, provider?.review_status_message, showRTLAlert]);
+    reviewModal.setShowReviewModal(true);
+  }, [detail.provider?.can_review, detail.provider?.review_status_message, reviewModal, showRTLAlert]);
 
-  if (isLoading) return <LoadingSpinner />;
-  if (isError || !provider) return <ErrorView onRetry={refetch} />;
+  if (detail.isLoading) return <LoadingSpinner />;
+  if (detail.isError || !detail.provider || !detail.profile) return <ErrorView onRetry={detail.refetch} />;
 
-  const profile = mapProviderProfile(provider);
+  const profile = detail.profile;
   const HERO_HEIGHT = 250;
   const AVATAR_SIZE = 96;
 
@@ -322,7 +215,7 @@ export default function ProviderScreen() {
             </Pressable>
 
             <Pressable
-              onPress={handleFavorite}
+              onPress={detail.handleFavorite}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
               hitSlop={8}
             >
@@ -444,7 +337,7 @@ export default function ProviderScreen() {
             <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 12, marginTop: 12 }}>
               {profile.whatsappUrl && (
                 <Pressable
-                  onPress={handleWhatsApp}
+                  onPress={detail.handleWhatsApp}
                   style={{
                     flex: profile.phone ? 1 : undefined,
                     width: profile.phone ? undefined : '100%',
@@ -468,7 +361,7 @@ export default function ProviderScreen() {
               )}
               {profile.phone && (
                 <Pressable
-                  onPress={handlePhone}
+                  onPress={detail.handlePhone}
                   style={{
                     flex: profile.whatsappUrl ? 1 : undefined,
                     width: profile.whatsappUrl ? undefined : '100%',
@@ -513,21 +406,21 @@ export default function ProviderScreen() {
           <CredentialsSection credentials={profile.credentials} colors={colors} />
           <View style={{ marginTop: 4 }}>
             <ReviewsSection
-              reviews={allReviews}
+              reviews={detail.allReviews}
               rating={profile.rating}
               reviewsCount={profile.reviewsCount}
               colors={colors}
               isDark={isDark}
-              isAuthenticated={isAuthenticated}
+              isAuthenticated={detail.isAuthenticated}
               canWriteReview={profile.canReview}
               reviewStatusMessage={profile.reviewStatusMessage}
-              user={user}
+              user={detail.user}
               onWriteReviewPress={handleWriteReviewPress}
               onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
               onReportReview={handleReportReview}
-              isFetching={isFetchingReviews}
-              hasMore={hasMoreReviews}
-              onLoadMore={() => setReviewPage((p) => p + 1)}
+              isFetching={detail.isFetchingReviews}
+              hasMore={detail.hasMoreReviews}
+              onLoadMore={() => detail.setReviewPage((p) => p + 1)}
             />
           </View>
         </View>
@@ -557,12 +450,12 @@ export default function ProviderScreen() {
       </Modal>
 
       {/* ═══ CUSTOM REPORT MODAL ═══ */}
-      <Modal visible={showReportModal} transparent animationType="slide" onRequestClose={() => setShowReportModal(false)}>
+      <Modal visible={reportModal.showReportModal} transparent animationType="slide" onRequestClose={() => reportModal.setShowReportModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.overlayMedium, justifyContent: 'flex-end' }}>
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
-              <Pressable onPress={() => setShowReportModal(false)}>
+              <Pressable onPress={() => reportModal.setShowReportModal(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
               </Pressable>
             </View>
@@ -574,9 +467,9 @@ export default function ProviderScreen() {
                 { type: 'spam', label: 'رسائل مزعجة (سبام)' },
                 { type: 'other', label: 'سبب آخر (اكتبه بالأسفل)' }
               ].map((opt) => {
-                const isSelected = reportReasonType === opt.type;
+                const isSelected = reportModal.reportReasonType === opt.type;
                 return (
-                  <Pressable key={opt.type} onPress={() => { setReportReasonType(opt.type as any); setReportError(''); }} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
+                  <Pressable key={opt.type} onPress={() => { reportModal.setReportReasonType(opt.type as any); reportModal.setReportError(''); }} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
                     <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.border, alignItems: 'center', justifyContent: 'center' }}>
                       {isSelected && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
                     </View>
@@ -588,8 +481,8 @@ export default function ProviderScreen() {
 
             <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, textAlign: 'right', marginBottom: 8 }}>تفاصيل البلاغ</Text>
             <TextInput
-              value={customReportReason}
-              onChangeText={(text) => { setCustomReportReason(text); setReportError(''); }}
+              value={reportModal.customReportReason}
+              onChangeText={(text) => { reportModal.setCustomReportReason(text); reportModal.setReportError(''); }}
               placeholder="اكتب تفاصيل البلاغ هنا... (10 أحرف على الأقل)"
               placeholderTextColor={colors.textMuted}
               multiline
@@ -597,15 +490,15 @@ export default function ProviderScreen() {
               style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
             />
 
-            {reportError ? (
-              <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12, textAlign: 'right', marginBottom: 12 }}>{reportError}</Text>
+            {reportModal.reportError ? (
+              <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12, textAlign: 'right', marginBottom: 12 }}>{reportModal.reportError}</Text>
             ) : null}
 
             <View style={{ flexDirection: 'row-reverse', gap: 12 }}>
-              <Pressable onPress={handleReportSubmit} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center' }}>
+              <Pressable onPress={reportModal.handleReportSubmit} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
-              <Pressable onPress={() => setShowReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+              <Pressable onPress={() => reportModal.setShowReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textSecondary }}>إلغاء</Text>
               </Pressable>
             </View>
@@ -640,36 +533,36 @@ export default function ProviderScreen() {
       </Modal>
 
       {/* ═══ REVIEW ACTION WINDOW MODAL ═══ */}
-      <Modal visible={showReviewModal} transparent animationType="slide" onRequestClose={() => setShowReviewModal(false)}>
+      <Modal visible={reviewModal.showReviewModal} transparent animationType="slide" onRequestClose={() => reviewModal.setShowReviewModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
             <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>أضف تقييمك</Text>
-            <Pressable onPress={() => setShowReviewModal(false)}>
+            <Pressable onPress={() => reviewModal.setShowReviewModal(false)}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
           <ScrollView style={{ flex: 1, paddingHorizontal: 16 }}>
             <Text style={{ marginBottom: 12, marginTop: 24, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تقييمك</Text>
             <View style={{ alignItems: 'center' }}>
-              <StarRating value={reviewRating} size={40} interactive onChange={setReviewRating} />
+              <StarRating value={reviewModal.reviewRating} size={40} interactive onChange={reviewModal.setReviewRating} />
             </View>
             <Text style={{ marginBottom: 8, marginTop: 20, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تعليقك (اختياري)</Text>
             <TextInput
-              value={reviewComment}
-              onChangeText={setReviewComment}
+              value={reviewModal.reviewComment}
+              onChangeText={reviewModal.setReviewComment}
               placeholder="اكتب تجربتك بالتفصيل هنا..."
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={5}
               style={{ width: '100%', minHeight: 120, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surface }}
             />
-            {reviewError ? (
-              <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 13, textAlign: 'right', marginTop: 12 }}>{reviewError}</Text>
+            {reviewModal.reviewError ? (
+              <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 13, textAlign: 'right', marginTop: 12 }}>{reviewModal.reviewError}</Text>
             ) : null}
           </ScrollView>
-          <Pressable onPress={handleReviewSubmit} disabled={!reviewRating || submitReview.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewRating ? colors.primary : colors.surfaceAlt }}>
-            <Text style={{ fontFamily: 'Cairo-Bold', color: reviewRating ? colors.textOnPrimary : colors.textMuted }}>
-              {submitReview.isPending ? 'جاري الإرسال...' : 'إرسال التقييم'}
+          <Pressable onPress={reviewModal.handleReviewSubmit} disabled={!reviewModal.reviewRating || reviewModal.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewModal.reviewRating ? colors.primary : colors.surfaceAlt }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: reviewModal.reviewRating ? colors.textOnPrimary : colors.textMuted }}>
+              {reviewModal.isPending ? 'جاري الإرسال...' : 'إرسال التقييم'}
             </Text>
           </Pressable>
         </SafeAreaView>
