@@ -15,6 +15,7 @@ import type { ThemeColors } from '../../src/theme/tokens';
 import type { PortfolioItem, Review, Provider } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { mapProviderProfile, getAvatarTheme } from '../../src/utils/providerMappers';
+import { toEnglishNumbers } from '../../src/utils/numberFormatter';
 import {
   SectionHeader,
   AboutSection,
@@ -306,7 +307,7 @@ export default function ProviderScreen() {
           )}
 
           <LinearGradient
-            colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.15)', 'transparent']}
+            colors={[colors.overlayMedium, colors.overlayLight, 'transparent']}
             style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 100 }}
           />
 
@@ -368,13 +369,13 @@ export default function ProviderScreen() {
         <View
           style={{
             backgroundColor: colors.surface,
-            marginTop: 32,
+            marginTop: 20,
             marginHorizontal: 16,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom: 20,
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 16,
             borderWidth: 1,
             borderColor: colors.border,
             shadowColor: colors.shadow,
@@ -385,7 +386,7 @@ export default function ProviderScreen() {
           }}
         >
           {/* Name & Type Header - Centered */}
-          <View style={{ width: '100%', alignItems: 'center', paddingTop: 12 }}>
+          <View style={{ width: '100%', alignItems: 'center', paddingTop: 8 }}>
             <Text numberOfLines={2} style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', writingDirection: 'rtl', lineHeight: 28 }}>
               {profile.name}
             </Text>
@@ -400,10 +401,10 @@ export default function ProviderScreen() {
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'center' }}>
               <Ionicons name="star" size={14} color={colors.gold} />
               <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
-                {profile.rating > 0 ? profile.rating.toFixed(1) : '0.0'}
+                {toEnglishNumbers(profile.rating > 0 ? profile.rating.toFixed(1) : '0.0')}
               </Text>
               <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 12, color: colors.textMuted }}>
-                ({profile.reviewsCount} تقييم)
+                ({toEnglishNumbers(profile.reviewsCount)} تقييم)
               </Text>
             </View>
           </View>
@@ -414,9 +415,9 @@ export default function ProviderScreen() {
             width: '100%',
             backgroundColor: colors.surfaceAlt,
             borderRadius: 18,
-            paddingVertical: 12,
+            paddingVertical: 10,
             paddingHorizontal: 8,
-            marginTop: 18,
+            marginTop: 12,
             alignItems: 'center',
             justifyContent: 'space-around',
           }}>
@@ -440,7 +441,7 @@ export default function ProviderScreen() {
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
-            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 12, marginTop: 16 }}>
+            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 12, marginTop: 12 }}>
               {profile.whatsappUrl && (
                 <Pressable
                   onPress={handleWhatsApp}
@@ -449,20 +450,20 @@ export default function ProviderScreen() {
                     width: profile.phone ? undefined : '100%',
                     height: 48,
                     borderRadius: 14,
-                    backgroundColor: '#25D366',
+                    backgroundColor: colors.whatsapp,
                     flexDirection: 'row-reverse',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
-                    shadowColor: '#25D366',
+                    shadowColor: colors.whatsapp,
                     shadowOffset: { width: 0, height: 4 },
                     shadowOpacity: 0.1,
                     shadowRadius: 6,
                     elevation: 2,
                   }}
                 >
-                  <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
-                  <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: '#FFFFFF' }}>واتساب</Text>
+                  <Ionicons name="logo-whatsapp" size={18} color={colors.textOnPrimary} />
+                  <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: colors.textOnPrimary }}>واتساب</Text>
                 </Pressable>
               )}
               {profile.phone && (
@@ -494,7 +495,7 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 16, marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
               {profile.socialLinks.map((item) => (
                 <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
                   <Ionicons name={item.icon} size={18} color={item.color} />
@@ -504,43 +505,41 @@ export default function ProviderScreen() {
           )}
         </View>
 
-        {/* ═══ CORE SECTIONS (About, Services, Portfolio, Credentials) ═══ */}
-        <View style={{ paddingHorizontal: 16, marginTop: 24 }}>
+        {/* ═══ CORE SECTIONS (About, Services, Portfolio, Credentials, Reviews) ═══ */}
+        <View style={{ paddingHorizontal: 16, marginTop: 16, paddingBottom: 40 }}>
           {profile.about && <AboutSection about={profile.about} colors={colors} />}
           <ServicesSection services={profile.services} colors={colors} />
           <PortfolioSection projects={profile.projects} colors={colors} onImagePress={(item, idx) => { setGalleryItem(item); setGalleryIndex(idx); }} />
           <CredentialsSection credentials={profile.credentials} colors={colors} />
-        </View>
-
-        {/* ═══ REVIEWS SECTION (Pasted Old Design) ═══ */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 40, marginTop: 12 }}>
-          <ReviewsSection
-            reviews={allReviews}
-            rating={profile.rating}
-            reviewsCount={profile.reviewsCount}
-            colors={colors}
-            isDark={isDark}
-            isAuthenticated={isAuthenticated}
-            canWriteReview={profile.canReview}
-            reviewStatusMessage={profile.reviewStatusMessage}
-            user={user}
-            onWriteReviewPress={handleWriteReviewPress}
-            onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
-            onReportReview={handleReportReview}
-            isFetching={isFetchingReviews}
-            hasMore={hasMoreReviews}
-            onLoadMore={() => setReviewPage((p) => p + 1)}
-          />
+          <View style={{ marginTop: 4 }}>
+            <ReviewsSection
+              reviews={allReviews}
+              rating={profile.rating}
+              reviewsCount={profile.reviewsCount}
+              colors={colors}
+              isDark={isDark}
+              isAuthenticated={isAuthenticated}
+              canWriteReview={profile.canReview}
+              reviewStatusMessage={profile.reviewStatusMessage}
+              user={user}
+              onWriteReviewPress={handleWriteReviewPress}
+              onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
+              onReportReview={handleReportReview}
+              isFetching={isFetchingReviews}
+              hasMore={hasMoreReviews}
+              onLoadMore={() => setReviewPage((p) => p + 1)}
+            />
+          </View>
         </View>
       </ScrollView>
 
       {/* ═══ PORTFOLIO IMAGE FULLSCREEN LIGHTBOX ═══ */}
       <Modal visible={galleryItem !== null} transparent animationType="fade" onRequestClose={() => setGalleryItem(null)}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)' }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlayHeavy }}>
           <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
             <View style={{ position: 'absolute', top: insets.top + 16, left: 16, zIndex: 99 }}>
-              <Pressable onPress={() => setGalleryItem(null)} style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)' }}>
-                <Ionicons name="close" size={24} color="#FFFFFF" />
+              <Pressable onPress={() => setGalleryItem(null)} style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.overlayMedium }}>
+                <Ionicons name="close" size={24} color={colors.textOnPrimary} />
               </Pressable>
             </View>
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -549,7 +548,7 @@ export default function ProviderScreen() {
               )}
             </View>
             {galleryItem?.title ? (
-              <Text style={{ textAlign: 'center', color: '#FFFFFF', fontFamily: 'Cairo-SemiBold', fontSize: 15, paddingVertical: 20, paddingHorizontal: 24, writingDirection: 'rtl' }}>
+              <Text style={{ textAlign: 'center', color: colors.textOnPrimary, fontFamily: 'Cairo-SemiBold', fontSize: 15, paddingVertical: 20, paddingHorizontal: 24, writingDirection: 'rtl' }}>
                 {galleryItem.title}
               </Text>
             ) : null}
@@ -559,7 +558,7 @@ export default function ProviderScreen() {
 
       {/* ═══ CUSTOM REPORT MODAL ═══ */}
       <Modal visible={showReportModal} transparent animationType="slide" onRequestClose={() => setShowReportModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.overlayMedium, justifyContent: 'flex-end' }}>
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
@@ -616,7 +615,7 @@ export default function ProviderScreen() {
 
       {/* ═══ CUSTOM SYSTEM ALERTS MODAL ═══ */}
       <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <View style={{ flex: 1, backgroundColor: colors.overlayHeavy, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
           <View style={{ width: '90%', maxWidth: 360, backgroundColor: colors.surface, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
             <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, marginBottom: 12, textAlign: 'center' }}>{customAlert.title}</Text>
             <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24, writingDirection: 'rtl' }}>{customAlert.message}</Text>
