@@ -36,11 +36,21 @@ export interface ThemeColors {
   goldActive: string; // active/pressed mustard background
   // Status
   success: string;
+  successSoft: string; // success background
   error: string;
+  errorSoft: string; // error background
+  // Social platforms
   whatsapp: string;
+  facebook: string;
+  instagram: string;
+  linkedin: string;
+  github: string;
   star: string;
   // Effects
-  overlay: string; // image scrims
+  overlayLight: string; // rgba(0,0,0,0.3)
+  overlayMedium: string; // rgba(0,0,0,0.5)
+  overlayHeavy: string; // rgba(0,0,0,0.7)
+  overlay: string; // image scrims (medium)
   shadow: string;
 }
 
@@ -69,10 +79,19 @@ export const lightColors: ThemeColors = {
   goldActive: '#FEF3C7',
 
   success: '#10B981',
+  successSoft: 'rgba(16, 185, 129, 0.10)',
   error: '#EF4444',
+  errorSoft: 'rgba(239, 68, 68, 0.10)',
   whatsapp: '#25D366',
+  facebook: '#1877F2',
+  instagram: '#E1306C',
+  linkedin: '#0A66C2',
+  github: '#F1F5F9',
   star: '#E1AD01',
 
+  overlayLight: 'rgba(0,0,0,0.3)',
+  overlayMedium: 'rgba(0,0,0,0.5)',
+  overlayHeavy: 'rgba(0,0,0,0.7)',
   overlay: 'rgba(0,0,0,0.45)',
   shadow: '#0F172A',
 };
@@ -102,10 +121,19 @@ export const darkColors: ThemeColors = {
   goldActive: 'rgba(225, 173, 1, 0.24)',
 
   success: '#34D399',
+  successSoft: 'rgba(52, 211, 153, 0.12)',
   error: '#F87171',
+  errorSoft: 'rgba(248, 113, 113, 0.12)',
   whatsapp: '#25D366',
+  facebook: '#1877F2',
+  instagram: '#E1306C',
+  linkedin: '#0A66C2',
+  github: '#F1F5F9',
   star: '#F0BE2C',
 
+  overlayLight: 'rgba(0,0,0,0.3)',
+  overlayMedium: 'rgba(0,0,0,0.5)',
+  overlayHeavy: 'rgba(0,0,0,0.7)',
   overlay: 'rgba(0,0,0,0.55)',
   shadow: '#000000',
 };

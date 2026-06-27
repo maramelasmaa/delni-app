@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function EmptyState({ icon = 'search-outline', title, message, actionLabel, onAction }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, paddingVertical: 64 }}>
       <View

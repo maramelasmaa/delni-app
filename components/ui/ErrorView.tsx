@@ -7,7 +7,7 @@ interface Props {
 }
 
 export function ErrorView({ message = 'حدث خطأ ما', onRetry }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, backgroundColor: colors.bg }}>
       <Text style={{ marginBottom: 16, textAlign: 'center', fontSize: 16, color: colors.error, fontFamily: 'Cairo-SemiBold', writingDirection: 'rtl' }}>
