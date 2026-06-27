@@ -14,8 +14,8 @@ interface Props {
 }
 
 const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavoritePress }: Props) {
-  const { colors, isDark } = useTheme();
-  const styles = useMemo(() => makeStyles(colors, isDark), [colors, isDark]);
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const handlePress = useCallback(() => {
     router.push(`/provider/${provider.slug}`);
@@ -33,7 +33,7 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
   return (
     <Pressable onPress={handlePress} style={({ pressed }) => [styles.wrapper, pressed && styles.wrapperPressed]}>
       <View style={styles.card}>
-
+        
         {/* ─── Top Half (Content & Direct Actions) ─── */}
         <View style={styles.topHalf}>
           {/* Avatar (Right) */}
@@ -69,21 +69,11 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
 
           {/* Actions (Left) */}
           <View style={styles.actions}>
-            <Pressable
-              onPress={handleFavorite}
-              hitSlop={12}
-              style={({ pressed }) => [
-                styles.favoriteButton,
-                {
-                  backgroundColor: isFav ? colors.gold : colors.surfaceAlt,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-            >
+            <Pressable onPress={handleFavorite} hitSlop={10}>
               <Ionicons
                 name={isFav ? 'heart' : 'heart-outline'}
-                size={18}
-                color={isFav ? '#0F172A' : colors.textMuted}
+                size={22}
+                color={isFav ? colors.gold : colors.textMuted}
               />
             </Pressable>
           </View>
@@ -104,44 +94,12 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
 
           {/* Rating (Middle) */}
           <View style={styles.metaItem}>
-            <Ionicons name="star" size={12} color="#EAB308" />
+            <Ionicons name="star" size={12} color={colors.gold} />
             <Text style={styles.metaText}>
-              {rating > 0 ? `${rating.toFixed(1)}` : '—'}
+              {rating > 0 ? `${rating.toFixed(1)} (${reviewCount} تقييم)` : 'لا تقييمات'}
             </Text>
           </View>
 
-          {/* Experience Badge */}
-          {provider.years_experience ? (
-            <>
-              <Text style={styles.dotDivider}>•</Text>
-              <View style={styles.metaItem}>
-                <Ionicons name="ribbon-outline" size={12} color={colors.textMuted} />
-                <Text style={styles.metaText}>{provider.years_experience} سنة</Text>
-              </View>
-            </>
-          ) : null}
-
-          {/* Featured Badge */}
-          {provider.is_featured ? (
-            <>
-              <Text style={styles.dotDivider}>•</Text>
-              <View style={styles.metaItem}>
-                <Ionicons name="sparkles" size={12} color="#FBBF24" />
-                <Text style={[styles.metaText, { color: '#FBBF24', fontFamily: 'Cairo-Bold' }]}>مميز</Text>
-              </View>
-            </>
-          ) : null}
-
-          {/* Remote Work Badge */}
-          {provider.offers_remote_work ? (
-            <>
-              <Text style={styles.dotDivider}>•</Text>
-              <View style={styles.metaItem}>
-                <Ionicons name="laptop-outline" size={12} color={colors.primary} />
-                <Text style={[styles.metaText, { color: colors.primary, fontFamily: 'Cairo-Bold' }]}>عن بعد</Text>
-              </View>
-            </>
-          ) : null}
 
         </View>
 
@@ -150,7 +108,7 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
   );
 });
 
-function makeStyles(colors: ThemeColors, isDark: boolean) {
+function makeStyles(colors: ThemeColors) {
   return StyleSheet.create({
     wrapper: {
     },
@@ -181,7 +139,7 @@ function makeStyles(colors: ThemeColors, isDark: boolean) {
     },
     avatarRing: {
       borderRadius: 18,
-      backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+      backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       overflow: 'hidden',
@@ -220,10 +178,9 @@ function makeStyles(colors: ThemeColors, isDark: boolean) {
       fontFamily: 'Cairo-Bold',
       writingDirection: 'rtl',
       lineHeight: 22,
-      maxWidth: 160,
     },
     categoryBadge: {
-      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+      backgroundColor: colors.primarySoft,
       borderRadius: 8,
       paddingHorizontal: 10,
       paddingVertical: 4,
@@ -241,31 +198,22 @@ function makeStyles(colors: ThemeColors, isDark: boolean) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 16,
-      width: 40,
-    },
-    favoriteButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: 32,
     },
     actionPressed: {
       transform: [{ scale: 0.90 }],
     },
     // ─── Bottom Half ───
     bottomRow: {
-      minHeight: 40,
+      height: 40,
       flexDirection: 'row-reverse',
       alignItems: 'center',
-      justifyContent: 'flex-start',
+      justifyContent: 'center',
       gap: 8,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       paddingHorizontal: 16,
-      paddingVertical: 8,
       backgroundColor: colors.surfaceAlt,
-      flexWrap: 'wrap',
     },
     metaItem: {
       flexDirection: 'row-reverse',
