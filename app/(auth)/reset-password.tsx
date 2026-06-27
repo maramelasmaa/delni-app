@@ -8,7 +8,7 @@ import { useResetPassword } from '../../src/hooks/useAuth';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export default function ResetPasswordScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { token, email } = useLocalSearchParams<{ token: string; email: string }>();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -19,9 +19,9 @@ export default function ResetPasswordScreen() {
 
   const handleReset = async () => {
     setError('');
-    if (!password) { setError('كلمة المرور مطلوبة'); return; }
+    if (!password) { setError('أدخل كلمتك'); return; }
     if (!passwordRegex.test(password)) {
-      setError('كلمة المرور: 8 أحرف على الأقل، تشمل حرفاً كبيراً وصغيراً ورقماً');
+      setError('8 أحرف: حروف كبيرة وصغيرة ورقم');
       return;
     }
     if (password !== confirmation) { setError('كلمات المرور غير متطابقة'); return; }
@@ -38,8 +38,8 @@ export default function ResetPasswordScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ marginBottom: 8, textAlign: 'center', fontSize: 24, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>إعادة تعيين كلمة المرور</Text>
-          <Text style={{ marginBottom: 32, textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>أدخل كلمة المرور الجديدة</Text>
+          <Text style={{ marginBottom: 8, textAlign: 'center', fontSize: 24, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>إعادة تعيين كلمتك</Text>
+          <Text style={{ marginBottom: 32, textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>أدخل كلمتك الجديدة</Text>
 
           {error ? (
             <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.12)', padding: 12 }}>
@@ -50,7 +50,7 @@ export default function ResetPasswordScreen() {
           <PasswordInput
             value={password}
             onChangeText={setPassword}
-            placeholder="كلمة المرور الجديدة"
+            placeholder="كلمتك الجديدة"
             placeholderTextColor={colors.textMuted}
             autoComplete="new-password"
             textContentType="newPassword"
@@ -59,7 +59,7 @@ export default function ResetPasswordScreen() {
           <PasswordInput
             value={confirmation}
             onChangeText={setConfirmation}
-            placeholder="تأكيد كلمة المرور"
+            placeholder="أعد كتابة كلمتك"
             placeholderTextColor={colors.textMuted}
             autoComplete="new-password"
             textContentType="newPassword"
@@ -69,10 +69,10 @@ export default function ResetPasswordScreen() {
           <Pressable
             onPress={handleReset}
             disabled={reset.isPending}
-            style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16 }}
+            style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: reset.isPending ? 0.7 : 1 }}
           >
-            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
-              {reset.isPending ? 'جارٍ التعيين...' : 'تعيين كلمة المرور'}
+            <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>
+              {reset.isPending ? 'جاري التعيين...' : 'حفظ كلمتك'}
             </Text>
           </Pressable>
         </View>

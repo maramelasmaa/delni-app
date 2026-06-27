@@ -1,6 +1,7 @@
 /**
  * Utility to format dates and times nicely in Arabic.
  */
+import { toEnglishNumbers } from './numberFormatter';
 
 /**
  * Formats an ISO 8601 date string to a friendly relative time (e.g. "منذ يومين", "أمس", "الآن").
@@ -62,23 +63,24 @@ export function formatAbsoluteDate(dateString: string | null | undefined): strin
 
   const date = new Date(dateString);
   if (isNaN(date.getTime())) {
-    return dateString;
+    return toEnglishNumbers(dateString);
   }
 
   try {
     // Format using standard Egyptian/Arabic locale with Western digits (1, 2, 3) for clean Cairo font look
-    return new Intl.DateTimeFormat('ar-EG', {
+    const formatted = new Intl.DateTimeFormat('ar-EG', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
       numberingSystem: 'latn',
     }).format(date);
+    return toEnglishNumbers(formatted);
   } catch (e) {
     // Fallback simple parsing
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    return `${year}/${month}/${day}`;
+    return toEnglishNumbers(`${year}/${month}/${day}`);
   }
 }
 
@@ -91,21 +93,22 @@ export function formatIssueDate(dateString: string | null | undefined): string {
   const trimmed = dateString.trim();
   // If it's just a year, return it directly
   if (/^\d{4}$/.test(trimmed)) {
-    return trimmed;
+    return toEnglishNumbers(trimmed);
   }
 
   const date = new Date(trimmed);
   if (isNaN(date.getTime())) {
-    return dateString;
+    return toEnglishNumbers(dateString);
   }
 
   try {
-    return new Intl.DateTimeFormat('ar-EG', {
+    const formatted = new Intl.DateTimeFormat('ar-EG', {
       month: 'long',
       year: 'numeric',
       numberingSystem: 'latn',
     }).format(date);
+    return toEnglishNumbers(formatted);
   } catch (e) {
-    return dateString;
+    return toEnglishNumbers(dateString);
   }
 }

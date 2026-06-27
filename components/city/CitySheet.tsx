@@ -586,7 +586,7 @@ export function CitySheet({ visible, onClose }: Props) {
                         width: '100%',
                         height: 48,
                         borderRadius: 16,
-                        backgroundColor: colors.primary,
+                        backgroundColor: '#1E40AF',
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
@@ -595,7 +595,7 @@ export function CitySheet({ visible, onClose }: Props) {
                         style={{
                           fontSize: 14,
                           fontFamily: 'Cairo-Bold',
-                          color: colors.textOnPrimary,
+                          color: isDark ? '#FFFFFF' : '#000000',
                         }}
                       >
                         حسناً

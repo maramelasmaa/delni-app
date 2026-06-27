@@ -23,7 +23,9 @@ export function useLogin() {
     onSuccess: async ({ user, token }, variables) => {
       await setAuth(user, token);
       await queryClient.invalidateQueries();
-      router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+      requestAnimationFrame(() => {
+        router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+      });
     },
   });
 }
@@ -41,7 +43,9 @@ export function useRegister() {
     onSuccess: async ({ user, token }, variables) => {
       await setAuth(user, token);
       await queryClient.invalidateQueries();
-      router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+      requestAnimationFrame(() => {
+        router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+      });
     },
   });
 }
@@ -55,7 +59,9 @@ export function useLogout() {
     onSettled: async () => {
       await clearAuth();
       queryClient.clear();
-      router.replace('/(auth)/login');
+      requestAnimationFrame(() => {
+        router.replace('/(auth)/login');
+      });
     },
   });
 }
@@ -95,7 +101,9 @@ export function useResetPassword() {
       return res.data;
     },
     onSuccess: () => {
-      router.replace('/(auth)/login');
+      requestAnimationFrame(() => {
+        router.replace('/(auth)/login');
+      });
     },
   });
 }
@@ -132,7 +140,9 @@ export function useDeleteAccount() {
     onSettled: async () => {
       await clearAuth();
       queryClient.clear();
-      router.replace('/(auth)/login');
+      requestAnimationFrame(() => {
+        router.replace('/(auth)/login');
+      });
     },
   });
 }

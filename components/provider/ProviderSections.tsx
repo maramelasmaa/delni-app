@@ -6,6 +6,7 @@ import type { PortfolioItem, Review, ProviderCredential } from '../../src/types'
 import type { ThemeColors } from '../../src/theme/tokens';
 import { StarRating } from '../ui/StarRating';
 import { formatRelativeTime, formatIssueDate } from '../../src/utils/date';
+import { toEnglishNumbers } from '../../src/utils/numberFormatter';
 import { getServiceIcon, getAvatarTheme } from '../../src/utils/providerMappers';
 import { useTheme } from '../../src/hooks/useTheme';
 import { openExternalUrl } from '../../src/utils/links';
@@ -47,7 +48,7 @@ export function AboutSection({ about, colors }: AboutSectionProps) {
   const shouldShowToggle = about.length > 180;
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 8, width: '100%' }}>
       <SectionHeader title="نبذة عنا" colors={colors} />
       <View
         style={{
@@ -110,7 +111,7 @@ export function ServicesSection({ services, colors }: ServicesSectionProps) {
   if (!services || services.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 8, width: '100%' }}>
       <SectionHeader title="الخدمات المقدمة" colors={colors} />
       <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
         {services.map((svc) => (
@@ -188,7 +189,7 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
   };
 
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 8, width: '100%' }}>
       <SectionHeader title="معرض الأعمال" colors={colors} />
       <ScrollView
         horizontal
@@ -247,8 +248,8 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
                       }}
                     >
                       <Ionicons name="images-outline" size={13} color="#FFFFFF" />
-                      <Text style={{ color: '#FFFFFF', fontFamily: 'Cairo-Bold', fontSize: 11 }}>
-                        {imageCount} صور
+                      <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 11 }}>
+                        {toEnglishNumbers(imageCount)} صور
                       </Text>
                     </View>
                   )}
@@ -324,7 +325,7 @@ interface CredentialsSectionProps {
 export function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
   if (!credentials || credentials.length === 0) return null;
   return (
-    <View style={{ marginBottom: 28, width: '100%' }}>
+    <View style={{ marginBottom: 0, width: '100%' }}>
       <SectionHeader title="الشهادات والمؤهلات" colors={colors} />
       <View style={{ gap: 12, width: '100%' }}>
         {credentials.map((cred) => (
@@ -377,13 +378,13 @@ export function CredentialsSection({ credentials, colors }: CredentialsSectionPr
                 <Text
                   style={{
                     fontFamily: 'Cairo-Regular',
-                    fontSize: 11,
+                    fontSize: 13,
                     color: colors.textMuted,
                     textAlign: 'right',
                     writingDirection: 'rtl',
                   }}
                 >
-                  تاريخ الإصدار: {formatIssueDate(cred.issue_date)}
+                  تاريخ الإصدار: {toEnglishNumbers(formatIssueDate(cred.issue_date))}
                 </Text>
               </View>
             )}
@@ -505,17 +506,17 @@ export function ReviewsSection({
   const [showAll, setShowAll] = useState(false);
   const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
   return (
-    <View style={{ width: '100%', marginTop: 28 }}>
+    <View style={{ width: '100%', marginTop: 0 }}>
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <View style={{ width: 14, height: 3, backgroundColor: colors.gold, borderRadius: 2 }} />
-        <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
-          التقييمات ({reviewsCount})
+        <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
+          التقييمات ({toEnglishNumbers(reviewsCount)})
         </Text>
       </View>
       {reviewsCount > 0 && (
         <View
           style={{
-            marginBottom: 20,
+            marginBottom: 14,
             borderRadius: 20,
             backgroundColor: colors.surface,
             padding: 16,
@@ -528,11 +529,11 @@ export function ReviewsSection({
         >
           <View style={{ alignItems: 'center', width: '35%' }}>
             <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.textPrimary, lineHeight: 46 }}>
-              {rating.toFixed(1)}
+              {toEnglishNumbers(rating.toFixed(1))}
             </Text>
             <StarRating value={rating} size={16} />
             <Text style={{ fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
-              بناءً على {reviewsCount} تقييم
+              بناءً على {toEnglishNumbers(reviewsCount)} تقييم
             </Text>
           </View>
           <View style={{ width: '60%', gap: 4 }}>
@@ -598,7 +599,7 @@ export function ReviewsSection({
           reviewStatusMessage ? (
             <View
               style={{
-                marginBottom: 20,
+                marginBottom: 14,
                 flexDirection: 'row-reverse',
                 alignItems: 'center',
                 gap: 10,

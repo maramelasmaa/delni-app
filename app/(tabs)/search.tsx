@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
+import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorView } from '../../components/ui/ErrorView';
 import {
@@ -24,6 +25,7 @@ import {
   useToggleFavorite,
   useProviderTypes,
 } from '../../src/hooks/useApi';
+import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import type { Provider, SearchFilters } from '../../src/types';
@@ -35,6 +37,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 const FALLBACK_PROVIDER_TYPES = [
+  { code: '', name: 'الكل' },
   { code: 'individual', name: 'فرد' },
   { code: 'company', name: 'شركة' },
   { code: 'agency', name: 'وكالة' },
@@ -46,6 +49,23 @@ const FALLBACK_PROVIDER_TYPES = [
 
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
+}
+
+function isRemoteParamEnabled(value?: string) {
+  return value === '1' || value === 'true';
+}
+
+function toSearchRouteParams(filters: Partial<SearchFilters>) {
+  return {
+    keyword: filters.keyword || undefined,
+    category: filters.category || undefined,
+    category_id: filters.category_id ? String(filters.category_id) : undefined,
+    city: filters.city || undefined,
+    city_id: filters.city_id ? String(filters.city_id) : undefined,
+    sort: filters.sort || undefined,
+    provider_type: filters.provider_type || undefined,
+    remote: filters.remote ? '1' : undefined,
+  };
 }
 
 export default function SearchTabScreen() {
@@ -60,8 +80,7 @@ export default function SearchTabScreen() {
     remote?: string;
     show_filters?: string;
   }>();
-  const { colors } = useTheme();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const { colors, isDark } = useTheme();
 
   const keywordParam = getSingleParam(params.keyword);
   const categoryParam = getSingleParam(params.category);
@@ -72,15 +91,10 @@ export default function SearchTabScreen() {
   const providerTypeParam = getSingleParam(params.provider_type);
   const remoteParam = getSingleParam(params.remote);
 
-  const cityPillsRef = useRef<ScrollView>(null);
-  const categoryPillsRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
-
-  const scrollPillsToStart = useCallback(
-    (ref: React.RefObject<ScrollView | null>) => (contentWidth: number) =>
-      ref.current?.scrollTo({ x: contentWidth, animated: false }),
-    [],
-  );
+  const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
+    redirectPath: `/(tabs)/search?keyword=${keywordParam || ''}`,
+  });
 
   const [keyword, setKeyword] = useState(keywordParam);
   const [debouncedQ, setDebouncedQ] = useState(keywordParam);
@@ -95,7 +109,7 @@ export default function SearchTabScreen() {
     city_id: cityIdParam ? Number(cityIdParam) : undefined,
     sort: sortParam === 'newest' ? 'newest' : 'rating',
     provider_type: providerTypeParam || undefined,
-    remote: remoteParam === 'true',
+    remote: isRemoteParamEnabled(remoteParam),
     page: 1,
   });
   const [modalFilters, setModalFilters] = useState<SearchFilters>({
@@ -106,7 +120,7 @@ export default function SearchTabScreen() {
     city_id: cityIdParam ? Number(cityIdParam) : undefined,
     sort: sortParam === 'newest' ? 'newest' : 'rating',
     provider_type: providerTypeParam || undefined,
-    remote: remoteParam === 'true',
+    remote: isRemoteParamEnabled(remoteParam),
     page: 1,
   });
 
@@ -133,39 +147,25 @@ export default function SearchTabScreen() {
   }, []);
 
   const handleApplyFilters = useCallback(() => {
-    setFilters((f) => {
-      const next = {
-        ...f,
-        keyword: modalFilters.keyword,
-        city: modalFilters.city,
-        city_id: modalFilters.city_id,
-        category: modalFilters.category,
-        category_id: modalFilters.category_id,
-        provider_type: modalFilters.provider_type,
-        remote: modalFilters.remote,
-        sort: modalFilters.sort,
-        page: 1,
-      };
-      Promise.resolve().then(() => {
-        router.setParams({
-          keyword: next.keyword || undefined,
-          category: next.category || undefined,
-          category_id: next.category_id ? String(next.category_id) : undefined,
-          city: next.city || undefined,
-          city_id: next.city_id ? String(next.city_id) : undefined,
-          sort: next.sort || undefined,
-          provider_type: next.provider_type || undefined,
-          remote: next.remote ? 'true' : undefined,
-        });
-      });
-      return next;
-    });
-    setKeyword(modalFilters.keyword || '');
+    const nextFilters: SearchFilters = {
+      keyword: modalFilters.keyword,
+      city: modalFilters.city,
+      city_id: modalFilters.city_id,
+      category: modalFilters.category,
+      category_id: modalFilters.category_id,
+      provider_type: modalFilters.provider_type,
+      remote: modalFilters.remote === true,
+      sort: modalFilters.sort || 'rating',
+      page: 1,
+    };
+    setFilters(nextFilters);
+    setKeyword(nextFilters.keyword || '');
     setShowFilters(false);
+    router.setParams(toSearchRouteParams(nextFilters));
   }, [modalFilters]);
 
   const handleResetFilters = useCallback(() => {
-    const defaults = {
+    const defaults: SearchFilters = {
       keyword: undefined,
       category: undefined,
       category_id: undefined,
@@ -179,19 +179,8 @@ export default function SearchTabScreen() {
     setModalFilters(defaults);
     setFilters(defaults);
     setKeyword('');
-    Promise.resolve().then(() => {
-      router.setParams({
-        keyword: undefined,
-        category: undefined,
-        category_id: undefined,
-        city: undefined,
-        city_id: undefined,
-        sort: undefined,
-        provider_type: undefined,
-        remote: undefined,
-      });
-    });
     setShowFilters(false);
+    router.setParams(toSearchRouteParams(defaults));
   }, []);
 
   useEffect(() => {
@@ -231,7 +220,7 @@ export default function SearchTabScreen() {
       city_id: cityIdParam ? Number(cityIdParam) : undefined,
       sort: sortParam === 'newest' ? 'newest' : 'rating',
       provider_type: providerTypeParam || undefined,
-      remote: remoteParam === 'true',
+      remote: isRemoteParamEnabled(remoteParam),
       page: 1,
     }));
   }, [keywordParam, categoryParam, categoryIdParam, cityParam, cityIdParam, sortParam, providerTypeParam, remoteParam]);
@@ -251,19 +240,9 @@ export default function SearchTabScreen() {
   const commitSearch = useCallback(
     (term: string) => {
       setShowSuggestions(false);
-      setFilters((f) => ({ ...f, keyword: term, page: 1 }));
-      Promise.resolve().then(() => {
-        router.setParams({
-          keyword: term || undefined,
-          category: filters.category || undefined,
-          category_id: filters.category_id ? String(filters.category_id) : undefined,
-          city: filters.city || undefined,
-          city_id: filters.city_id ? String(filters.city_id) : undefined,
-          sort: filters.sort || undefined,
-          provider_type: filters.provider_type || undefined,
-          remote: filters.remote ? 'true' : undefined,
-        });
-      });
+      const nextFilters: SearchFilters = { ...filters, keyword: term, page: 1 };
+      setFilters(nextFilters);
+      router.setParams(toSearchRouteParams(nextFilters));
     },
     [filters.category, filters.category_id, filters.city, filters.city_id, filters.sort, filters.provider_type, filters.remote],
   );
@@ -294,23 +273,21 @@ export default function SearchTabScreen() {
     if (filters.city) q.set('city', filters.city);
     if (filters.sort) q.set('sort', filters.sort);
     if (filters.provider_type) q.set('provider_type', filters.provider_type);
-    if (filters.remote) q.set('remote', 'true');
+    if (filters.remote) q.set('remote', '1');
     const qs = q.toString();
     return qs ? `/(tabs)/search?${qs}` : '/(tabs)/search';
   }, [filters]);
 
   const handleFavorite = useCallback(
     (slug: string, isFavorited: boolean) => {
-      if (!isAuthenticated) {
-        router.push({ pathname: '/(auth)/login', params: { redirectTo: buildRedirect() } });
-        return;
-      }
-      toggleFavorite.mutate({ slug, isFavorited });
-      setAllProviders((prev) =>
-        prev.map((p) => (p.slug === slug ? { ...p, is_favorited: !isFavorited } : p))
-      );
+      handleFavoritePress(() => {
+        toggleFavorite.mutate({ slug, isFavorited });
+        setAllProviders((prev) =>
+          prev.map((p) => (p.slug === slug ? { ...p, is_favorited: !isFavorited } : p))
+        );
+      }, slug);
     },
-    [buildRedirect, isAuthenticated, toggleFavorite],
+    [handleFavoritePress, toggleFavorite],
   );
 
   const activeFilterCount = [
@@ -364,7 +341,7 @@ export default function SearchTabScreen() {
                 setKeyword(text);
                 setShowSuggestions(text.length >= 2);
               }}
-              placeholder="ابحث عن خدمة أو مزود..."
+              placeholder="ابحث عن خدمة أو مقدم..."
               placeholderTextColor={colors.textMuted}
               textAlign="right"
               returnKeyType="search"
@@ -415,26 +392,26 @@ export default function SearchTabScreen() {
                 height: 36,
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: activeFilterCount > 0 ? colors.primary : 'transparent',
+                backgroundColor: activeFilterCount > 0 ? '#1E40AF' : 'transparent',
                 borderRadius: 10,
                 borderWidth: activeFilterCount > 0 ? 1 : 0,
-                borderColor: colors.primary,
+                borderColor: '#1E40AF',
                 transform: [{ scale: pressed ? 0.9 : 1 }],
               })}
             >
               <Ionicons
                 name="options-outline"
                 size={20}
-                color={activeFilterCount > 0 ? colors.textOnPrimary : colors.textSecondary}
+                color={activeFilterCount > 0 ? '#FFFFFF' : colors.textSecondary}
               />
               {activeFilterCount > 0 ? (
                 <View style={{
-                  position: 'absolute', right: -4, top: -4,
+                  position: 'absolute', start: -4, top: -4,
                   width: 14, height: 14, borderRadius: 7,
                   backgroundColor: colors.gold,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#FFFFFF', lineHeight: 10 }}>{activeFilterCount}</Text>
+                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 10 }}>{activeFilterCount}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -497,7 +474,7 @@ export default function SearchTabScreen() {
 
       {/* Results */}
       {isError && !isFetching ? (
-        <ErrorView message="حدث خطأ أثناء البحث" onRetry={refetch} />
+        <ErrorView message="فشل البحث" onRetry={refetch} />
       ) : isLoading && (filters.page ?? 1) === 1 ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -506,8 +483,8 @@ export default function SearchTabScreen() {
         keyword || filters.category || filters.city ? (
           <EmptyState
             icon="search-outline"
-            title="لم نجد نتائج"
-            message="جرّب البحث بكلمات أخرى أو تعديل التصفية"
+            title="لا توجد نتائج"
+            message="جرّب كلمات أخرى أو غيّر التصفية"
           />
         ) : (
           <View
@@ -543,7 +520,7 @@ export default function SearchTabScreen() {
                 marginBottom: 6,
               }}
             >
-              ابحث عن خدمة أو مزود
+              ابحث عن خدمة أو مقدم
             </Text>
             <Text
               style={{
@@ -554,7 +531,7 @@ export default function SearchTabScreen() {
                 lineHeight: 22,
               }}
             >
-              اكتب اسم الخدمة أو المزود للبحث
+              اكتب اسم الخدمة أو مقدم الخدمة
             </Text>
           </View>
         )
@@ -656,7 +633,7 @@ export default function SearchTabScreen() {
               <TextInput
                 value={modalFilters.keyword || ''}
                 onChangeText={(text) => handleModalFilterChange('keyword', text)}
-                placeholder="ابحث عن خدمة أو مزود..."
+                placeholder="ابحث عن خدمة أو مقدم..."
                 placeholderTextColor={colors.textMuted}
                 textAlign="right"
                 style={{
@@ -768,19 +745,19 @@ export default function SearchTabScreen() {
               <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>القسم</Text>
             </View>
-            <ScrollView
-              ref={categoryPillsRef}
+            <FlatList
               horizontal
+              inverted
+              scrollEnabled
               showsHorizontalScrollIndicator={false}
-              onContentSizeChange={scrollPillsToStart(categoryPillsRef)}
+              data={[{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])]}
+              keyExtractor={(item) => `cat-${item.id}`}
               contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
-            >
-              {[{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])].map((cat) => {
+              renderItem={({ item: cat }) => {
                 const isSelected = modalFilters.category === cat.slug || (!modalFilters.category && !cat.slug);
                 const iconName = cat.slug === '' ? 'apps-outline' : getCategoryIcon(cat.slug, cat.name);
                 return (
                   <Pressable
-                    key={cat.id}
                     onPress={() => {
                       handleModalFilterChange('category', cat.slug || undefined);
                       handleModalFilterChange('category_id', cat.id || undefined);
@@ -798,7 +775,7 @@ export default function SearchTabScreen() {
                     }}
                   >
                     {isSelected && (
-                      <View style={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}>
+                      <View style={{ position: 'absolute', top: 6, start: 6, zIndex: 10 }}>
                         <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
                       </View>
                     )}
@@ -831,24 +808,26 @@ export default function SearchTabScreen() {
                     </Text>
                   </Pressable>
                 );
-              })}
-            </ScrollView>
+              }}
+            />
 
             {/* Provider Type filter */}
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="briefcase-outline" size={16} color={colors.textPrimary} />
-              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع المزود</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع مقدم الخدمة</Text>
             </View>
-            <ScrollView
+            <FlatList
               horizontal
+              inverted
+              scrollEnabled
               showsHorizontalScrollIndicator={false}
+              data={[{ code: '', name: 'الكل' }, ...(providerTypes && providerTypes.length > 0 ? providerTypes : FALLBACK_PROVIDER_TYPES)]}
+              keyExtractor={(item) => `ptype-${item.code}`}
               contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
-            >
-              {[{ code: '', name: 'الكل' }, ...(providerTypes && providerTypes.length > 0 ? providerTypes : FALLBACK_PROVIDER_TYPES)].map((type) => {
+              renderItem={({ item: type }) => {
                 const isSelected = (modalFilters.provider_type || '') === type.code;
                 return (
                   <Pressable
-                    key={type.code}
                     onPress={() => handleModalFilterChange('provider_type', type.code || undefined)}
                     style={{
                       minWidth: 76,
@@ -863,7 +842,7 @@ export default function SearchTabScreen() {
                     }}
                   >
                     {isSelected && (
-                      <View style={{ position: 'absolute', top: 4, right: 4, zIndex: 10 }}>
+                      <View style={{ position: 'absolute', top: 4, start: 4, zIndex: 10 }}>
                         <Ionicons name="checkmark-circle" size={12} color={colors.primary} />
                       </View>
                     )}
@@ -879,8 +858,8 @@ export default function SearchTabScreen() {
                     </Text>
                   </Pressable>
                 );
-              })}
-            </ScrollView>
+              }}
+            />
 
             {/* Remote Work filter */}
             <View
@@ -926,8 +905,8 @@ export default function SearchTabScreen() {
                       height: 48,
                       borderRadius: 14,
                       borderWidth: 1.5,
-                      borderColor: isSelected ? colors.primary : colors.borderStrong,
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderColor: isSelected ? '#1E40AF' : colors.borderStrong,
+                      backgroundColor: isSelected ? '#1E40AF' : colors.surface,
                       flexDirection: 'row-reverse',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -937,13 +916,13 @@ export default function SearchTabScreen() {
                     <Ionicons
                       name={opt.icon}
                       size={16}
-                      color={isSelected ? colors.textOnPrimary : colors.textSecondary}
+                      color={isSelected ? '#FFFFFF' : colors.textSecondary}
                     />
                     <Text
                       style={{
                         fontSize: 12,
                         fontFamily: 'Cairo-Bold',
-                        color: isSelected ? colors.textOnPrimary : colors.textSecondary,
+                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
                       }}
                     >
                       {opt.label}
@@ -960,7 +939,7 @@ export default function SearchTabScreen() {
               onPress={handleApplyFilters}
               style={{
                 flex: 2,
-                backgroundColor: colors.primary,
+                backgroundColor: '#1E40AF',
                 borderRadius: 16,
                 height: 52,
                 flexDirection: 'row-reverse',
@@ -969,8 +948,8 @@ export default function SearchTabScreen() {
                 gap: 8,
               }}
             >
-              <Ionicons name="funnel-outline" size={18} color={colors.textOnPrimary} />
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>تطبيق</Text>
+              <Ionicons name="funnel-outline" size={18} color="#FFFFFF" />
+              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>تطبيق</Text>
             </Pressable>
 
             <Pressable
@@ -994,6 +973,15 @@ export default function SearchTabScreen() {
           </View>
         </SafeAreaView>
       </Modal>
+
+      {/* Favorite Auth Modal */}
+      <FavoriteAuthModal
+        visible={showAuthAlert}
+        colors={colors}
+        isDark={isDark}
+        onConfirm={handleConfirmLogin}
+        onDismiss={handleDismiss}
+      />
     </SafeAreaView>
   );
 }

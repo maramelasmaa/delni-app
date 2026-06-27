@@ -5,12 +5,13 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { Avatar } from '../../components/ui/Avatar';
+import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useTopRated, useCategories, useToggleFavorite } from '../../src/hooks/useApi';
+import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/store/auth';
 import { useCityStore } from '../../src/store/city';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider } from '../../src/types';
@@ -20,7 +21,7 @@ function getSingleParam(value?: string | string[]) {
 }
 
 export default function TopRatedScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const params = useLocalSearchParams<{ category?: string }>();
   const categoryParam = getSingleParam(params.category);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -33,8 +34,10 @@ export default function TopRatedScreen() {
   const categoriesKey = selectedCategories.join(',');
   const prevCategoryKeyRef = useRef(categoriesKey);
 
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const toggleFavorite = useToggleFavorite();
+  const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
+    redirectPath: '/(tabs)/top-rated',
+  });
 
 
 
@@ -63,16 +66,14 @@ export default function TopRatedScreen() {
 
   const handleFavorite = useCallback(
     (slug: string, isFavorited: boolean) => {
-      if (!isAuthenticated) {
-        router.push({ pathname: '/(auth)/login', params: { redirectTo: '/top-rated' } });
-        return;
-      }
-      toggleFavorite.mutate({ slug, isFavorited });
-      setAllProviders((prev) =>
-        prev.map((p) => (p.slug === slug ? { ...p, is_favorited: !isFavorited } : p))
-      );
+      handleFavoritePress(() => {
+        toggleFavorite.mutate({ slug, isFavorited });
+        setAllProviders((prev) =>
+          prev.map((p) => (p.slug === slug ? { ...p, is_favorited: !isFavorited } : p))
+        );
+      }, slug);
     },
-    [isAuthenticated, toggleFavorite],
+    [handleFavoritePress, toggleFavorite],
   );
 
   const handleCategoryToggle = useCallback((slug: string) => {
@@ -117,7 +118,7 @@ export default function TopRatedScreen() {
                 <Text style={{ fontSize: 28, fontFamily: 'Cairo-Black', color: colors.gold }}>.</Text>
               </View>
               <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginTop: 4 }}>
-                أفضل مقدمي الخدمات بناءً على تقييمات العملاء
+                مقدمي الخدمات الموثوقون حسب تقييمات العملاء
               </Text>
             </View>
 
@@ -150,9 +151,9 @@ export default function TopRatedScreen() {
                         paddingHorizontal: 16,
                         paddingVertical: 8,
                         borderRadius: 20,
-                        backgroundColor: isActive ? colors.primary : colors.surface,
+                        backgroundColor: isActive ? '#1E40AF' : colors.surface,
                         borderWidth: 1,
-                        borderColor: isActive ? colors.primary : colors.border,
+                        borderColor: isActive ? '#1E40AF' : colors.border,
                         alignItems: 'center',
                         justifyContent: 'center',
                         shadowColor: colors.shadow,
@@ -166,7 +167,7 @@ export default function TopRatedScreen() {
                         style={{
                           fontSize: 13,
                           fontFamily: isActive ? 'Cairo-Bold' : 'Cairo-SemiBold',
-                          color: isActive ? colors.textOnPrimary : colors.textSecondary,
+                          color: isActive ? '#FFFFFF' : colors.textSecondary,
                         }}
                       >
                         {cat.name}
@@ -204,7 +205,7 @@ export default function TopRatedScreen() {
         )}
         ListEmptyComponent={
           podium.length === 0 ? (
-            <EmptyState icon="star-outline" title="لا يوجد مزودون بعد" />
+            <EmptyState icon="star-outline" title="لا توجد خدمات بعد" />
           ) : null
         }
         ListFooterComponent={
@@ -233,6 +234,15 @@ export default function TopRatedScreen() {
             </Pressable>
           ) : null
         }
+      />
+
+      {/* Favorite Auth Modal */}
+      <FavoriteAuthModal
+        visible={showAuthAlert}
+        colors={colors}
+        isDark={isDark}
+        onConfirm={handleConfirmLogin}
+        onDismiss={handleDismiss}
       />
     </SafeAreaView>
   );
@@ -277,7 +287,7 @@ function RibbonBadge({ position }: { position: number }) {
           height: 24,
           borderRadius: 12,
           borderWidth: 1.5,
-          borderColor: '#FFFFFF',
+          borderColor: 'rgba(255, 255, 255, 0.3)',
           backgroundColor: color,
           alignItems: 'center',
           justifyContent: 'center',
@@ -292,7 +302,7 @@ function RibbonBadge({ position }: { position: number }) {
           style={{
             fontSize: 11,
             fontWeight: 'bold',
-            color: '#FFFFFF',
+            color: '#0F172A',
             textAlign: 'center',
             includeFontPadding: false,
           }}

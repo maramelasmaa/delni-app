@@ -7,6 +7,8 @@ import { useFavorites, useToggleFavorite } from '../../src/hooks/useApi';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
+import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
+import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider } from '../../src/types';
 
@@ -93,18 +95,23 @@ function EmptyCard({
 }
 
 export default function FavoritesScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data, isLoading, isError, refetch } = useFavorites();
   const toggleFavorite = useToggleFavorite();
+  const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
+    redirectPath: '/(tabs)/favorites',
+  });
 
   const providers: Provider[] = data?.data ?? [];
 
   const handleUnfavorite = useCallback(
     (slug: string) => {
-      toggleFavorite.mutate({ slug, isFavorited: true });
+      handleFavoritePress(() => {
+        toggleFavorite.mutate({ slug, isFavorited: true });
+      }, slug);
     },
-    [toggleFavorite],
+    [handleFavoritePress, toggleFavorite],
   );
 
   return (
@@ -154,7 +161,7 @@ export default function FavoritesScreen() {
                 }}
               >
                 <Text style={{ color: colors.error, fontFamily: 'Cairo-SemiBold', fontSize: 14, marginBottom: 16 }}>
-                  حدث خطأ أثناء تحميل المفضلة
+                  فشل تحميل المفضلة
                 </Text>
                 <Pressable
                   onPress={() => refetch()}
@@ -177,8 +184,8 @@ export default function FavoritesScreen() {
             return (
               <EmptyCard
                 colors={colors}
-                title="سجل الدخول لعرض المفضلة"
-                message="احفظ مقدمي الخدمات للوصول إليهم بسهولة في أي وقت"
+                title="تسجيل الدخول مطلوب"
+                message="حفظ مقدمي الخدمات المفضلين لديك للوصول إليهم بسهولة"
                 actionLabel="تسجيل الدخول"
                 onAction={() => router.push('/(auth)/login')}
               />
@@ -189,8 +196,8 @@ export default function FavoritesScreen() {
             <EmptyCard
               colors={colors}
               title="مفضلتك فارغة"
-              message="اضغط على القلب في صفحة مزود الخدمة لحفظه هنا."
-              actionLabel="تصفح مقدمي الخدمات"
+              message="ابدأ بحفظ مقدمي الخدمات المفضلين"
+              actionLabel="اكتشف الخدمات"
               onAction={() => router.push('/(tabs)/')}
             />
           );
@@ -203,6 +210,15 @@ export default function FavoritesScreen() {
             />
           </View>
         )}
+      />
+
+      {/* Favorite Auth Modal */}
+      <FavoriteAuthModal
+        visible={showAuthAlert}
+        colors={colors}
+        isDark={isDark}
+        onConfirm={handleConfirmLogin}
+        onDismiss={handleDismiss}
       />
     </SafeAreaView>
   );

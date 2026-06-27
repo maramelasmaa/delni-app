@@ -10,7 +10,7 @@ import type { ThemeColors } from '../src/theme/tokens';
 
 function extractError(err: unknown, fallback: string): string {
   const e = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
-  if (!e.response) return 'تعذّر الاتصال بالخادم';
+  if (!e.response) return 'فشل الاتصال';
   const data = e.response.data;
   if (data?.errors) return Object.values(data.errors)[0]?.[0] ?? fallback;
   return data?.message ?? fallback;
@@ -59,6 +59,7 @@ function FieldRow({
   keyboardType,
   onSave,
   colors,
+  isDark,
 }: {
   label: string;
   initialValue: string;
@@ -66,6 +67,7 @@ function FieldRow({
   keyboardType?: 'default' | 'email-address' | 'phone-pad';
   onSave: (value: string) => Promise<unknown>;
   colors: ThemeColors;
+  isDark: boolean;
 }) {
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
@@ -78,7 +80,7 @@ function FieldRow({
     try {
       await onSave(value.trim());
     } catch (err) {
-      setError(extractError(err, 'تعذّر الحفظ'));
+      setError(extractError(err, 'لم نتمكن من الحفظ'));
     } finally {
       setSaving(false);
     }
@@ -112,12 +114,12 @@ function FieldRow({
               paddingHorizontal: 14,
               paddingVertical: 7,
               borderRadius: 999,
-              backgroundColor: colors.primary,
+              backgroundColor: '#1E40AF',
               transform: [{ scale: pressed ? 0.96 : 1 }],
               opacity: saving ? 0.7 : 1,
             })}
           >
-            <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>
+            <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>
               {saving ? '...' : 'حفظ'}
             </Text>
           </Pressable>
@@ -130,7 +132,7 @@ function FieldRow({
   );
 }
 
-function PasswordSection({ colors }: { colors: ThemeColors }) {
+function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: boolean }) {
   const changePassword = useChangePassword();
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
@@ -156,9 +158,9 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
 
   const submit = async () => {
     setError('');
-    if (!current) return setError('كلمة المرور الحالية مطلوبة');
-    if (!passwordRegex.test(next)) return setError('كلمة المرور: 8 أحرف على الأقل، حرف كبير وصغير ورقم');
-    if (next === current) return setError('الجديدة يجب أن تختلف عن الحالية');
+    if (!current) return setError('أدخل كلمتك الحالية');
+    if (!passwordRegex.test(next)) return setError('8 أحرف: حروف كبيرة وصغيرة ورقم');
+    if (next === current) return setError('كلمتك الجديدة يجب أن تختلف عن الحالية');
     if (next !== confirm) return setError('كلمات المرور غير متطابقة');
     try {
       await changePassword.mutateAsync({ current_password: current, password: next, password_confirmation: confirm });
@@ -166,7 +168,7 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
       setCurrent(''); setNext(''); setConfirm('');
       setTimeout(() => { setOpen(false); setDone(false); }, 1200);
     } catch (err) {
-      setError(extractError(err, 'تعذّر تغيير كلمة المرور'));
+      setError(extractError(err, 'فشل تغيير كلمتك'));
     }
   };
 
@@ -178,7 +180,7 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
             <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
           </View>
           <View>
-            <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>كلمة المرور</Text>
+            <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>كلمتك</Text>
             <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>••••••••</Text>
           </View>
         </View>
@@ -187,7 +189,7 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
           hitSlop={8}
           style={({ pressed }) => ({ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: open ? colors.surfaceAlt : colors.primarySoft, transform: [{ scale: pressed ? 0.96 : 1 }] })}
         >
-          <Text style={{ color: open ? colors.textSecondary : colors.primary, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>{open ? 'إلغاء' : 'تغيير'}</Text>
+          <Text style={{ color: open ? colors.textSecondary : isDark ? '#60A5FA' : '#1E40AF', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>{open ? 'إلغاء' : 'تغيير'}</Text>
         </Pressable>
       </View>
 
@@ -196,20 +198,20 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
           {done ? (
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 }}>
               <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-              <Text style={{ textAlign: 'center', color: colors.success, fontFamily: 'Cairo-Bold', fontSize: 14 }}>تم تغيير كلمة المرور</Text>
+              <Text style={{ textAlign: 'center', color: colors.success, fontFamily: 'Cairo-Bold', fontSize: 14 }}>تم تغيير كلمتك بنجاح</Text>
             </View>
           ) : (
             <>
-              <TextInput value={current} onChangeText={setCurrent} placeholder="كلمة المرور الحالية" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
-              <TextInput value={next} onChangeText={setNext} placeholder="كلمة المرور الجديدة" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
-              <TextInput value={confirm} onChangeText={setConfirm} placeholder="تأكيد كلمة المرور" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={current} onChangeText={setCurrent} placeholder="كلمتك الحالية" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={next} onChangeText={setNext} placeholder="كلمتك الجديدة" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={confirm} onChangeText={setConfirm} placeholder="أعد كتابة كلمتك" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
               {error ? <Text style={{ marginTop: 8, textAlign: 'right', color: colors.error, fontFamily: 'Cairo-Regular', fontSize: 12 }}>{error}</Text> : null}
               <Pressable
                 onPress={submit}
                 disabled={changePassword.isPending}
-                style={({ pressed }) => ({ marginTop: 14, alignItems: 'center', borderRadius: 14, backgroundColor: colors.primary, paddingVertical: 13, opacity: changePassword.isPending ? 0.7 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                style={({ pressed }) => ({ marginTop: 16, marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, opacity: changePassword.isPending ? 0.65 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
               >
-                <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 14 }}>{changePassword.isPending ? 'جارٍ الحفظ...' : 'حفظ كلمة المرور'}</Text>
+                <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمتك'}</Text>
               </Pressable>
             </>
           )}
@@ -254,11 +256,11 @@ export default function AccountScreen() {
 
   const confirmDelete = () => {
     showRTLAlert(
-      'حذف الحساب',
-      'سيتم حذف حسابك وجميع بياناتك بشكل نهائي. هذا الإجراء لا يمكن التراجع عنه.',
+      'حذف حسابك نهائياً',
+      'لا يمكن استرجاع هذا الإجراء بعد تنفيذه. سيتم حذف جميع بيانات حسابك وملفك الشخصي من النظام.',
       [
         { text: 'إلغاء', style: 'cancel' },
-        { text: 'حذف حسابي', style: 'destructive', onPress: () => deleteAccount.mutate() },
+        { text: 'نعم، احذف حسابي', style: 'destructive', onPress: () => deleteAccount.mutate() },
       ],
     );
   };
@@ -300,17 +302,21 @@ export default function AccountScreen() {
             {/* Personal info */}
             <SectionLabel colors={colors}>المعلومات الشخصية</SectionLabel>
             <GroupCard colors={colors}>
-              <FieldRow label="الاسم" initialValue={user?.name ?? ''} placeholder="الاسم الكامل" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
-              <Divider colors={colors} />
-              <FieldRow label="رقم الهاتف" initialValue={user?.phone ?? ''} placeholder="رقم الهاتف" keyboardType="phone-pad" onSave={(v) => updateProfile.mutateAsync({ phone: v })} colors={colors} />
-              <Divider colors={colors} />
-              <FieldRow label="البريد الإلكتروني" initialValue={user?.email ?? ''} placeholder="البريد الإلكتروني" keyboardType="email-address" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
+              {user?.name && (
+                <>
+                  <FieldRow label="اسمك" initialValue={user.name} placeholder="اسمك" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} isDark={isDark} />
+                  {user?.email && <Divider colors={colors} />}
+                </>
+              )}
+              {user?.email && (
+                <FieldRow label="بريدك الإلكتروني" initialValue={user.email} placeholder="بريدك الإلكتروني" keyboardType="email-address" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} isDark={isDark} />
+              )}
             </GroupCard>
 
             {/* Security */}
             <View style={{ height: 24 }} />
             <SectionLabel colors={colors}>الأمان</SectionLabel>
-            <PasswordSection colors={colors} />
+            <PasswordSection colors={colors} isDark={isDark} />
 
             {/* Danger */}
             <View style={{ height: 28 }} />
@@ -323,7 +329,7 @@ export default function AccountScreen() {
                   </View>
                   <View>
                     <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>حذف الحساب</Text>
-                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>حذف حسابك وجميع بياناتك بشكل نهائي</Text>
+                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>حذف حسابك ولا يمكن التراجع عن هذا</Text>
                   </View>
                 </View>
                 <Pressable
@@ -337,7 +343,7 @@ export default function AccountScreen() {
                     transform: [{ scale: pressed ? 0.96 : 1 }]
                   })}
                 >
-                  <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>حذف</Text>
+                  <Text style={{ color: isDark ? '#F87171' : '#DC2626', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>حذف</Text>
                 </Pressable>
               </View>
             </GroupCard>
@@ -352,22 +358,24 @@ export default function AccountScreen() {
         animationType="fade"
         onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.65)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View
             style={{
               width: '90%',
-              maxWidth: 400,
+              maxWidth: 380,
               backgroundColor: colors.surface,
-              borderRadius: 28,
-              padding: 24,
+              borderRadius: 32,
+              paddingTop: 36,
+              paddingHorizontal: 28,
+              paddingBottom: 28,
               borderWidth: 1,
               borderColor: colors.border,
               alignItems: 'center',
               shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.15,
-              shadowRadius: 20,
-              elevation: 10,
+              shadowOffset: { width: 0, height: 12 },
+              shadowOpacity: 0.18,
+              shadowRadius: 24,
+              elevation: 12,
             }}
           >
             {(() => {
@@ -375,11 +383,13 @@ export default function AccountScreen() {
               let iconName: keyof typeof Ionicons.glyphMap = 'information-circle-outline';
               let iconColor = colors.primary;
               let iconBg = colors.primarySoft;
+              let shouldBeDestructive = false;
 
               if (t.includes('حذف')) {
                 iconName = 'trash-outline';
                 iconColor = colors.error;
-                iconBg = isDark ? 'rgba(248, 113, 113, 0.15)' : 'rgba(239, 68, 68, 0.10)';
+                iconBg = isDark ? 'rgba(248, 113, 113, 0.18)' : 'rgba(239, 68, 68, 0.12)';
+                shouldBeDestructive = true;
               } else if (t.includes('تسجيل الدخول')) {
                 iconName = 'lock-closed-outline';
                 iconColor = colors.primary;
@@ -391,25 +401,25 @@ export default function AccountScreen() {
               } else if (t.includes('تم') || t.includes('نجاح')) {
                 iconName = 'checkmark-circle-outline';
                 iconColor = colors.success;
-                iconBg = isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.10)';
+                iconBg = isDark ? 'rgba(52, 211, 153, 0.18)' : 'rgba(16, 185, 129, 0.12)';
               }
 
               return (
-                <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                  <Ionicons name={iconName} size={28} color={iconColor} />
+                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+                  <Ionicons name={iconName} size={36} color={iconColor} />
                 </View>
               );
             })()}
 
-            <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', marginBottom: 14, lineHeight: 28 }}>
               {customAlert.title}
             </Text>
 
-            <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24, writingDirection: 'rtl' }}>
+            <Text style={{ fontSize: 15, fontFamily: 'Cairo-Regular', color: colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32, writingDirection: 'rtl' }}>
               {customAlert.message}
             </Text>
 
-            <View style={{ width: '100%', flexDirection: (customAlert.buttons || []).length === 2 ? 'row' : 'column', gap: 12 }}>
+            <View style={{ width: '100%', flexDirection: 'row', gap: 12, justifyContent: 'space-between' }}>
               {(() => {
                 const actionButtons = customAlert.buttons || [];
 
@@ -417,14 +427,24 @@ export default function AccountScreen() {
                   return (
                     <Pressable
                       onPress={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-                      style={{ width: '100%', height: 48, borderRadius: 16, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}
+                      style={({ pressed }) => ({
+                        flex: 1,
+                        height: 52,
+                        borderRadius: 18,
+                        backgroundColor: '#1E40AF',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity: pressed ? 0.85 : 1,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
+                      })}
                     >
-                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>حسناً</Text>
+                      <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>حسناً</Text>
                     </Pressable>
                   );
                 }
 
                 const sortedButtons = [...actionButtons].sort((a, b) => {
+                  // Cancel first (left), then destructive/primary (right)
                   if (a.style === 'cancel' && b.style !== 'cancel') return -1;
                   if (a.style !== 'cancel' && b.style === 'cancel') return 1;
                   return 0;
@@ -433,7 +453,6 @@ export default function AccountScreen() {
                 return sortedButtons.map((btn, idx) => {
                   const isCancel = btn.style === 'cancel';
                   const isDestructive = btn.style === 'destructive';
-                  const isSideBySide = actionButtons.length === 2;
 
                   return (
                     <Pressable
@@ -443,19 +462,19 @@ export default function AccountScreen() {
                         btn.onPress?.();
                       }}
                       style={({ pressed }) => ({
-                        flex: isSideBySide ? 1 : undefined,
-                        width: isSideBySide ? undefined : '100%',
-                        height: 48,
-                        borderRadius: 16,
-                        backgroundColor: isCancel ? 'transparent' : isDestructive ? colors.error : colors.primary,
+                        flex: isDestructive ? 1.5 : 1,
+                        height: 52,
+                        borderRadius: 18,
+                        backgroundColor: isCancel ? colors.surfaceAlt : isDestructive ? colors.error : colors.primary,
                         borderWidth: isCancel ? 1.5 : 0,
                         borderColor: isCancel ? colors.borderStrong : undefined,
                         alignItems: 'center',
                         justifyContent: 'center',
-                        opacity: pressed ? 0.9 : 1,
+                        opacity: pressed ? 0.85 : 1,
+                        transform: [{ scale: pressed ? 0.97 : 1 }],
                       })}
                     >
-                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isCancel ? colors.textSecondary : colors.textOnPrimary }}>
+                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDestructive ? isDark ? '#FFFFFF' : '#000000' : isCancel ? colors.textPrimary : isDark ? '#FFFFFF' : '#000000' }}>
                         {btn.text}
                       </Text>
                     </Pressable>

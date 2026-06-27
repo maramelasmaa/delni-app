@@ -173,9 +173,9 @@ function getServiceIcon(serviceName: string | undefined): keyof typeof Ionicons.
 
 function SectionHeader({ title, colors }: { title: string; colors: ThemeColors }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 16, width: '100%' }}>
+    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12, width: '100%' }}>
       <View style={{ width: 4, height: 18, backgroundColor: colors.primary, borderRadius: 2 }} />
-      <Text style={{ fontSize: 16, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
+      <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
         {title}
       </Text>
     </View>
@@ -192,13 +192,13 @@ function AboutSection({ about, colors }: AboutSectionProps) {
   const shouldShowToggle = about.length > 180;
 
   return (
-    <View style={{ marginBottom: 36, width: '100%' }}>
+    <View style={{ marginBottom: 16, width: '100%' }}>
       <SectionHeader title="نبذة عنا" colors={colors} />
       <View
         style={{
           borderRadius: 20,
           backgroundColor: colors.surface,
-          padding: 18,
+          padding: 16,
           borderWidth: 1,
           borderColor: colors.border,
           shadowColor: colors.shadow,
@@ -225,7 +225,7 @@ function AboutSection({ about, colors }: AboutSectionProps) {
           <Pressable
             onPress={() => setExpanded(!expanded)}
             style={{
-              marginTop: 14,
+              marginTop: 10,
               alignSelf: 'flex-start',
               flexDirection: 'row-reverse',
               alignItems: 'center',
@@ -255,25 +255,25 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
   if (!services || services.length === 0) return null;
 
   return (
-    <View style={{ marginBottom: 36, width: '100%' }}>
+    <View style={{ marginBottom: 16, width: '100%' }}>
       <SectionHeader title="الخدمات المقدمة" colors={colors} />
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 12, width: '100%' }}>
+      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
         {services.map((svc) => (
           <View
             key={svc.id}
             style={{
               flexDirection: 'row-reverse',
               alignItems: 'center',
-              gap: 12,
+              gap: 10,
               width: '48%',
               flexGrow: 1,
               minWidth: 140,
               backgroundColor: colors.surface,
               borderWidth: 1,
               borderColor: colors.border,
-              borderRadius: 16,
-              paddingHorizontal: 14,
-              paddingVertical: 14,
+              borderRadius: 14,
+              paddingHorizontal: 12,
+              paddingVertical: 12,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
               shadowOpacity: 0.02,
@@ -297,7 +297,7 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
               numberOfLines={2}
               style={{
                 fontFamily: 'Cairo-Bold',
-                fontSize: 12.5,
+                fontSize: 13,
                 color: colors.textPrimary,
                 textAlign: 'right',
                 writingDirection: 'rtl',
@@ -320,10 +320,18 @@ interface PortfolioSectionProps {
 }
 function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
   if (!projects || projects.length === 0) return null;
 
   const cardWidth = SCREEN_WIDTH - 32;
   const gapSize = 12;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollToEnd({ animated: false });
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleScroll = (event: any) => {
     const xOffset = event.nativeEvent.contentOffset.x;
@@ -333,9 +341,10 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
   };
 
   return (
-    <View style={{ marginBottom: 36, width: '100%' }}>
+    <View style={{ marginBottom: 16, width: '100%' }}>
       <SectionHeader title="معرض الأعمال" colors={colors} />
       <ScrollView
+        ref={scrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
         snapToInterval={cardWidth + gapSize}
@@ -355,7 +364,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
               key={project.id || idx}
               style={{
                 width: cardWidth,
-                borderRadius: 20,
+                borderRadius: 18,
                 backgroundColor: colors.surface,
                 borderWidth: 1,
                 borderColor: colors.border,
@@ -399,10 +408,10 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                   )}
                 </View>
               )}
-              <View style={{ padding: 18, alignItems: 'flex-end', width: '100%' }}>
+              <View style={{ padding: 14, alignItems: 'flex-end', width: '100%' }}>
                 <Text
                   style={{
-                    fontSize: 15,
+                    fontSize: 14,
                     fontFamily: 'Cairo-Bold',
                     color: colors.textPrimary,
                     textAlign: 'right',
@@ -415,13 +424,13 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                   <Text
                     numberOfLines={3}
                     style={{
-                      marginTop: 10,
-                      fontSize: 13.5,
+                      marginTop: 6,
+                      fontSize: 13,
                       fontFamily: 'Cairo-Regular',
                       color: colors.textSecondary,
                       textAlign: 'right',
                       writingDirection: 'rtl',
-                      lineHeight: 21,
+                      lineHeight: 20,
                     }}
                   >
                     {project.short_description}
@@ -440,7 +449,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
             justifyContent: 'center',
             alignItems: 'center',
             gap: 6,
-            marginTop: 14,
+            marginTop: 10,
           }}
         >
           {projects.map((_, idx) => {
@@ -470,16 +479,16 @@ interface CredentialsSectionProps {
 function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
   if (!credentials || credentials.length === 0) return null;
   return (
-    <View style={{ marginBottom: 36, width: '100%' }}>
+    <View style={{ marginBottom: 12, width: '100%' }}>
       <SectionHeader title="الشهادات والمؤهلات" colors={colors} />
-      <View style={{ gap: 14, width: '100%' }}>
+      <View style={{ gap: 10, width: '100%' }}>
         {credentials.map((cred) => (
           <View
             key={cred.id}
             style={{
               backgroundColor: colors.surface,
-              borderRadius: 16,
-              padding: 18,
+              borderRadius: 14,
+              padding: 14,
               borderWidth: 1,
               borderColor: colors.border,
               borderRightWidth: 4,
@@ -494,7 +503,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
             <Text
               style={{
                 fontFamily: 'Cairo-Bold',
-                fontSize: 14,
+                fontSize: 13.5,
                 color: colors.textPrimary,
                 textAlign: 'right',
                 writingDirection: 'rtl',
@@ -507,7 +516,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
               <Text
                 style={{
                   fontFamily: 'Cairo-SemiBold',
-                  fontSize: 12.5,
+                  fontSize: 13,
                   color: colors.textSecondary,
                   textAlign: 'right',
                   writingDirection: 'rtl',
@@ -523,7 +532,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
                 <Text
                   style={{
                     fontFamily: 'Cairo-Regular',
-                    fontSize: 11,
+                    fontSize: 12,
                     color: colors.textMuted,
                     textAlign: 'right',
                     writingDirection: 'rtl',
@@ -548,8 +557,8 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
     <View
       style={{
         flexDirection: 'row-reverse',
-        paddingBottom: 16,
-        marginBottom: 16,
+        paddingBottom: 12,
+        marginBottom: 12,
         borderBottomWidth: isLast ? 0 : 1,
         borderColor: colors.border,
         width: '100%',
@@ -573,11 +582,11 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
 
       <View style={{ flex: 1, alignItems: 'flex-end' }}>
         <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
+          <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
             {review.user_name}
           </Text>
           <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10 }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
+            <Text style={{ fontSize: 11.5, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
               {formatRelativeTime(review.created_at)}
             </Text>
             <Pressable
@@ -592,18 +601,18 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
             </Pressable>
           </View>
         </View>
-        <View style={{ flexDirection: 'row-reverse', marginTop: 2, marginBottom: 6 }}>
+        <View style={{ flexDirection: 'row-reverse', marginTop: 2, marginBottom: 4 }}>
           <StarRating value={review.rating} size={13} />
         </View>
         {review.comment ? (
           <Text
             style={{
               textAlign: 'right',
-              fontSize: 14,
+              fontSize: 13,
               color: colors.textSecondary,
               fontFamily: 'Cairo-Regular',
               writingDirection: 'rtl',
-              lineHeight: 22,
+              lineHeight: 20,
               width: '100%'
             }}
           >
@@ -651,20 +660,20 @@ function ReviewsSection({
   const [showAll, setShowAll] = useState(false);
   const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
   return (
-    <View style={{ width: '100%', marginTop: 28 }}>
+    <View style={{ width: '100%', marginTop: 0 }}>
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <View style={{ width: 14, height: 3, backgroundColor: colors.gold, borderRadius: 2 }} />
-        <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
+        <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
           التقييمات ({reviewsCount})
         </Text>
       </View>
       {reviewsCount > 0 && (
         <View
           style={{
-            marginBottom: 20,
-            borderRadius: 20,
+            marginBottom: 12,
+            borderRadius: 18,
             backgroundColor: colors.surface,
-            padding: 16,
+            padding: 14,
             borderWidth: 1,
             borderColor: colors.border,
             flexDirection: 'row-reverse',
@@ -673,11 +682,11 @@ function ReviewsSection({
           }}
         >
           <View style={{ alignItems: 'center', width: '35%' }}>
-            <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.textPrimary, lineHeight: 46 }}>
+            <Text style={{ fontSize: 32, fontFamily: 'Cairo-Bold', color: colors.textPrimary, lineHeight: 40 }}>
               {rating.toFixed(1)}
             </Text>
             <StarRating value={rating} size={16} />
-            <Text style={{ fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
+            <Text style={{ fontSize: 12, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
               بناءً على {reviewsCount} تقييم
             </Text>
           </View>
@@ -703,7 +712,7 @@ function ReviewsSection({
       )}
       {isAuthenticated ? (
         canWriteReview ? (
-          <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
+          <View style={{ marginBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' }}>
             <View
               style={{
                 width: 40,
@@ -726,15 +735,15 @@ function ReviewsSection({
                 flexDirection: 'row-reverse',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                borderRadius: 24,
+                borderRadius: 18,
                 borderWidth: 1,
                 borderColor: colors.border,
                 backgroundColor: colors.surface,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
+                paddingHorizontal: 14,
+                paddingVertical: 10,
               }}
             >
-              <Text style={{ fontSize: 15, fontFamily: 'Cairo-Regular', color: colors.textMuted }}>
+              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textMuted }}>
                 شارك الآخرين تجربتك، أضف تقييماً...
               </Text>
               <Ionicons name="create-outline" size={18} color={colors.textMuted} />
@@ -744,25 +753,25 @@ function ReviewsSection({
           reviewStatusMessage ? (
             <View
               style={{
-                marginBottom: 20,
+                marginBottom: 12,
                 flexDirection: 'row-reverse',
                 alignItems: 'center',
                 gap: 10,
-                borderRadius: 16,
+                borderRadius: 14,
                 backgroundColor: colors.surfaceAlt,
-                paddingHorizontal: 16,
-                paddingVertical: 12
+                paddingHorizontal: 14,
+                paddingVertical: 10
               }}
             >
               <Ionicons name="information-circle-outline" size={22} color={colors.textSecondary} />
-              <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl', lineHeight: 20 }}>
+              <Text style={{ flex: 1, textAlign: 'right', fontSize: 13, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl', lineHeight: 19 }}>
                 {reviewStatusMessage}
               </Text>
             </View>
           ) : null
         )
       ) : (
-        <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
+        <View style={{ marginBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' }}>
           <View
             style={{
               width: 40,
@@ -783,15 +792,15 @@ function ReviewsSection({
               flexDirection: 'row-reverse',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderRadius: 24,
+              borderRadius: 18,
               borderWidth: 1,
               borderColor: colors.border,
               backgroundColor: colors.surfaceAlt,
-              paddingHorizontal: 16,
-              paddingVertical: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 10,
             }}
           >
-            <Text style={{ fontSize: 15, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
+            <Text style={{ fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textSecondary }}>
               سجل دخولك لكتابة تقييم...
             </Text>
             <Ionicons name="log-in-outline" size={18} color={colors.textSecondary} />
@@ -817,15 +826,15 @@ function ReviewsSection({
         <Pressable
           onPress={() => setShowAll(true)}
           style={{
-            marginTop: 8,
+            marginTop: 6,
             alignItems: 'center',
-            borderRadius: 16,
+            borderRadius: 14,
             borderWidth: 1,
             borderColor: colors.primary,
-            paddingVertical: 12,
+            paddingVertical: 10,
           }}
         >
-          <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
+          <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
             عرض كل التقييمات ({reviews.length})
           </Text>
         </Pressable>
@@ -835,18 +844,18 @@ function ReviewsSection({
           onPress={onLoadMore}
           disabled={isFetching}
           style={{
-            marginTop: 8,
+            marginTop: 6,
             alignItems: 'center',
-            borderRadius: 16,
+            borderRadius: 14,
             borderWidth: 1,
             borderColor: colors.primary,
-            paddingVertical: 12,
+            paddingVertical: 10,
           }}
         >
           {isFetching ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
               تحميل المزيد من التقييمات
             </Text>
           )}
@@ -1197,13 +1206,13 @@ export default function ProviderScreen() {
         <View
           style={{
             backgroundColor: colors.surface,
-            marginTop: AVATAR_SIZE / 2 + 8,
+            marginTop: AVATAR_SIZE / 2 + 4,
             marginHorizontal: 16,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingHorizontal: 20,
-            paddingTop: 20,
-            paddingBottom: 20,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 16,
             borderWidth: 1,
             borderColor: colors.border,
             shadowColor: colors.shadow,
@@ -1214,15 +1223,15 @@ export default function ProviderScreen() {
           }}
         >
           {/* Name & Info - Centered */}
-          <View style={{ width: '100%', alignItems: 'center', gap: 12 }}>
-            <Text numberOfLines={2} style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', writingDirection: 'rtl', lineHeight: 28 }}>
+          <View style={{ width: '100%', alignItems: 'center', gap: 8 }}>
+            <Text numberOfLines={2} style={{ fontSize: 19, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'center', writingDirection: 'rtl', lineHeight: 26 }}>
               {profile.name}
             </Text>
 
             {/* Type & Category & Rating Badges - Same Line */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
               {translatedType && (
-                <View style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                <View style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9 }}>
                   <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.primary }}>
                     {translatedType}
                   </Text>
@@ -1230,15 +1239,15 @@ export default function ProviderScreen() {
               )}
 
               {profile.categoryName && (
-                <View style={{ backgroundColor: 'rgba(59,130,246,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-SemiBold', color: colors.primary }}>
+                <View style={{ backgroundColor: 'rgba(59,130,246,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9 }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.primary }}>
                     {profile.categoryName}
                   </Text>
                 </View>
               )}
 
               {profile.rating > 0 && (
-                <View style={{ backgroundColor: 'rgba(234,179,8,0.12)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 3 }}>
+                <View style={{ backgroundColor: 'rgba(234,179,8,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, flexDirection: 'row-reverse', alignItems: 'center', gap: 3 }}>
                   <Ionicons name="star" size={11} color={colors.gold} />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 11, color: colors.gold }}>
                     {profile.rating.toFixed(1)}
@@ -1253,10 +1262,10 @@ export default function ProviderScreen() {
             flexDirection: 'row-reverse',
             width: '100%',
             backgroundColor: colors.surfaceAlt,
-            borderRadius: 18,
-            paddingVertical: 18,
-            paddingHorizontal: 12,
-            marginTop: 24,
+            borderRadius: 16,
+            paddingVertical: 14,
+            paddingHorizontal: 10,
+            marginTop: 16,
             alignItems: 'center',
             justifyContent: 'space-around',
           }}>
@@ -1264,10 +1273,10 @@ export default function ProviderScreen() {
               <React.Fragment key={spec.id}>
                 <View style={{ alignItems: 'center', flex: 1 }}>
                   <Ionicons name={spec.icon as any} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
-                  <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12.5, color: colors.textPrimary, textAlign: 'center' }}>
+                  <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12, color: colors.textPrimary, textAlign: 'center' }}>
                     {spec.value}
                   </Text>
-                  <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 2 }}>
+                  <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 1 }}>
                     {spec.label}
                   </Text>
                 </View>
@@ -1280,7 +1289,7 @@ export default function ProviderScreen() {
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
-            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 14, marginTop: 24 }}>
+            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 10, marginTop: 16 }}>
               {profile.whatsappUrl && (
                 <Pressable
                   onPress={handleWhatsApp}
@@ -1288,7 +1297,7 @@ export default function ProviderScreen() {
                     flex: profile.phone ? 1 : undefined,
                     width: profile.phone ? undefined : '100%',
                     height: 48,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     backgroundColor: '#25D366',
                     flexDirection: 'row-reverse',
                     alignItems: 'center',
@@ -1312,7 +1321,7 @@ export default function ProviderScreen() {
                     flex: profile.whatsappUrl ? 1 : undefined,
                     width: profile.whatsappUrl ? undefined : '100%',
                     height: 48,
-                    borderRadius: 14,
+                    borderRadius: 12,
                     backgroundColor: colors.primary,
                     flexDirection: 'row-reverse',
                     alignItems: 'center',
@@ -1334,7 +1343,7 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 18, marginTop: 24, paddingTop: 20, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
               {profile.socialLinks.map((item) => (
                 <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
                   <Ionicons name={item.icon} size={18} color={item.color} />
@@ -1345,7 +1354,7 @@ export default function ProviderScreen() {
         </View>
 
         {/* ═══ CORE SECTIONS (About, Services, Portfolio, Credentials) ═══ */}
-        <View style={{ paddingHorizontal: 16, marginTop: 32 }}>
+        <View style={{ paddingHorizontal: 16, marginTop: 18 }}>
           {profile.about && <AboutSection about={profile.about} colors={colors} />}
           <ServicesSection services={profile.services} colors={colors} />
           <PortfolioSection projects={profile.projects} colors={colors} onImagePress={(item, idx) => { setGalleryItem(item); setGalleryIndex(idx); }} />
@@ -1353,7 +1362,7 @@ export default function ProviderScreen() {
         </View>
 
         {/* ═══ REVIEWS SECTION (Pasted Old Design) ═══ */}
-        <View style={{ paddingHorizontal: 16, paddingBottom: 40, marginTop: 32 }}>
+        <View style={{ paddingHorizontal: 16, paddingBottom: 28, marginTop: 0 }}>
           <ReviewsSection
             reviews={allReviews}
             rating={profile.rating}

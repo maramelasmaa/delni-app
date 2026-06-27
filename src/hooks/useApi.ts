@@ -118,7 +118,9 @@ export function useSearch(filters: SearchFilters) {
     queryKey: ['search', filters],
     queryFn: async () => {
       const params = Object.fromEntries(
-        Object.entries(filters).filter(([, v]) => v !== undefined && v !== '' && v !== false && v !== 0),
+        Object.entries(filters)
+          .filter(([, v]) => v !== undefined && v !== '' && v !== false && v !== 0)
+          .map(([key, value]) => [key, key === 'remote' && value === true ? 1 : value]),
       );
       const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.search, { params });
       return {

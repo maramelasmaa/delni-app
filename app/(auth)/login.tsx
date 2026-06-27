@@ -16,7 +16,7 @@ import { useLogin } from '../../src/hooks/useAuth';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { redirectTo } = useLocalSearchParams<{ redirectTo?: string }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,11 +29,11 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrors({});
     if (!email.trim() || !emailRegex.test(email.trim())) {
-      setErrors({ email: 'أدخل بريداً إلكترونياً صالحاً' });
+      setErrors({ email: 'أدخل بريدك الإلكتروني' });
       return;
     }
     if (!password) {
-      setErrors({ password: 'كلمة المرور مطلوبة' });
+      setErrors({ password: 'أدخل كلمتك' });
       return;
     }
     try {
@@ -41,7 +41,7 @@ export default function LoginScreen() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
       if (!axiosErr.response) {
-        setErrors({ general: 'تعذّر الاتصال بالخادم، تحقق من اتصالك بالإنترنت' });
+        setErrors({ general: 'فشل الاتصال. تحقق من اتصالك بالإنترنت' });
         return;
       }
       const data = axiosErr.response.data;
@@ -104,7 +104,7 @@ export default function LoginScreen() {
             {/* Email */}
             <View style={{ marginBottom: 16 }}>
               <Text style={{ marginBottom: 6, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>
-                البريد الإلكتروني
+                بريدك الإلكتروني
               </Text>
               <TextInput
                 value={email}
@@ -130,9 +130,9 @@ export default function LoginScreen() {
               ref={passwordRef}
               value={password}
               onChangeText={setPassword}
-              label="كلمة المرور"
+              label="كلمتك"
               error={errors.password}
-              placeholder="كلمة المرور"
+              placeholder="كلمتك"
               placeholderTextColor={colors.textMuted}
               autoComplete="current-password"
               textContentType="password"
@@ -151,10 +151,10 @@ export default function LoginScreen() {
             <Pressable
               onPress={handleLogin}
               disabled={login.isPending}
-              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: login.isPending ? 0.7 : 1 }}
+              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: login.isPending ? 0.7 : 1 }}
             >
-              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
-                {login.isPending ? 'جارٍ الدخول...' : 'دخول'}
+              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: '#FFFFFF' }}>
+                {login.isPending ? 'جاري الدخول...' : 'تسجيل الدخول'}
               </Text>
             </Pressable>
 
@@ -171,7 +171,7 @@ export default function LoginScreen() {
               }}
             >
               <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>
-                تصفح كزائر
+                تصفح كضيف
               </Text>
             </Pressable>
 

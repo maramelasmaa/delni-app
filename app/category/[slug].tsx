@@ -5,10 +5,12 @@ import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, ScrollVi
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
+import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useCategory, useToggleFavorite, useCities, useProviderTypes } from '../../src/hooks/useApi';
+import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import { useCityStore } from '../../src/store/city';
@@ -25,6 +27,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 const FALLBACK_PROVIDER_TYPES = [
+  { code: '', name: 'الكل' },
   { code: 'individual', name: 'فرد' },
   { code: 'company', name: 'شركة' },
   { code: 'agency', name: 'وكالة' },
@@ -35,15 +38,25 @@ const FALLBACK_PROVIDER_TYPES = [
 ] as const;
 
 export default function CategoryScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { slug, subcategorySlug } = useLocalSearchParams<{ slug: string; subcategorySlug?: string }>();
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const toggleFavorite = useToggleFavorite();
   const insets = useSafeAreaInsets();
   const activeCity = useCityStore((s) => s.activeCity);
+  const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
+    redirectPath: `/category/${String(slug)}${subcategorySlug ? `?subcategorySlug=${subcategorySlug}` : ''}`,
+  });
 
   const [page, setPage] = useState(1);
   const [allProviders, setAllProviders] = useState<Provider[]>([]);
+  const providerTypeScrollRef = useRef<ScrollView>(null);
+
+  const handleProviderTypeContentSizeChange = (width: number) => {
+    const timer = setTimeout(() => {
+      providerTypeScrollRef.current?.scrollTo({ x: width, animated: false });
+    }, 50);
+    return () => clearTimeout(timer);
+  };
 
   const isCityInitial = useRef(true);
   const isKeywordInitial = useRef(true);
@@ -109,7 +122,7 @@ export default function CategoryScreen() {
     city: filters.city || undefined,
     city_id: cityId || undefined,
     provider_type: filters.provider_type || undefined,
-    remote: filters.remote,
+    remote: filters.remote ? 1 : undefined,
     sort: filters.sort || undefined,
     page,
   };
@@ -135,12 +148,13 @@ export default function CategoryScreen() {
     queryFn: async () => {
       const params = Object.fromEntries(
         Object.entries(providerParams).filter(([k, v]) => {
-          // Keep remote=true, but exclude false (means "show all, not just remote")
-          if (k === 'remote') return v === true;
+          // Keep remote=1, but exclude empty state (means "show all, not just remote")
+          if (k === 'remote') return v === 1;
           // Exclude undefined, empty strings, and 0
           return v !== undefined && v !== '' && v !== 0;
         }),
       );
+      console.log('[CategoryScreen] Query params:', { providerParams, finalParams: params, shouldUseSearch });
       if (!shouldUseSearch) {
         // "الكل" (All) tab is active and no active search filters -> Fetch from the category details endpoint directly.
         const res = await api.get<ApiResponse<CategoryDetailData>>(ENDPOINTS.category(slug), { params });
@@ -178,6 +192,7 @@ export default function CategoryScreen() {
   useEffect(() => {
     if (!searchData) return;
     const fresh = searchData.data ?? [];
+
     setAllProviders((prev) =>
       page === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
     );
@@ -203,7 +218,7 @@ export default function CategoryScreen() {
       city: filters.city || undefined,
       category: slug,
       provider_type: filters.provider_type || undefined,
-      remote: !!filters.remote,
+      remote: filters.remote === true,
       sort: filters.sort || 'rating',
       page: 1,
     });
@@ -212,20 +227,23 @@ export default function CategoryScreen() {
   }, [filters, slug]);
 
   const handleModalFilterChange = useCallback((key: keyof SearchFilters, value: any) => {
+    console.log('[CategoryScreen] Modal filter changed:', { key, value });
     setModalFilters((f) => ({ ...f, [key]: value, page: 1 }));
   }, []);
 
   const handleApplyFilters = useCallback(() => {
     try {
-      setFilters((f) => ({
-        ...f,
+      const newFilters = {
+        category: slug,
         keyword: modalFilters.keyword ?? undefined,
         city: modalFilters.city ?? undefined,
         provider_type: modalFilters.provider_type ?? undefined,
-        remote: !!modalFilters.remote,
+        remote: modalFilters.remote === true,
         sort: modalFilters.sort ?? 'rating',
         page: 1,
-      }));
+      };
+      console.log('[CategoryScreen] Applying filters:', newFilters);
+      setFilters(newFilters);
       setPage(1);
       setAllProviders([]);
       setKeyword(modalFilters.keyword || '');
@@ -233,7 +251,7 @@ export default function CategoryScreen() {
     } catch (err) {
       console.error('[CategoryScreen] handleApplyFilters error:', err);
     }
-  }, [modalFilters]);
+  }, [modalFilters, slug]);
 
   const handleResetFilters = useCallback(() => {
     try {
@@ -303,19 +321,14 @@ export default function CategoryScreen() {
 
   const handleFavorite = useCallback(
     (providerSlug: string, isFavorited: boolean) => {
-      if (!isAuthenticated) {
-        router.push({
-          pathname: '/(auth)/login',
-          params: { redirectTo: `/category/${String(slug)}${subcategorySlug ? `?subcategorySlug=${subcategorySlug}` : ''}` }
-        });
-        return;
-      }
-      toggleFavorite.mutate({ slug: providerSlug, isFavorited });
-      setAllProviders((prev) =>
-        prev.map((p) => (p.slug === providerSlug ? { ...p, is_favorited: !isFavorited } : p))
-      );
+      handleFavoritePress(() => {
+        toggleFavorite.mutate({ slug: providerSlug, isFavorited });
+        setAllProviders((prev) =>
+          prev.map((p) => (p.slug === providerSlug ? { ...p, is_favorited: !isFavorited } : p))
+        );
+      }, providerSlug);
     },
-    [isAuthenticated, slug, subcategorySlug, toggleFavorite],
+    [handleFavoritePress, toggleFavorite],
   );
 
   // Single-select: tap a subcategory to filter to it; tap "الكل" or the active
@@ -377,8 +390,8 @@ export default function CategoryScreen() {
           !isProvidersFetching && totalCount === 0 ? (
             <EmptyState
               icon="briefcase-outline"
-              title="لم نجد نتائج"
-              message="لا يوجد مقدمي خدمات في هذا القسم حالياً."
+              title="لا توجد نتائج"
+              message="لا توجد خدمات في هذا القسم الآن"
             />
           ) : null
         }
@@ -409,6 +422,15 @@ export default function CategoryScreen() {
             </>
           )
         }
+      />
+
+      {/* Favorite Auth Modal */}
+      <FavoriteAuthModal
+        visible={showAuthAlert}
+        colors={colors}
+        isDark={isDark}
+        onConfirm={handleConfirmLogin}
+        onDismiss={handleDismiss}
       />
 
       {/* Filter modal */}
@@ -450,7 +472,7 @@ export default function CategoryScreen() {
             {/* Search TextInput block inside the filters modal */}
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 10 }}>
               <Ionicons name="search-outline" size={16} color={colors.textPrimary} />
-              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>البحث عن اسم أو خدمة</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>ابحث عن خدمة أو مقدم</Text>
             </View>
             <View
               style={{
@@ -469,7 +491,7 @@ export default function CategoryScreen() {
               <TextInput
                 value={modalFilters.keyword || ''}
                 onChangeText={(text) => handleModalFilterChange('keyword', text)}
-                placeholder="ابحث عن خدمة أو مزود..."
+                placeholder="ابحث عن خدمة أو مقدم..."
                 placeholderTextColor={colors.textMuted}
                 textAlign="right"
                 style={{
@@ -578,11 +600,13 @@ export default function CategoryScreen() {
             {/* Provider Type filter */}
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="briefcase-outline" size={16} color={colors.textPrimary} />
-              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع المزود</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع مقدم الخدمة</Text>
             </View>
             <ScrollView
+              ref={providerTypeScrollRef}
               horizontal
               showsHorizontalScrollIndicator={false}
+              onContentSizeChange={handleProviderTypeContentSizeChange}
               contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
             >
               {[{ code: '', name: 'الكل' }, ...(providerTypes?.length ? providerTypes : FALLBACK_PROVIDER_TYPES)].map((type) => {
@@ -640,8 +664,8 @@ export default function CategoryScreen() {
                       height: 48,
                       borderRadius: 14,
                       borderWidth: 1.5,
-                      borderColor: isSelected ? colors.primary : colors.borderStrong,
-                      backgroundColor: isSelected ? colors.primary : colors.surface,
+                      borderColor: isSelected ? '#1E40AF' : colors.borderStrong,
+                      backgroundColor: isSelected ? '#1E40AF' : colors.surface,
                       flexDirection: 'row-reverse',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -651,13 +675,13 @@ export default function CategoryScreen() {
                     <Ionicons
                       name={opt.icon}
                       size={16}
-                      color={isSelected ? colors.textOnPrimary : colors.textSecondary}
+                      color={isSelected ? '#FFFFFF' : colors.textSecondary}
                     />
                     <Text
                       style={{
                         fontSize: 12,
                         fontFamily: 'Cairo-Bold',
-                        color: isSelected ? colors.textOnPrimary : colors.textSecondary,
+                        color: isSelected ? '#FFFFFF' : colors.textSecondary,
                       }}
                     >
                       {opt.label}
@@ -665,6 +689,20 @@ export default function CategoryScreen() {
                   </Pressable>
                 );
               })}
+            </View>
+
+            {/* Remote Work Filter */}
+            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: colors.surfaceAlt, borderRadius: 16 }}>
+              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, flex: 1 }}>
+                <Ionicons name="desktop-outline" size={18} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>عمل عن بعد</Text>
+              </View>
+              <Switch
+                value={modalFilters.remote === true}
+                onValueChange={(value) => handleModalFilterChange('remote', value)}
+                trackColor={{ false: colors.border, true: colors.primarySoft }}
+                thumbColor={modalFilters.remote === true ? colors.primary : colors.textMuted}
+              />
             </View>
           </ScrollView>
 
@@ -674,7 +712,7 @@ export default function CategoryScreen() {
               onPress={handleApplyFilters}
               style={{
                 flex: 2,
-                backgroundColor: colors.primary,
+                backgroundColor: '#1E40AF',
                 borderRadius: 16,
                 height: 52,
                 flexDirection: 'row-reverse',
@@ -683,8 +721,8 @@ export default function CategoryScreen() {
                 gap: 8,
               }}
             >
-              <Ionicons name="funnel-outline" size={18} color={colors.textOnPrimary} />
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>تطبيق</Text>
+              <Ionicons name="funnel-outline" size={18} color="#FFFFFF" />
+              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>تطبيق</Text>
             </Pressable>
 
             <Pressable
@@ -856,10 +894,10 @@ function CategoryHeader({
           <Text
             style={{
               textAlign: 'right',
-              fontSize: 24,
+              fontSize: 18,
               fontFamily: 'Cairo-Black',
               color: colors.textPrimary,
-              lineHeight: 32,
+              lineHeight: 26,
             }}
             numberOfLines={2}
           >
@@ -931,7 +969,7 @@ function CategoryHeader({
           <TextInput
             value={keyword}
             onChangeText={setKeyword}
-            placeholder="ابحث عن خدمة أو مزود..."
+            placeholder="ابحث عن خدمة أو مقدم..."
             placeholderTextColor={colors.textMuted}
             textAlign="right"
             style={{
@@ -958,16 +996,16 @@ function CategoryHeader({
               height: 36,
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: activeFilterCount > 0 ? colors.primary : 'transparent',
+              backgroundColor: activeFilterCount > 0 ? '#1E40AF' : 'transparent',
               borderRadius: 10,
               borderWidth: activeFilterCount > 0 ? 1 : 0,
-              borderColor: colors.primary,
+              borderColor: '#1E40AF',
             }}
           >
             <Ionicons
               name="options-outline"
               size={20}
-              color={activeFilterCount > 0 ? colors.textOnPrimary : colors.textSecondary}
+              color={activeFilterCount > 0 ? '#FFFFFF' : colors.textSecondary}
             />
             {activeFilterCount > 0 ? (
               <View style={{
@@ -976,7 +1014,7 @@ function CategoryHeader({
                 backgroundColor: colors.gold,
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#FFFFFF', lineHeight: 10 }}>{activeFilterCount}</Text>
+                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 10 }}>{activeFilterCount}</Text>
               </View>
             ) : null}
           </Pressable>
@@ -1029,7 +1067,7 @@ function CategoryHeader({
                       style={{
                         fontSize: 13,
                         fontFamily: isActive ? 'Cairo-Bold' : 'Cairo-SemiBold',
-                        color: isActive ? '#FFFFFF' : colors.textSecondary,
+                        color: isActive ? '#000000' : colors.textSecondary,
                         textAlign: 'center',
                       }}
                     >
@@ -1045,10 +1083,9 @@ function CategoryHeader({
 
       {/* ── Providers List Section Header ── */}
       <SectionTitle
-        title={totalCount !== undefined ? `المزودين (${totalCount})` : 'المزودين'}
+        title={totalCount !== undefined ? `مقدمي الخدمات (${totalCount})` : 'مقدمي الخدمات'}
         colors={colors}
       />
     </>
   );
 }
-

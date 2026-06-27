@@ -34,7 +34,7 @@ export default function AboutScreen() {
             <Text style={{ fontSize: 30, fontFamily: 'Cairo-Black', color: colors.gold }}>.</Text>
           </View>
           <Text style={{ marginTop: 6, fontSize: 12, fontFamily: 'Cairo-SemiBold', color: colors.textMuted }}>
-            المنصة الأولى لمزودي الخدمات في ليبيا
+            المنصة الأولى لمقدمي الخدمات في ليبيا
           </Text>
         </View>
 
@@ -60,17 +60,17 @@ export default function AboutScreen() {
             <Text style={cardTitle}>هدف المنصة</Text>
           </View>
           <Text style={[body, { marginBottom: 16 }]}>
-            نسعى لتسهيل الوصول للمهنيين ومزودي الخدمات في مختلف التخصصات والمدن الليبية، وبناء بيئة تواصل موثوقة ومحترمة.
+            نسعى لتسهيل الوصول للمهنيين ومقدمي الخدمات في مختلف التخصصات والمدن الليبية، وبناء بيئة تواصل موثوقة ومحترمة.
           </Text>
 
           <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 8 }}>
               <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
-              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>سهولة البحث والتواصل</Text>
+              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>ابحث وتواصل بسهولة</Text>
             </View>
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
               <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
-              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>تقييمات حقيقية وشفافة</Text>
+              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>تقييمات موثوقة وحقيقية</Text>
             </View>
           </View>
         </View>

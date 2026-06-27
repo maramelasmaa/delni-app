@@ -54,7 +54,7 @@ export default function CategoriesScreen() {
             marginTop: 4,
           }}
         >
-          اختر تخصصاً للبحث عن مزود
+          اختر تخصصاً للبحث عن مقدم خدمة
         </Text>
       </View>
 

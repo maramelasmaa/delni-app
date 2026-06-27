@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   Text,
   TextInput,
@@ -21,7 +22,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
     const { colors } = useTheme();
     const [showPassword, setShowPassword] = useState(false);
 
-    const hasValue = value !== undefined && value !== null && String(value).length > 0;
+    const isSecure = !showPassword;
 
     return (
       <View style={[{ marginBottom: 16 }, containerStyle]}>
@@ -46,22 +47,25 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             borderWidth: 1,
             backgroundColor: colors.surfaceAlt,
             borderColor: error ? colors.error : colors.border,
+            height: 48, // 🔥 FIX 1: Explicit fixed height prevents the box from resizing
+            justifyContent: 'center',
           }}
         >
           <TextInput
             ref={ref}
             value={value}
-            secureTextEntry={!showPassword}
-            textAlign="left"
+            secureTextEntry={isSecure}
+            textAlign="right"
             style={[
               {
                 width: '100%',
+                height: '100%', // Takes up full parent fixed height
                 color: colors.textPrimary,
-                fontFamily: 'Cairo-Regular',
-                writingDirection: 'ltr',
+                // 🔥 FIX 2: Switch the font family when hidden to stop bullet expansion bugs
+                fontFamily: isSecure ? (Platform.OS === 'ios' ? 'System' : 'monospace') : 'Cairo-Regular',
+                writingDirection: 'rtl',
                 paddingLeft: 16,
                 paddingRight: 44,
-                paddingVertical: 12,
                 fontSize: 14,
               },
               style,
@@ -74,7 +78,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             style={{
               position: 'absolute',
               bottom: 0,
-              right: 12,
+              left: 12,
               top: 0,
               justifyContent: 'center',
               zIndex: 10,

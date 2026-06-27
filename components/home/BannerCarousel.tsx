@@ -1,15 +1,13 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, Pressable, Text, View } from 'react-native';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, FlatList, Pressable, Text, View, NativeSyntheticEvent, NativeScrollEvent, I18nManager } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { openExternalUrl } from '../../src/utils/links';
 import type { Banner } from '../../src/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 40;
-// Locked banner aspect ratio (2:1). MUST match the Filament upload crop ratio
-// so every banner renders identically regardless of the source image's pixels.
 const BANNER_RATIO = 2;
 const CARD_HEIGHT = Math.round(CARD_WIDTH / BANNER_RATIO);
 const GAP = 12;
@@ -20,74 +18,111 @@ interface Props {
   banners: Banner[];
 }
 
+type CarouselBanner = Banner & {
+  _carouselKey: string;
+  _realIndex: number;
+};
+
 function BannerCarousel({ banners }: Props) {
   const { colors } = useTheme();
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<CarouselBanner>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeIndexRef = useRef(0);
+  
+  const realCount = banners.length;
+  
+  // Create a 3x padded array to allow seamless infinite scrolling left and right
+  const data = useMemo<CarouselBanner[]>(() => {
+    if (realCount <= 1) {
+      return banners.map((b, i) => ({ ...b, _carouselKey: `${b.id}-${i}`, _realIndex: i }));
+    }
+    // [Group A] [Group B (Main)] [Group C]
+    const triple = [...banners, ...banners, ...banners];
+    return triple.map((banner, index) => ({
+      ...banner,
+      _carouselKey: `${banner.id}-${index}`,
+      _realIndex: index % realCount,
+    }));
+  }, [banners, realCount]);
 
-  // Since the list is inverted, index 0 is at offset 0 (on the right)
-  // and offset increases as we scroll to the left.
-  const getOffset = useCallback((index: number): number => index * STRIDE, []);
+  // Start at the beginning of the middle group (Group B)
+  const initialIndex = realCount;
+  const [activeIndex, setActiveIndex] = useState(0);
+  const currentIndexRef = useRef(initialIndex);
 
-  // Keep activeIndex in sync while user manually scrolls
-  const onScroll = useCallback(
-    (e: { nativeEvent: { contentOffset: { x: number } } }) => {
-      const x = e.nativeEvent.contentOffset.x;
-      const raw = x / STRIDE;
-      const idx = Math.max(0, Math.min(Math.round(raw), banners.length - 1));
-      if (idx !== activeIndexRef.current) {
-        activeIndexRef.current = idx;
-        setActiveIndex(idx);
-      }
-    },
-    [banners.length],
-  );
+  const startTimer = useCallback(() => {
+    if (realCount <= 1) return;
+    stopTimer();
+    
+    timerRef.current = setInterval(() => {
+      const nextIndex = currentIndexRef.current + 1;
+      flatListRef.current?.scrollToOffset({
+        offset: nextIndex * STRIDE,
+        animated: true,
+      });
+    }, AUTO_SCROLL_INTERVAL);
+  }, [realCount]);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  // Handle endless loop reset silently when scrolling stops
+  const handleScrollReset = useCallback((xOffset: number) => {
+    if (realCount <= 1) return;
+
+    const exactIndex = xOffset / STRIDE;
+    let currentIdx = Math.round(exactIndex);
+    
+    // If user drifts into Group A or Group C, snap them silently back to Group B
+    if (currentIdx < realCount) {
+      currentIdx = currentIdx + realCount;
+      flatListRef.current?.scrollToOffset({ offset: currentIdx * STRIDE, animated: false });
+    } else if (currentIdx >= realCount * 2) {
+      currentIdx = currentIdx - realCount;
+      flatListRef.current?.scrollToOffset({ offset: currentIdx * STRIDE, animated: false });
+    }
+
+    currentIndexRef.current = currentIdx;
+    setActiveIndex(currentIdx % realCount);
+  }, [realCount]);
+
+  const onMomentumScrollEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    handleScrollReset(e.nativeEvent.contentOffset.x);
+    startTimer();
+  }, [handleScrollReset, startTimer]);
+
+  const onScrollBeginDrag = useCallback(() => {
+    stopTimer();
+  }, [stopTimer]);
 
   useEffect(() => {
-    if (banners.length <= 1) return;
-
-    timerRef.current = setInterval(() => {
-      const curr = activeIndexRef.current;
-      const next = (curr + 1) % banners.length;
-      activeIndexRef.current = next;
-      setActiveIndex(next);
-
-      const isLooping = next === 0 && curr === banners.length - 1;
-      if (isLooping) {
-        // Jump back to index 0 (which is offset 0 on the right) without animation
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
-      } else {
-        flatListRef.current?.scrollToOffset({ offset: getOffset(next), animated: true });
-      }
-    }, AUTO_SCROLL_INTERVAL);
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [banners.length, getOffset]);
+    startTimer();
+    return () => stopTimer();
+  }, [startTimer, stopTimer]);
 
   const handlePress = useCallback((banner: Banner) => {
     if (!banner.link_value) return;
-    if (banner.link_type === 'category' && banner.link_value) {
-      router.push({
-        pathname: '/category/[slug]',
-        params: { slug: banner.link_value },
-      });
+    if (banner.link_type === 'category') {
+      router.push({ pathname: '/category/[slug]', params: { slug: banner.link_value } });
+    } else if (banner.link_type === 'provider') {
+      router.push(`/provider/${banner.link_value}`);
+    } else if (banner.link_type === 'url') {
+      openExternalUrl(banner.link_value);
     }
-    else if (banner.link_type === 'provider') router.push(`/provider/${banner.link_value}`);
-    else if (banner.link_type === 'url') openExternalUrl(banner.link_value);
   }, []);
 
-  const scrollToIndex = useCallback(
-    (i: number) => {
-      flatListRef.current?.scrollToOffset({ offset: getOffset(i), animated: true });
-      activeIndexRef.current = i;
-      setActiveIndex(i);
-    },
-    [getOffset],
-  );
+  const scrollToDot = useCallback((index: number) => {
+    if (realCount === 0) return;
+    stopTimer();
+    const targetIndex = realCount + index; // Target layout mapping to Group B
+    currentIndexRef.current = targetIndex;
+    setActiveIndex(index);
+    flatListRef.current?.scrollToOffset({ offset: targetIndex * STRIDE, animated: true });
+    startTimer();
+  }, [realCount, startTimer, stopTimer]);
 
   if (banners.length === 0) return null;
 
@@ -95,7 +130,7 @@ function BannerCarousel({ banners }: Props) {
     <View className="mb-6">
       <FlatList
         ref={flatListRef}
-        data={banners}
+        data={data}
         horizontal
         inverted
         showsHorizontalScrollIndicator={false}
@@ -103,18 +138,21 @@ function BannerCarousel({ banners }: Props) {
         snapToAlignment="start"
         decelerationRate="fast"
         scrollEventThrottle={16}
-        onScroll={onScroll}
+        disableIntervalMomentum
+        getItemLayout={(_, index) => ({ length: STRIDE, offset: STRIDE * index, index })}
+        initialScrollIndex={realCount > 1 ? initialIndex : 0}
+        onMomentumScrollEnd={onMomentumScrollEnd}
+        onScrollBeginDrag={onScrollBeginDrag}
         contentContainerStyle={{ paddingHorizontal: 20, gap: GAP }}
-        renderItem={({ item }) => (
-          <BannerItem banner={item} onPress={handlePress} />
-        )}
-        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => <BannerItem banner={item} onPress={handlePress} />}
+        keyExtractor={(item) => item._carouselKey}
       />
 
-      {banners.length > 1 ? (
-        <View className="mt-3 flex-row-reverse items-center justify-center gap-1.5">
+      {realCount > 1 ? (
+        // flex-row or flex-row-reverse matches native system engine setup
+        <View className="mt-3 flex-row items-center justify-center gap-1.5">
           {banners.map((_, i) => (
-            <Pressable key={i} onPress={() => scrollToIndex(i)} hitSlop={6}>
+            <Pressable key={i} onPress={() => scrollToDot(i)} hitSlop={6}>
               <View
                 style={{
                   height: 6,
@@ -131,13 +169,7 @@ function BannerCarousel({ banners }: Props) {
   );
 }
 
-const BannerItem = memo(function BannerItem({
-  banner,
-  onPress,
-}: {
-  banner: Banner;
-  onPress: (b: Banner) => void;
-}) {
+const BannerItem = memo(function BannerItem({ banner, onPress }: { banner: Banner; onPress: (b: Banner) => void }) {
   const isClickable = banner.link_type !== 'none' && !!banner.link_value;
 
   return (
@@ -153,22 +185,18 @@ const BannerItem = memo(function BannerItem({
         contentFit="cover"
         recyclingKey={`banner-${banner.id}`}
       />
-
       {banner.title || banner.subtitle ? (
-        <View
-          className="absolute bottom-0 left-0 right-0 px-4 py-3"
-          style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
-        >
-          {banner.title ? (
+        <View className="absolute bottom-0 left-0 right-0 px-4 py-3" style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}>
+          {banner.title && (
             <Text className="text-right text-base font-cairo-bold text-white" numberOfLines={1}>
               {banner.title}
             </Text>
-          ) : null}
-          {banner.subtitle ? (
+          )}
+          {banner.subtitle && (
             <Text className="mt-0.5 text-right text-xs font-cairo-semibold text-white/80" numberOfLines={1}>
               {banner.subtitle}
             </Text>
-          ) : null}
+          )}
         </View>
       ) : null}
     </Pressable>

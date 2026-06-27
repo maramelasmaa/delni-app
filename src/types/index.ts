@@ -108,7 +108,6 @@ export interface Provider {
     github?: string | null;
     map_url?: string | null;
   };
-  service_area_note?: string | null;
   offers_remote_work?: boolean;
   can_review?: boolean;
   review_status_message?: string | null;

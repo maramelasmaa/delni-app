@@ -16,7 +16,7 @@ import { useRegister } from '../../src/hooks/useAuth';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export default function RegisterScreen() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { redirectTo } = useLocalSearchParams<{ redirectTo?: string }>();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -37,19 +37,19 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     setErrors({});
     if (!name.trim()) {
-      setErrors({ name: 'الاسم مطلوب' });
+      setErrors({ name: 'أدخل اسمك' });
       return;
     }
     if (!email.trim() || !emailRegex.test(email.trim())) {
-      setErrors({ email: 'أدخل بريداً إلكترونياً صالحاً' });
+      setErrors({ email: 'أدخل بريدك الإلكتروني' });
       return;
     }
     if (!password) {
-      setErrors({ password: 'كلمة المرور مطلوبة' });
+      setErrors({ password: 'أدخل كلمتك' });
       return;
     }
     if (!passwordRegex.test(password)) {
-      setErrors({ password: 'كلمة المرور: 8 أحرف على الأقل، تشمل حرفاً كبيراً وصغيراً ورقماً' });
+      setErrors({ password: '8 أحرف: حروف كبيرة وصغيرة ورقم' });
       return;
     }
     if (password !== confirmation) {
@@ -67,7 +67,7 @@ export default function RegisterScreen() {
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
       if (!axiosErr.response) {
-        setErrors({ general: 'تعذّر الاتصال بالخادم، تحقق من اتصالك بالإنترنت' });
+        setErrors({ general: 'فشل الاتصال. تحقق من اتصالك بالإنترنت' });
         return;
       }
       const data = axiosErr.response.data;
@@ -121,7 +121,7 @@ export default function RegisterScreen() {
                 <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>دلني</Text>
                 <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.gold }}>.</Text>
               </View>
-              <Text style={{ marginTop: 4, fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-SemiBold' }}>إنشاء حساب جديد</Text>
+              <Text style={{ marginTop: 4, fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-SemiBold' }}>إنشاء حساب</Text>
             </View>
 
             {errors.general ? (
@@ -132,7 +132,7 @@ export default function RegisterScreen() {
 
             {/* Full name */}
             <View style={{ marginBottom: 16 }}>
-              <Text style={label}>الاسم الكامل</Text>
+              <Text style={label}>اسمك</Text>
               <TextInput
                 value={name}
                 onChangeText={setName}
@@ -150,7 +150,7 @@ export default function RegisterScreen() {
 
             {/* Email */}
             <View style={{ marginBottom: 16 }}>
-              <Text style={label}>البريد الإلكتروني</Text>
+              <Text style={label}>بريدك الإلكتروني</Text>
               <TextInput
                 ref={emailRef}
                 value={email}
@@ -174,7 +174,7 @@ export default function RegisterScreen() {
               ref={passwordRef}
               value={password}
               onChangeText={setPassword}
-              label="كلمة المرور"
+              label="كلمتك"
               error={errors.password}
               placeholder="8 أحرف على الأقل"
               placeholderTextColor={colors.textMuted}
@@ -189,9 +189,9 @@ export default function RegisterScreen() {
               ref={confirmationRef}
               value={confirmation}
               onChangeText={setConfirmation}
-              label="تأكيد كلمة المرور"
+              label="أعد كتابة كلمتك"
               error={errors.password_confirmation}
-              placeholder="أعد كتابة كلمة المرور"
+              placeholder="أعد كتابة كلمتك"
               placeholderTextColor={colors.textMuted}
               autoComplete="new-password"
               textContentType="newPassword"
@@ -203,10 +203,10 @@ export default function RegisterScreen() {
             <Pressable
               onPress={handleRegister}
               disabled={register.isPending}
-              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: register.isPending ? 0.7 : 1 }}
+              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: register.isPending ? 0.7 : 1 }}
             >
-              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
-                {register.isPending ? 'جارٍ التسجيل...' : 'إنشاء الحساب'}
+              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: '#FFFFFF' }}>
+                {register.isPending ? 'جاري التسجيل...' : 'أنشئ حسابك'}
               </Text>
             </Pressable>
 
@@ -223,13 +223,13 @@ export default function RegisterScreen() {
               }}
             >
               <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>
-                تصفح كزائر
+                تصفح كضيف
               </Text>
             </Pressable>
 
             {/* Privacy policy — required by App Store 5.1.1 before data collection */}
             <Text style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
-              بالتسجيل أنت توافق على{' '}
+              بالتسجيل، أنت توافق على{' '}
               <Text style={{ color: colors.primary }} onPress={() => router.push('/privacy')}>
                 سياسة الخصوصية
               </Text>
