@@ -7,28 +7,28 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useToggleFavorite } from '../../src/hooks/useApi';
 import { useAuthStore } from '../../src/store/auth';
 import type { Provider } from '../../src/types';
-import { getProviderCover, getProviderLogo } from '../../src/utils/imageFallback';
+import { getProviderCover } from '../../src/utils/imageFallback';
+import { getOffersRemoteWork } from '../../src/utils/providerMappers';
 
 interface Props {
   provider: Provider;
 }
 
 const W = 240;
-const H = 270;
-const R = 20;
-const COVER_H = 120;
-const LOGO = 88;
+const H = 300; 
+const R = 24; // Smooth pill-curved corners
+const COVER_H = 135; // Locked fixed height for the image layer
 
 const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const toggleFavorite = useToggleFavorite();
   const [isFavorited, setIsFavorited] = useState(!!provider.is_favorited);
 
   const rating = provider.rating_average ?? 0;
-  const gold = colors.gold ?? '#EAB308';
-  const surface = colors.surface ?? '#0F172A';
-  const text = colors.textPrimary ?? '#F8FAFC';
+  const gold = colors.gold;
+  const cardBg = colors.surface;
+  const textMain = colors.textPrimary;
 
   const go = useCallback(() => {
     router.push(`/provider/${provider.slug}`);
@@ -44,110 +44,143 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
   }, [isAuthenticated, provider.slug, isFavorited, toggleFavorite]);
 
   return (
-    <Pressable
-      onPress={go}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor: surface,
-          borderColor: pressed ? gold : 'rgba(255,255,255,0.08)',
-          transform: [{ scale: pressed ? 0.98 : 1 }],
-        },
-      ]}
-    >
-      <View style={styles.coverWrap}>
-        <Image
-          source={{ uri: getProviderCover(provider.cover_url, provider.id) }}
-          style={styles.cover}
-          contentFit="cover"
-        />
-
-        <View style={styles.coverOverlay} />
-
-        <View style={[styles.featuredBadge, { backgroundColor: gold }]}>
-          <Text style={styles.featuredText}>مميز</Text>
-          <Ionicons name="star" size={11} color="#0F172A" />
-        </View>
-
-        <Pressable
-          onPress={handleFavorite}
-          style={({ pressed }) => [
-            styles.heartButton,
-            {
-              backgroundColor: isFavorited ? gold : 'rgba(0,0,0,0.3)',
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-          hitSlop={12}
-        >
-          <Ionicons
-            name={isFavorited ? 'heart' : 'heart-outline'}
-            size={16}
-            color={isFavorited ? '#0F172A' : '#FFFFFF'}
-          />
-        </Pressable>
-      </View>
-
-      <View style={styles.body}>
-        <View
-          style={[
-            styles.logoWrap,
-            {
-              backgroundColor: surface,
-              borderColor: gold,
-            },
-          ]}
-        >
+    <View style={styles.cardContainer}>
+      <Pressable
+        onPress={go}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            backgroundColor: cardBg,
+            borderColor: pressed ? gold : colors.border,
+            transform: [{ scale: pressed ? 0.98 : 1 }],
+          },
+        ]}
+      >
+        {/* Cover Image Wrap with Strict Fixed Dimensions */}
+        <View style={styles.coverWrap}>
           <Image
-            source={{ uri: getProviderLogo(provider.logo_url, provider.id) }}
-            style={styles.logo}
-            contentFit="contain"
+            source={{ uri: getProviderCover(provider.cover_url, provider.id) }}
+            style={styles.cover}
+            contentFit="cover" // Centers and crops the photo seamlessly into the dimensions
+            cachePolicy="memory-disk"
           />
+          <View style={styles.topGradient} />
+
+          {/* Featured Badge */}
+          {provider.is_featured && (
+            <View style={[styles.featuredBadge, { backgroundColor: gold }]}>
+              <Ionicons name="sparkles" size={10} color={colors.goldText} />
+              <Text style={[styles.featuredText, { color: colors.goldText }]}>مميز</Text>
+            </View>
+          )}
+
+          {/* Favorite Button */}
+          <Pressable
+            onPress={handleFavorite}
+            style={({ pressed }) => [
+              styles.heartButton,
+              {
+                backgroundColor: isFavorited ? gold : colors.overlayMedium,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+            hitSlop={12}
+          >
+            <Ionicons
+              name={isFavorited ? 'heart' : 'heart-outline'}
+              size={15}
+              color={isFavorited ? colors.goldText : '#FFFFFF'}
+            />
+          </Pressable>
         </View>
 
-        <Text numberOfLines={2} style={[styles.name, { color: text, maxWidth: 110 }]}>
-          {provider.name}
-        </Text>
+        {/* Card Content Body */}
+        <View style={styles.body}>
+          
+          {/* Category & Rating Row (Perfectly Aligned) */}
+          <View style={styles.metaRow}>
+            {rating > 0 ? (
+              <View style={styles.ratingBadge}>
+                <Text style={[styles.ratingCount, { color: colors.textMuted }]}>
+                  ({provider.reviews_count})
+                </Text>
+                <Text style={[styles.ratingNumber, { color: colors.goldText }]}>
+                  {rating.toFixed(1)}
+                </Text>
+                <View style={styles.starIconAlign}>
+                  <Ionicons name="star" size={12} color={gold} />
+                </View>
+              </View>
+            ) : <View />}
 
-        <View style={styles.metaRow}>
-          {provider.category?.name && (
-            <View style={[styles.badge, { backgroundColor: 'rgba(59,130,246,0.12)' }]}>
-              <Ionicons name="briefcase-outline" size={10} color="#60A5FA" />
-              <Text numberOfLines={1} style={[styles.badgeText, { color: '#60A5FA' }]}>
+            {provider.category?.name && (
+              <Text style={[styles.categoryTag, { color: colors.textSecondary, backgroundColor: colors.surfaceAlt }]}>
                 {provider.category.name}
               </Text>
-            </View>
-          )}
+            )}
+          </View>
 
-          {rating > 0 && (
-            <View style={[styles.badge, { backgroundColor: 'rgba(234,179,8,0.12)' }]}>
-              <Ionicons name="star" size={10} color={gold} />
-              <Text numberOfLines={1} style={[styles.badgeText, { color: gold }]}>
-                {rating.toFixed(1)}
-              </Text>
-            </View>
-          )}
+          {/* Content Block */}
+          <View style={styles.mainContent}>
+            <Text numberOfLines={1} style={[styles.providerName, { color: textMain }]}>
+              {provider.name}
+            </Text>
+
+            {provider.city?.name && (
+              <View style={styles.locationRow}>
+                <Text style={[styles.locationText, { color: colors.textMuted }]}>
+                  {provider.city.name}
+                </Text>
+                <Ionicons name="location-outline" size={12} color={colors.textMuted} />
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+          {/* Footer Metrics */}
+          <View style={styles.footerRow}>
+            {getOffersRemoteWork(provider) ? (
+              <View style={styles.remoteBadge}>
+                <Text style={styles.remoteText}>عن بعد</Text>
+                <Ionicons name="laptop-outline" size={11} color={colors.success} />
+              </View>
+            ) : <View />}
+
+            {provider.years_experience && (
+              <View style={styles.experienceRow}>
+                <Text style={[styles.experienceText, { color: colors.textMuted }]}>
+                  خبرة {provider.years_experience} {provider.years_experience > 10 ? 'سنة' : 'سنوات'}
+                </Text>
+                <Ionicons name="ribbon-outline" size={12} color={colors.textMuted} />
+              </View>
+            )}
+          </View>
+
         </View>
-
-      </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 });
 
 export { FeaturedCard };
 
 const styles = StyleSheet.create({
+  cardContainer: {
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+
   card: {
     width: W,
     height: H,
     borderRadius: R,
     borderWidth: 1,
     overflow: 'hidden',
-    marginRight: 14,
-
+    
     shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
 
@@ -157,129 +190,171 @@ const styles = StyleSheet.create({
   },
 
   coverWrap: {
-    height: COVER_H,
-    width: '100%',
+    width: W,            // Locked to Card width
+    height: COVER_H,     // Locked to Cover height
+    position: 'relative',
     overflow: 'hidden',
     borderTopLeftRadius: R,
     borderTopRightRadius: R,
-
-    ...(Platform.OS === 'ios' && {
-      borderCurve: 'continuous',
-    }),
   },
 
   cover: {
-    width: '100%',
-    height: '100%',
+    width: W,            // Enforces fixed width on the image node
+    height: COVER_H,     // Enforces fixed height on the image node
+    backgroundColor: '#F1F5F9',
   },
 
-  coverOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(2,6,23,0.2)',
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
 
   featuredBadge: {
     position: 'absolute',
-    top: 10,
-    left: 10,
+    top: 12,
+    right: 12,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 10,
+    paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 999,
+    borderRadius: 8,
   },
 
   featuredText: {
-    fontSize: 11,
+    fontSize: 9,
     fontFamily: 'Cairo-Bold',
-    color: '#0F172A',
-    writingDirection: 'rtl',
+    lineHeight: 13,
   },
 
   heartButton: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    top: 12,
+    left: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
   },
 
   body: {
-    height: H - COVER_H,
-    position: 'relative',
+    flex: 1,
     paddingHorizontal: 14,
-    paddingTop: LOGO / 2 + 10,
-    paddingBottom: 12,
-  },
-
-  logoWrap: {
-    position: 'absolute',
-    top: -LOGO / 2,
-    right: 14,
-    width: LOGO,
-    height: LOGO,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    padding: 4,
-    overflow: 'hidden',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
-
-    ...(Platform.OS === 'ios' && {
-      borderCurve: 'continuous',
-    }),
-  },
-
-  logo: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 10,
-  },
-
-  name: {
-    textAlign: 'right',
-    fontSize: 13,
-    lineHeight: 18,
-    fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
-    height: 36,
-    marginBottom: 8,
+    paddingVertical: 14,
+    justifyContent: 'space-between',
   },
 
   metaRow: {
-    height: 28,
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
   },
 
-  badge: {
-    flex: 1,
-    minWidth: 0,
-    height: 28,
-    flexDirection: 'row-reverse',
+  categoryTag: {
+    fontSize: 9,
+    fontFamily: 'Cairo-SemiBold',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+
+  ratingBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 9,
-    borderRadius: 999,
     justifyContent: 'center',
   },
 
-  badgeText: {
-    flex: 1,
-    textAlign: 'right',
-    fontSize: 10,
+  ratingNumber: {
+    fontSize: 12,
     fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
+    lineHeight: 14, 
+    marginLeft: 3,  
+    marginRight: 4, 
   },
 
+  ratingCount: {
+    fontSize: 10,
+    fontFamily: 'Cairo-Regular',
+    lineHeight: 14,
+  },
+
+  starIconAlign: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: Platform.OS === 'android' ? 1 : 0, 
+  },
+
+  mainContent: {
+    marginVertical: 2,
+  },
+
+  providerName: {
+    fontSize: 14,
+    fontFamily: 'Cairo-Bold',
+    writingDirection: 'rtl',
+    textAlign: 'right',
+    lineHeight: 20,
+  },
+
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 2,
+  },
+
+  locationText: {
+    fontSize: 11,
+    fontFamily: 'Cairo-Regular',
+    lineHeight: 14,
+  },
+
+  divider: {
+    height: 1,
+    width: '100%',
+    marginVertical: 2,
+  },
+
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  experienceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  experienceText: {
+    fontSize: 10,
+    fontFamily: 'Cairo-Medium',
+    lineHeight: 14,
+  },
+
+  remoteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+
+  remoteText: {
+    fontSize: 9,
+    fontFamily: 'Cairo-Medium',
+    color: '#10B981',
+    lineHeight: 13,
+  },
 });
