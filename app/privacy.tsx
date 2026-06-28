@@ -50,16 +50,6 @@ function Bullet({ text, colors }: { text: string; colors: ThemeColors }) {
   );
 }
 
-function BodyText({ text, colors }: { text: string; colors: ThemeColors }) {
-  return (
-    <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
-        {text}
-      </Text>
-    </View>
-  );
-}
-
 export default function PrivacyScreen() {
   const { colors } = useTheme();
 
@@ -70,7 +60,7 @@ export default function PrivacyScreen() {
         <Text style={{ textAlign: 'right', fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, marginBottom: 4 }}>
           سياسة الخصوصية
         </Text>
-        <Text style={{ textAlign: 'right', fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular', marginBottom: 24 }}>
+        <Text style={{ textAlign: 'right', fontSize: 12, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginBottom: 24 }}>
           آخر تحديث: يونيو 2026
         </Text>
 
@@ -97,7 +87,7 @@ export default function PrivacyScreen() {
           <Bullet text="سجلات الأخطاء: معلومات التعطل والأخطاء لتحسين استقرار التطبيق وأداؤه." colors={colors} />
         </GroupCard>
 
-        {/* 2. أسباب وأغراض معالجة البيانات */}
+        {/* 2. أسباب معالجة البيانات */}
         <SectionLabel colors={colors}>2. أسباب معالجة البيانات</SectionLabel>
         <GroupCard colors={colors}>
           <Bullet text="إنشاء وإدارة الحسابات: المصادقة والتحقق من الهوية وتمكين استعادة كلمة المرور المفقودة." colors={colors} />
@@ -139,7 +129,7 @@ export default function PrivacyScreen() {
           <Bullet text="سجلات البلاغات: نحتفظ بها سنة واحدة على الأقل لأغراض التدقيق والامتثال." colors={colors} />
         </GroupCard>
 
-        {/* 5. حقوق المستخدم */}
+        {/* 5. حقوقك */}
         <SectionLabel colors={colors}>5. حقوقك</SectionLabel>
         <GroupCard colors={colors}>
           <Bullet text="الوصول: يحق لك طلب نسخة من جميع البيانات الشخصية المرتبطة بحسابك بصيغة قابلة للقراءة." colors={colors} />
@@ -156,13 +146,21 @@ export default function PrivacyScreen() {
         {/* 6. أمان البيانات */}
         <SectionLabel colors={colors}>6. أمان البيانات</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="نستخدم تشفير TLS/SSL (HTTPS) لحماية البيانات أثناء النقل بين جهازك والخوادم. كلمات المرور تُخزن في شكل مجزأ (hashed) ولا يمكننا قراءتها. جميع الاتصالات بـ delni.ly تحمل شهادة SSL صحيحة. وعلى الرغم من هذه الإجراءات، لا يمكن ضمان أمان كامل بنسبة 100% لأي نظام إلكتروني." colors={colors} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
+              نستخدم تشفير TLS/SSL (HTTPS) لحماية البيانات أثناء النقل بين جهازك والخوادم. كلمات المرور تُخزن في شكل مجزأ (hashed) ولا يمكننا قراءتها. جميع الاتصالات بـ delni.ly تحمل شهادة SSL صحيحة.
+            </Text>
+          </View>
         </GroupCard>
 
         {/* 7. حماية الأطفال */}
         <SectionLabel colors={colors}>7. حماية الأطفال</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="تطبيق دلني موجه للبالغين فقط (+13 سنة). لا نقبل عن قصد تسجيل أو معالجة بيانات من قُصّر. إذا اكتشفنا حساب نشطه قاصر، سنحذفه فوراً وجميع بيانات المستخدم المرتبطة به." colors={colors} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
+              تطبيق دلني موجه للبالغين فقط (+13 سنة). لا نقبل عن قصد تسجيل أو معالجة بيانات من قُصّر. إذا اكتشفنا حساب نشطه قاصر، سنحذفه فوراً وجميع بيانات المستخدم المرتبطة به.
+            </Text>
+          </View>
         </GroupCard>
 
         {/* 8. الإشعارات والاتصالات */}
@@ -179,31 +177,45 @@ export default function PrivacyScreen() {
         {/* 9. الروابط الخارجية والخدمات */}
         <SectionLabel colors={colors}>9. الروابط الخارجية والخدمات</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="التطبيق قد يحتوي على روابط إلى WhatsApp و Facebook و Google Maps والمواقع الخارجية الأخرى. عند الضغط على هذه الروابط، ستغادر تطبيق دلني وتخضع لسياسات الخصوصية الخاصة بتلك المواقع. نحن غير مسؤولين عن ممارسات الخصوصية لديهم." colors={colors} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
+              التطبيق قد يحتوي على روابط إلى WhatsApp و Facebook و Google Maps والمواقع الخارجية الأخرى. عند الضغط على هذه الروابط، ستغادر تطبيق دلني وتخضع لسياسات الخصوصية الخاصة بتلك المواقع. نحن غير مسؤولين عن ممارسات الخصوصية لديهم.
+            </Text>
+          </View>
         </GroupCard>
 
         {/* 10. التغييرات على هذه السياسة */}
         <SectionLabel colors={colors}>10. التغييرات على السياسة</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="قد نحدّث هذه السياسة في أي وقت لعكس التغييرات في ممارسات الخصوصية أو التطبيق أو القوانين. إذا أجرينا تغييرات جوهرية، سيتم إخطارك عبر البريد الإلكتروني أو إشعار بارز داخل التطبيق قبل الدخول حيز التنفيذ." colors={colors} />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
+              قد نحدّث هذه السياسة في أي وقت لعكس التغييرات في ممارسات الخصوصية أو التطبيق أو القوانين. إذا أجرينا تغييرات جوهرية، سيتم إخطارك عبر البريد الإلكتروني أو إشعار بارز داخل التطبيق قبل الدخول حيز التنفيذ.
+            </Text>
+          </View>
         </GroupCard>
 
         {/* 11. التواصل بشأن الخصوصية */}
         <SectionLabel colors={colors}>11. التواصل بشأن الخصوصية</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="إذا كان لديك أسئلة أو مخاوف أو طلبات تتعلق ببيانات الخصوصية الشخصية، يرجى الاتصال بفريق الدعم والخصوصية لدينا." colors={colors} />
           <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
+            <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular', marginBottom: 12 }}>
+              إذا كان لديك أسئلة أو مخاوف أو طلبات تتعلق ببيانات الخصوصية الشخصية، يرجى الاتصال بفريق الدعم والخصوصية لدينا.
+            </Text>
             <Pressable
               onPress={() => router.push('/contact')}
-              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({
+                flexDirection: 'row-reverse',
+                alignItems: 'center',
+                paddingHorizontal: 0,
+                paddingVertical: 4,
+                opacity: pressed ? 0.7 : 1,
+              })}
             >
-              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.primary, marginBottom: 8 }}>
+              <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.primary }}>
                 اتصل بنا الآن
               </Text>
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} style={{ marginRight: 8 }} />
             </Pressable>
-            <Text style={{ textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textSecondary }}>
-              صفحة التواصل مع الفريق
-            </Text>
           </View>
         </GroupCard>
 
