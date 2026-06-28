@@ -7,6 +7,7 @@ import { useMe, useUpdateProfile, useChangePassword, useDeleteAccount } from '..
 import { useTheme } from '../src/hooks/useTheme';
 import { useAuthStore } from '../src/store/auth';
 import type { ThemeColors } from '../src/theme/tokens';
+import { rtlRow } from '../src/utils/rtl';
 
 function extractError(err: unknown, fallback: string): string {
   const e = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
@@ -59,7 +60,6 @@ function FieldRow({
   keyboardType,
   onSave,
   colors,
-  isDark,
 }: {
   label: string;
   initialValue: string;
@@ -67,7 +67,6 @@ function FieldRow({
   keyboardType?: 'default' | 'email-address' | 'phone-pad';
   onSave: (value: string) => Promise<unknown>;
   colors: ThemeColors;
-  isDark: boolean;
 }) {
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
@@ -88,7 +87,7 @@ function FieldRow({
 
   return (
     <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', gap: 12 }}>
         <View style={{ flex: 1 }}>
           <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginBottom: 1 }}>
             {label}
@@ -114,12 +113,12 @@ function FieldRow({
               paddingHorizontal: 14,
               paddingVertical: 7,
               borderRadius: 999,
-              backgroundColor: '#1E40AF',
+              backgroundColor: colors.primary,
               transform: [{ scale: pressed ? 0.96 : 1 }],
               opacity: saving ? 0.7 : 1,
             })}
           >
-            <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>
+            <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>
               {saving ? '...' : 'حفظ'}
             </Text>
           </Pressable>
@@ -132,7 +131,7 @@ function FieldRow({
   );
 }
 
-function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: boolean }) {
+function PasswordSection({ colors }: { colors: ThemeColors }) {
   const changePassword = useChangePassword();
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState('');
@@ -174,8 +173,8 @@ function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: bool
 
   return (
     <GroupCard colors={colors}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
-        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, flex: 1 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
+        <View style={{ ...rtlRow(), alignItems: 'center', gap: 12, flex: 1 }}>
           <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceAlt }}>
             <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
           </View>
@@ -189,14 +188,14 @@ function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: bool
           hitSlop={8}
           style={({ pressed }) => ({ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: open ? colors.surfaceAlt : colors.primarySoft, transform: [{ scale: pressed ? 0.96 : 1 }] })}
         >
-          <Text style={{ color: open ? colors.textSecondary : isDark ? '#60A5FA' : '#1E40AF', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>{open ? 'إلغاء' : 'تغيير'}</Text>
+          <Text style={{ color: open ? colors.textSecondary : colors.primary, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>{open ? 'إلغاء' : 'تغيير'}</Text>
         </Pressable>
       </View>
 
       {open ? (
         <View style={{ paddingHorizontal: 16, paddingBottom: 16, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 4 }}>
           {done ? (
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 }}>
               <Ionicons name="checkmark-circle" size={18} color={colors.success} />
               <Text style={{ textAlign: 'center', color: colors.success, fontFamily: 'Cairo-Bold', fontSize: 14 }}>تم تغيير كلمتك بنجاح</Text>
             </View>
@@ -211,7 +210,7 @@ function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: bool
                 disabled={changePassword.isPending}
                 style={({ pressed }) => ({ marginTop: 16, marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, opacity: changePassword.isPending ? 0.65 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
               >
-                <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمتك'}</Text>
+                <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمتك'}</Text>
               </Pressable>
             </>
           )}
@@ -222,7 +221,7 @@ function PasswordSection({ colors, isDark }: { colors: ThemeColors; isDark: bool
 }
 
 export default function AccountScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const storeUser = useAuthStore((s) => s.user);
   const { data: meUser } = useMe();
   const user = meUser ?? storeUser;
@@ -304,27 +303,27 @@ export default function AccountScreen() {
             <GroupCard colors={colors}>
               {user?.name && (
                 <>
-                  <FieldRow label="اسمك" initialValue={user.name} placeholder="اسمك" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} isDark={isDark} />
+                  <FieldRow label="اسمك" initialValue={user.name} placeholder="اسمك" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
                   {user?.email && <Divider colors={colors} />}
                 </>
               )}
               {user?.email && (
-                <FieldRow label="بريدك الإلكتروني" initialValue={user.email} placeholder="بريدك الإلكتروني" keyboardType="email-address" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} isDark={isDark} />
+                <FieldRow label="بريدك الإلكتروني" initialValue={user.email} placeholder="بريدك الإلكتروني" keyboardType="email-address" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
               )}
             </GroupCard>
 
             {/* Security */}
             <View style={{ height: 24 }} />
             <SectionLabel colors={colors}>الأمان</SectionLabel>
-            <PasswordSection colors={colors} isDark={isDark} />
+            <PasswordSection colors={colors} />
 
             {/* Danger */}
             <View style={{ height: 28 }} />
             <SectionLabel colors={colors}>حذف الحساب</SectionLabel>
             <GroupCard colors={colors}>
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
-                <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, flex: 1 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? 'rgba(248,113,113,0.12)' : 'rgba(239,68,68,0.08)' }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, gap: 12 }}>
+                <View style={{ ...rtlRow(), alignItems: 'center', gap: 12, flex: 1 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.errorSoft }}>
                     <Ionicons name="trash-outline" size={18} color={colors.error} />
                   </View>
                   <View>
@@ -339,13 +338,42 @@ export default function AccountScreen() {
                     paddingHorizontal: 12,
                     paddingVertical: 6,
                     borderRadius: 999,
-                    backgroundColor: isDark ? 'rgba(248,113,113,0.18)' : 'rgba(239,68,68,0.12)',
+                    backgroundColor: colors.errorSoft,
                     transform: [{ scale: pressed ? 0.96 : 1 }]
                   })}
                 >
-                  <Text style={{ color: isDark ? '#F87171' : '#DC2626', fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>حذف</Text>
+                  <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>حذف</Text>
                 </Pressable>
               </View>
+            </GroupCard>
+
+            {/* Privacy Policy */}
+            <View style={{ height: 28 }} />
+            <SectionLabel colors={colors}>القانوني</SectionLabel>
+            <GroupCard colors={colors}>
+              <Pressable
+                onPress={() => router.push('/privacy')}
+                style={({ pressed }) => ({
+                  ...rtlRow(),
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  paddingHorizontal: 16,
+                  paddingVertical: 14,
+                  gap: 12,
+                  opacity: pressed ? 0.7 : 1,
+                })}
+              >
+                <View style={{ ...rtlRow(), alignItems: 'center', gap: 12, flex: 1 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft }}>
+                    <Ionicons name="document-text-outline" size={18} color={colors.primary} />
+                  </View>
+                  <View>
+                    <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>سياسة الخصوصية</Text>
+                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>تعرّف على كيفية استخدام بيانات المستخدم</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+              </Pressable>
             </GroupCard>
           </Animated.View>
         </ScrollView>
@@ -388,7 +416,7 @@ export default function AccountScreen() {
               if (t.includes('حذف')) {
                 iconName = 'trash-outline';
                 iconColor = colors.error;
-                iconBg = isDark ? 'rgba(248, 113, 113, 0.18)' : 'rgba(239, 68, 68, 0.12)';
+                iconBg = colors.errorSoft;
                 shouldBeDestructive = true;
               } else if (t.includes('تسجيل الدخول')) {
                 iconName = 'lock-closed-outline';
@@ -401,7 +429,7 @@ export default function AccountScreen() {
               } else if (t.includes('تم') || t.includes('نجاح')) {
                 iconName = 'checkmark-circle-outline';
                 iconColor = colors.success;
-                iconBg = isDark ? 'rgba(52, 211, 153, 0.18)' : 'rgba(16, 185, 129, 0.12)';
+                iconBg = colors.successSoft;
               }
 
               return (
@@ -431,14 +459,14 @@ export default function AccountScreen() {
                         flex: 1,
                         height: 52,
                         borderRadius: 18,
-                        backgroundColor: '#1E40AF',
+                        backgroundColor: colors.primary,
                         alignItems: 'center',
                         justifyContent: 'center',
                         opacity: pressed ? 0.85 : 1,
                         transform: [{ scale: pressed ? 0.97 : 1 }],
                       })}
                     >
-                      <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>حسناً</Text>
+                      <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>حسناً</Text>
                     </Pressable>
                   );
                 }
@@ -474,7 +502,7 @@ export default function AccountScreen() {
                         transform: [{ scale: pressed ? 0.97 : 1 }],
                       })}
                     >
-                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDestructive ? isDark ? '#FFFFFF' : '#000000' : isCancel ? colors.textPrimary : isDark ? '#FFFFFF' : '#000000' }}>
+                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isCancel ? colors.textPrimary : colors.textOnPrimary }}>
                         {btn.text}
                       </Text>
                     </Pressable>
