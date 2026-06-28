@@ -194,7 +194,7 @@ export default function PrivacyScreen() {
           <BodyText text="إذا كان لديك أسئلة أو مخاوف أو طلبات تتعلق ببيانات الخصوصية الشخصية، يرجى الاتصال بفريق الدعم والخصوصية لدينا." colors={colors} />
           <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
             <Pressable
-              onPress={() => router.push({ pathname: '/account', params: { tab: 'help' } })}
+              onPress={() => router.push('/contact')}
               style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
             >
               <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.primary, marginBottom: 8 }}>
@@ -202,7 +202,7 @@ export default function PrivacyScreen() {
               </Text>
             </Pressable>
             <Text style={{ textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textSecondary }}>
-              البريد الإلكتروني: privacy@delni.ly
+              صفحة التواصل مع الفريق
             </Text>
           </View>
         </GroupCard>
