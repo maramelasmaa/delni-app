@@ -1,6 +1,7 @@
-import { ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useTheme } from '../src/hooks/useTheme';
 import type { ThemeColors } from '../src/theme/tokens';
 
@@ -75,124 +76,133 @@ export default function PrivacyScreen() {
 
         {/* Intro */}
         <Text style={{ textAlign: 'right', fontSize: 14, lineHeight: 22, color: colors.textSecondary, fontFamily: 'Cairo-Regular', marginBottom: 24 }}>
-          مرحباً بك في تطبيق دلني. نحن نقدّر خصوصيتك ونلتزم بحماية بيانات المستخدمين. توضح هذه السياسة كيفية جمع واستخدام وحماية البيانات عند استخدام تطبيقنا.
+          تطبيق دلني يحترم خصوصيتك ويلتزم بحماية بيانات المستخدمين وفقاً لأعلى معايير الأمان والخصوصية. تصف هذه السياسة أنواع البيانات التي نجمعها، وكيفية استخدامنا لها، وحقوقك فيما يتعلق ببيانات الحساب الشخصية.
         </Text>
 
-        {/* 1. البيانات التي نجمعها */}
-        <SectionLabel colors={colors}>1. البيانات التي نجمعها</SectionLabel>
+        {/* 1. أنواع البيانات المجمعة */}
+        <SectionLabel colors={colors}>1. أنواع البيانات المجمعة</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="البريد الإلكتروني: مطلوب للتسجيل والدخول واستعادة كلمة المرور" colors={colors} />
+          <Bullet text="بيانات الحساب: البريد الإلكتروني وكلمة المرور والاسم الكامل ورقم الهاتف (اختياري)." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="الاسم الكامل: مطلوب لإنشاء ملف التعريف والعرض العام" colors={colors} />
+          <Bullet text="بيانات الموقع: اختيار المدينة يدويًا لتصفية البحث عن مقدمي الخدمات المحليين. يمكن استخدام GPS إذا وافقت على الإذن." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="رقم الهاتف: اختياري، يُستخدم للتواصل المباشر مع مقدمي الخدمات" colors={colors} />
+          <Bullet text="محتوى المستخدم: التقييمات والتعليقات والمراجعات التي تكتبها عن مقدمي الخدمات." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="المدينة: اختياري، لتصفية البحث عن مقدمي الخدمات المحليين" colors={colors} />
+          <Bullet text="معرّفات الجهاز: رمز الإشعارات (push token) لإرسال الإشعارات والتنبيهات عبر الهاتف." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="التقييمات والتعليقات: بيانات عامة تكتبها أنت عن مقدمي الخدمات" colors={colors} />
+          <Bullet text="سجل الأنشطة: الفئات والمقدمون الذين بحثت عنهم وعرضت ملفاتهم الشخصية والمفضلات المحفوظة." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="معرّف الجهاز ورمز الإشعارات: لإرسال الإشعارات" colors={colors} />
+          <Bullet text="بيانات الجهاز: نوع النظام والإصدار والمعرّف الفريد للجهاز (UUID) للأغراض التشخيصية." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="سجل البحث والمشاهدة: تحسين توصياتك" colors={colors} />
-          <Divider colors={colors} />
-          <Bullet text="سجلات التطبيق والأخطاء: لتحسين الأداء والأمان" colors={colors} />
+          <Bullet text="سجلات الأخطاء: معلومات التعطل والأخطاء لتحسين استقرار التطبيق وأداؤه." colors={colors} />
         </GroupCard>
 
-        {/* 2. كيفية استخدام البيانات */}
-        <SectionLabel colors={colors}>2. كيفية استخدام بيانات المستخدمين</SectionLabel>
+        {/* 2. أسباب وأغراض معالجة البيانات */}
+        <SectionLabel colors={colors}>2. أسباب معالجة البيانات</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="المصادقة والأمان: التحقق من هويتك وحماية حسابك" colors={colors} />
+          <Bullet text="إنشاء وإدارة الحسابات: المصادقة والتحقق من الهوية وتمكين استعادة كلمة المرور المفقودة." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="تقديم الخدمات: السماح لك بالبحث وعرض مقدمي الخدمات" colors={colors} />
+          <Bullet text="توفير الخدمات: البحث والتصفية والعرض والاتصال بمقدمي الخدمات والتنقل داخل التطبيق." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="تحسين التجربة: تحسين توصيات البحث بناءً على تفضيلاتك" colors={colors} />
+          <Bullet text="الإشعارات والاتصالات: إرسال إشعارات بشأن قرارات البلاغات وتحديثات الحساب والإشعارات الإدارية." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="التواصل: إرسال إشعارات مهمة حول حسابك" colors={colors} />
+          <Bullet text="تحسين الخدمة: تحليل نمط الاستخدام وسلوك المستخدم لتحسين ميزات التطبيق والبحث والتوصيات." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="تحسين الخدمات: فهم كيفية استخدام التطبيق" colors={colors} />
+          <Bullet text="الأمان والحماية: منع الاحتيال والاستخدام المسيء والبلاغات والمحتوى غير المناسب." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="الامتثال القانوني: الامتثال للقوانين المعمول بها" colors={colors} />
+          <Bullet text="الالتزام القانوني: الامتثال للقوانين والأنظمة الليبية والدولية القابلة للتطبيق." colors={colors} />
         </GroupCard>
 
-        {/* 3. مشاركة البيانات */}
-        <SectionLabel colors={colors}>3. مشاركة البيانات</SectionLabel>
+        {/* 3. مع من نشارك البيانات */}
+        <SectionLabel colors={colors}>3. مع من نشارك البيانات</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="مقدمو الخدمات: قد يرى معلومات الاتصال عند التواصل المباشر" colors={colors} />
+          <Bullet text="مقدمو الخدمات: لا يتم الكشف عن هويتك تلقائياً. عند تواصلك المباشر (WhatsApp أو الهاتف)، يمكن لمقدم الخدمة رؤية رقم الهاتف الذي توفره." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="الموظفون: قد يراجعون البلاغات والمحتوى المخالف" colors={colors} />
+          <Bullet text="فريق دلني: الموظفون والمسؤولون قد يراجعون البلاغات والمحتوى المخالف لسياسة الاستخدام." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="متطلبات قانونية: قد نفصح عن البيانات إذا أُجبرنا قانونياً" colors={colors} />
+          <Bullet text="الإجراءات القانونية: قد نفصح عن البيانات إذا أُلزمنا بأمر قضائي أو متطلب حكومي رسمي." colors={colors} />
+          <Divider colors={colors} />
+          <Bullet text="عدم البيع: لا نبيع أو نؤجر أو نتاجر ببيانات المستخدمين الشخصية لأي طرف ثالث مقابل مكسب مالي." colors={colors} />
         </GroupCard>
 
         {/* 4. مدة الاحتفاظ بالبيانات */}
         <SectionLabel colors={colors}>4. مدة الاحتفاظ بالبيانات</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="بيانات الحساب: حتى تحذف الحساب" colors={colors} />
+          <Bullet text="بيانات الحساب: نحتفظ بها طالما الحساب نشط. عند الحذف، تُحذف جميع البيانات الشخصية خلال 30 يوماً." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="التقييمات والتعليقات: بشكل دائم" colors={colors} />
+          <Bullet text="التقييمات والتعليقات: تُحفظ بشكل دائم (بدون ربط بهويتك بعد حذف الحساب) لأنها جزء من تاريخ الخدمة العام." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="سجلات البحث: حذف تلقائي بعد 90 يوماً" colors={colors} />
+          <Bullet text="سجل البحث والأنشطة: يُحذف تلقائياً بعد 90 يوم من آخر نشاط." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="رموز الإشعارات: عند إزالة التطبيق" colors={colors} />
+          <Bullet text="رموز الإشعارات: تُحذف عند إزالة التطبيق أو عند إلغاء الإذن من إعدادات الجهاز." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="سجلات البلاغات: سنة واحدة على الأقل" colors={colors} />
+          <Bullet text="سجلات البلاغات: نحتفظ بها سنة واحدة على الأقل لأغراض التدقيق والامتثال." colors={colors} />
         </GroupCard>
 
-        {/* 5. حقوقك */}
+        {/* 5. حقوق المستخدم */}
         <SectionLabel colors={colors}>5. حقوقك</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="الوصول: طلب نسخة من بيانات حسابك" colors={colors} />
+          <Bullet text="الوصول: يحق لك طلب نسخة من جميع البيانات الشخصية المرتبطة بحسابك بصيغة قابلة للقراءة." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="الحذف: حذف حسابك من الإعدادات" colors={colors} />
+          <Bullet text="الحذف: يمكنك حذف حسابك وجميع بيانات الملف الشخصي من قسم الحساب > حذف الحساب في أي وقت." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="التصحيح: تحديث معلومات ملفك في أي وقت" colors={colors} />
+          <Bullet text="تصحيح البيانات: يمكنك تحديث اسمك وبريدك الإلكتروني ورقم هاتفك ومدينتك من إعدادات الحساب." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="عدم الملاحقة: لن نستخدم موقعك دون إذنك" colors={colors} />
+          <Bullet text="اعتراض المعالجة: يمكنك رفض الإشعارات الإدارية والبحثية (لن تؤثر على الإشعارات الحرجة)." colors={colors} />
+          <Divider colors={colors} />
+          <Bullet text="عدم تتبع الموقع: لن نستخدم GPS الخاص بك دون إذن صريح وواضح منك أولاً." colors={colors} />
         </GroupCard>
 
         {/* 6. أمان البيانات */}
         <SectionLabel colors={colors}>6. أمان البيانات</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="نحن نستخدم تشفير HTTPS وأفضل الممارسات الأمنية لحماية بيانات المستخدمين. يتم تخزين كلمات المرور بشكل آمن." colors={colors} />
+          <BodyText text="نستخدم تشفير TLS/SSL (HTTPS) لحماية البيانات أثناء النقل بين جهازك والخوادم. كلمات المرور تُخزن في شكل مجزأ (hashed) ولا يمكننا قراءتها. جميع الاتصالات بـ delni.ly تحمل شهادة SSL صحيحة. وعلى الرغم من هذه الإجراءات، لا يمكن ضمان أمان كامل بنسبة 100% لأي نظام إلكتروني." colors={colors} />
         </GroupCard>
 
         {/* 7. حماية الأطفال */}
         <SectionLabel colors={colors}>7. حماية الأطفال</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="لا ينطبق تطبيق دلني على الأشخاص الذين تقل أعمارهم عن 13 سنة. نحن لا نجمع بيانات شخصية من الأطفال." colors={colors} />
+          <BodyText text="تطبيق دلني موجه للبالغين فقط (+13 سنة). لا نقبل عن قصد تسجيل أو معالجة بيانات من قُصّر. إذا اكتشفنا حساب نشطه قاصر، سنحذفه فوراً وجميع بيانات المستخدم المرتبطة به." colors={colors} />
         </GroupCard>
 
-        {/* 8. الإشعارات */}
-        <SectionLabel colors={colors}>8. الإشعارات</SectionLabel>
+        {/* 8. الإشعارات والاتصالات */}
+        <SectionLabel colors={colors}>8. الإشعارات والاتصالات</SectionLabel>
         <GroupCard colors={colors}>
-          <Bullet text="قرارات البلاغات: قبول أو رفض بلاغك" colors={colors} />
+          <Bullet text="إشعارات قرار البلاغ: إذا أبلغت عن محتوى أو مستخدم، ستتلقى إشعار بقرار الفريق (قبول أو رفض)." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="الإشعارات الإدارية المهمة" colors={colors} />
+          <Bullet text="إشعارات الحساب: تحديثات الأمان وإعادة تعيين كلمة المرور والتغييرات المهمة." colors={colors} />
           <Divider colors={colors} />
-          <Bullet text="التحديثات والميزات الجديدة" colors={colors} />
+          <Bullet text="الرسائل الإدارية: التحديثات المتعلقة بالخدمة والسياسات والأخبار الهامة." colors={colors} />
+          <Bullet text="يمكنك تعطيل معظم الإشعارات من إعدادات جهازك، لكن الإشعارات الأمنية ستبقى نشطة." colors={colors} />
         </GroupCard>
 
-        {/* 9. الروابط الخارجية */}
-        <SectionLabel colors={colors}>9. الروابط الخارجية</SectionLabel>
+        {/* 9. الروابط الخارجية والخدمات */}
+        <SectionLabel colors={colors}>9. الروابط الخارجية والخدمات</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="قد يحتوي التطبيق على روابط خارجية. نحن غير مسؤولين عن سياسات الخصوصية لتلك المواقع." colors={colors} />
+          <BodyText text="التطبيق قد يحتوي على روابط إلى WhatsApp و Facebook و Google Maps والمواقع الخارجية الأخرى. عند الضغط على هذه الروابط، ستغادر تطبيق دلني وتخضع لسياسات الخصوصية الخاصة بتلك المواقع. نحن غير مسؤولين عن ممارسات الخصوصية لديهم." colors={colors} />
         </GroupCard>
 
-        {/* 10. تغييرات على السياسة */}
-        <SectionLabel colors={colors}>10. تغييرات على السياسة</SectionLabel>
+        {/* 10. التغييرات على هذه السياسة */}
+        <SectionLabel colors={colors}>10. التغييرات على السياسة</SectionLabel>
         <GroupCard colors={colors}>
-          <BodyText text="قد نحدّث هذه السياسة من وقت لآخر. سيتم إخطارك بأي تغييرات مهمة." colors={colors} />
+          <BodyText text="قد نحدّث هذه السياسة في أي وقت لعكس التغييرات في ممارسات الخصوصية أو التطبيق أو القوانين. إذا أجرينا تغييرات جوهرية، سيتم إخطارك عبر البريد الإلكتروني أو إشعار بارز داخل التطبيق قبل الدخول حيز التنفيذ." colors={colors} />
         </GroupCard>
 
-        {/* 11. التواصل معنا */}
-        <SectionLabel colors={colors}>11. التواصل معنا</SectionLabel>
+        {/* 11. التواصل بشأن الخصوصية */}
+        <SectionLabel colors={colors}>11. التواصل بشأن الخصوصية</SectionLabel>
         <GroupCard colors={colors}>
+          <BodyText text="إذا كان لديك أسئلة أو مخاوف أو طلبات تتعلق ببيانات الخصوصية الشخصية، يرجى الاتصال بفريق الدعم والخصوصية لدينا." colors={colors} />
           <View style={{ paddingHorizontal: 16, paddingVertical: 12 }}>
-            <Text style={{ textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, marginBottom: 4 }}>
-              privacy@delni.ly
-            </Text>
+            <Pressable
+              onPress={() => router.push({ pathname: '/account', params: { tab: 'help' } })}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.primary, marginBottom: 8 }}>
+                اتصل بنا الآن
+              </Text>
+            </Pressable>
             <Text style={{ textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textSecondary }}>
-              https://delni.ly
+              البريد الإلكتروني: privacy@delni.ly
             </Text>
           </View>
         </GroupCard>
