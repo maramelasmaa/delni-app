@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BannerCarousel } from '../../components/home/BannerCarousel';
+import { TopHeaderNotifications } from '../../src/components/common/TopHeaderNotifications';
 import { CitySheet } from '../../components/city/CitySheet';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
@@ -24,11 +25,13 @@ import { useHome, useToggleFavorite } from '../../src/hooks/useApi';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
 import { useCityStore } from '../../src/store/city';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
+import { rtlRow } from '../../src/utils/rtl';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Category } from '../../src/types';
 
 export default function HomeScreen() {
-  const { colors, isDark } = useTheme();
+  const [citySheetVisible, setCitySheetVisible] = useState(false);
+  const { colors } = useTheme();
   const activeCity = useCityStore((s) => s.activeCity);
   const { data, isLoading, isError, refetch, isRefetching } = useHome(activeCity?.slug);
   const toggleFavorite = useToggleFavorite();
@@ -36,7 +39,6 @@ export default function HomeScreen() {
     redirectPath: '/(tabs)/',
   });
 
-  const [citySheetOpen, setCitySheetOpen] = useState(false);
   const insets = useSafeAreaInsets();
 
   const handleRefresh = useCallback(() => {
@@ -82,36 +84,19 @@ export default function HomeScreen() {
             paddingBottom: 16,
             paddingHorizontal: 20,
             backgroundColor: colors.bg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
           }}
         >
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 0 }}>
-              <Text style={{ fontSize: 26, fontFamily: 'Cairo-Black', color: colors.textPrimary, letterSpacing: -0.5 }}>
-                دلني
-              </Text>
-              <Text style={{ fontSize: 26, fontFamily: 'Cairo-Black', color: colors.gold, letterSpacing: -0.5 }}>
-                .
-              </Text>
-            </View>
-
-            <Pressable
-              onPress={() => setCitySheetOpen(true)}
-              hitSlop={12}
-              style={({ pressed }) => ({
-                paddingHorizontal: 16,
-                paddingVertical: 9,
-                borderRadius: 20,
-                backgroundColor: 'transparent',
-                borderWidth: 1.5,
-                borderColor: colors.primary,
-                opacity: pressed ? 0.7 : 1,
-                transform: [{ scale: pressed ? 0.96 : 1 }],
-              })}
-            >
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.primary, textAlign: 'center' }} numberOfLines={1}>
-                {activeCity ? activeCity.name : 'اختر مدينة'}
-              </Text>
-            </Pressable>
+          <TopHeaderNotifications />
+          <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}>
+            <Text style={{ fontSize: 26, fontFamily: 'Cairo-Black', color: colors.gold, letterSpacing: -0.5 }}>
+              .
+            </Text>
+            <Text style={{ fontSize: 26, fontFamily: 'Cairo-Black', color: colors.textPrimary, letterSpacing: -0.5 }}>
+              دلني
+            </Text>
           </View>
         </View>
 
@@ -134,8 +119,8 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            <FlatList
-              data={[...categories.slice(0, 4), { id: 'view-all' as any, isViewAll: true }] as any[]}
+            <FlatList<Category | { id: string; isViewAll: true }>
+              data={[...categories.slice(0, 4), { id: 'view-all', isViewAll: true }]}
               horizontal
               inverted
               showsHorizontalScrollIndicator={false}
@@ -144,20 +129,20 @@ export default function HomeScreen() {
                 paddingHorizontal: 20,
                 paddingVertical: 4,
               }}
-              renderItem={({ item }: { item: any }) =>
-                item.isViewAll ? (
+              renderItem={({ item }) =>
+                'isViewAll' in item && item.isViewAll ? (
                   <Pressable
                     onPress={() => router.push('/categories')}
                     style={({ pressed }) => [
                       styles.categoryCard,
                       {
-                        borderColor: isDark ? 'rgba(240, 190, 44, 0.3)' : 'rgba(234, 179, 8, 0.35)',
+                        borderColor: colors.goldBorder,
                         opacity: pressed ? 0.8 : 1,
                         transform: [{ scale: pressed ? 0.97 : 1 }],
                       },
                     ]}
                   >
-                    <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: isDark ? 'rgba(240, 190, 44, 0.25)' : 'rgba(234, 179, 8, 0.3)', borderRadius: 12, padding: 8 }]}>
+                    <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: colors.goldBorder, borderRadius: 12, padding: 8 }]}>
                       <View style={styles.categoryIconBox}>
                         <Ionicons name="grid-outline" size={24} color={colors.gold} />
                       </View>
@@ -168,7 +153,7 @@ export default function HomeScreen() {
                     </View>
                   </Pressable>
                 ) : (
-                  <HomeCategoryCard key={item.id} category={item} colors={colors} isDark={isDark} />
+                  <HomeCategoryCard key={item.id} category={item as Category} colors={colors} />
                 )
               }
               keyExtractor={(item) => item.id.toString()}
@@ -179,14 +164,22 @@ export default function HomeScreen() {
         {/* ─── Featured ─── */}
         {featured.length > 0 && (
           <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
-            <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
+            <Pressable
+              onPress={() => setCitySheetVisible(true)}
+              style={({ pressed }) => [
+                { alignItems: 'flex-end', marginBottom: 16, opacity: pressed ? 0.7 : 1 },
+              ]}
+            >
               <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4 }}>
                 الخدمات المميزة
               </Text>
-              <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
-                {activeCity ? `مقدمي الخدمات في ${activeCity.name}` : 'مقدمي الخدمات'}
-              </Text>
-            </View>
+              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+                <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
+                  {activeCity ? `مقدمي الخدمات في ${activeCity.name}` : 'مقدمي الخدمات'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color={colors.primary} />
+              </View>
+            </Pressable>
 
             <FlatList
               data={featured}
@@ -201,13 +194,13 @@ export default function HomeScreen() {
 
       </ScrollView>
 
-      <CitySheet visible={citySheetOpen} onClose={() => setCitySheetOpen(false)} />
+      {/* City Selector */}
+      <CitySheet visible={citySheetVisible} onClose={() => setCitySheetVisible(false)} />
 
       {/* Favorite Auth Modal */}
       <FavoriteAuthModal
         visible={showAuthAlert}
         colors={colors}
-        isDark={isDark}
         onConfirm={handleConfirmLogin}
         onDismiss={handleDismiss}
       />
@@ -223,11 +216,9 @@ export default function HomeScreen() {
 const HomeCategoryCard = memo(function HomeCategoryCard({
   category,
   colors,
-  isDark,
 }: {
   category: Category;
   colors: ThemeColors;
-  isDark: boolean;
 }) {
   const handlePress = useCallback(() => {
     router.push({
@@ -245,13 +236,13 @@ const HomeCategoryCard = memo(function HomeCategoryCard({
       style={({ pressed }) => [
         styles.categoryCard,
         {
-          borderColor: isDark ? 'rgba(240, 190, 44, 0.3)' : 'rgba(234, 179, 8, 0.35)',
+          borderColor: colors.goldBorder,
           opacity: pressed ? 0.8 : 1,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
     >
-      <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: isDark ? 'rgba(240, 190, 44, 0.25)' : 'rgba(234, 179, 8, 0.3)', borderRadius: 12, padding: 8 }]}>
+      <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: colors.goldBorder, borderRadius: 12, padding: 8 }]}>
         <View style={styles.categoryIconBox}>
           {category.icon_url ? (
             <Image
