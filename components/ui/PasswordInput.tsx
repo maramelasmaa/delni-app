@@ -62,8 +62,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
                 width: '100%',
                 height: '100%', // Takes up full parent fixed height
                 color: colors.textPrimary,
-                // 🔥 FIX 2: Switch the font family when hidden to stop bullet expansion bugs
-                fontFamily: isSecure ? (Platform.OS === 'ios' ? 'System' : 'monospace') : 'Cairo-Regular',
+                fontFamily: 'Cairo-Regular',
                 writingDirection: 'rtl',
                 paddingLeft: 16,
                 paddingRight: 44,
