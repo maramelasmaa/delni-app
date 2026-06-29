@@ -66,6 +66,7 @@ export default function LoginScreen() {
     textAlign: 'right' as const,
     color: colors.textPrimary,
     fontFamily: 'Cairo-Regular',
+    fontSize: 14,
     writingDirection: 'rtl' as const,
   });
 

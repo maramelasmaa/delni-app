@@ -72,6 +72,7 @@ export default function ForgotPasswordScreen() {
                   textAlign: 'right',
                   color: colors.textPrimary,
                   fontFamily: 'Cairo-Regular',
+                  fontSize: 14,
                   writingDirection: 'rtl',
                 }}
               />

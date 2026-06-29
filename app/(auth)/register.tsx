@@ -92,6 +92,7 @@ export default function RegisterScreen() {
     textAlign: 'right' as const,
     color: colors.textPrimary,
     fontFamily: 'Cairo-Regular',
+    fontSize: 14,
     writingDirection: 'rtl' as const,
   });
 
@@ -115,7 +116,7 @@ export default function RegisterScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ flex: 1, paddingHorizontal: 24, paddingBottom: 32 }}>
+          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 32 }}>
             {/* Header */}
             <View style={{ marginBottom: 24, alignItems: 'center' }}>
               <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
