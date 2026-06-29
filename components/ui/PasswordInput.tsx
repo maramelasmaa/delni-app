@@ -43,6 +43,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
         <View
           style={{
             position: 'relative',
+            width: '100%',
             borderRadius: 12,
             borderWidth: 1,
             backgroundColor: colors.surfaceAlt,
