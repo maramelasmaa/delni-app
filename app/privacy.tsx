@@ -50,7 +50,7 @@ export default function PrivacyScreen() {
           </Text>
         </View>
 
-        <PrivacyCard icon="lock-closed" title="1. أنواع البيانات التي نعالجها" colors={colors}>
+        <PrivacyCard icon="lock-closed" title="أنواع البيانات التي نعالجها" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'الاسم والبريد الإلكتروني وكلمة المرور عند إنشاء الحساب أو تسجيل الدخول.',
@@ -62,7 +62,7 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="settings" title="2. لماذا نستخدم هذه البيانات" colors={colors}>
+        <PrivacyCard icon="settings" title="لماذا نستخدم هذه البيانات" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'تسجيل الدخول وإدارة الحساب واستعادة كلمة المرور.',
@@ -73,7 +73,7 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="share-social" title="3. مع من قد نشارك البيانات" colors={colors}>
+        <PrivacyCard icon="share-social" title="مع من قد نشارك البيانات" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'فريق الإدارة والمشرفون قد يراجعون التقييمات والبلاغات عند الحاجة إلى الإشراف أو الدعم.',
@@ -84,7 +84,7 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="calendar" title="4. مدة الاحتفاظ" colors={colors}>
+        <PrivacyCard icon="calendar" title="مدة الاحتفاظ" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'بيانات الحساب تُحفظ ما دام الحساب نشطًا، ثم تُزال وفق إجراءات الحذف المعتمدة لدينا.',
@@ -93,7 +93,7 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="person" title="5. حقوقك" colors={colors}>
+        <PrivacyCard icon="person" title="حقوقك" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'يمكنك تحديث اسمك وبريدك الإلكتروني من داخل التطبيق.',
@@ -104,13 +104,13 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="shield" title="6. الأمان" colors={colors}>
+        <PrivacyCard icon="shield" title="الأمان" colors={colors}>
           <Text style={body}>
             نستخدم اتصالات HTTPS لحماية البيانات أثناء النقل بين التطبيق والخوادم. كما نحاول قصر الوصول إلى البيانات على ما يلزم لتشغيل الخدمة والإشراف عليها.
           </Text>
         </PrivacyCard>
 
-        <PrivacyCard icon="location" title="7. الموقع" colors={colors}>
+        <PrivacyCard icon="location" title="الموقع" colors={colors}>
           <View style={{ gap: 8 }}>
             {[
               'إذن الموقع اختياري ويُستخدم فقط أثناء استعمالك للتطبيق للمساعدة في اقتراح المدينة الأقرب.',
@@ -119,7 +119,7 @@ export default function PrivacyScreen() {
           </View>
         </PrivacyCard>
 
-        <PrivacyCard icon="alert-circle" title="8. تحديثات السياسة" colors={colors}>
+        <PrivacyCard icon="alert-circle" title="تحديثات السياسة" colors={colors}>
           <Text style={body}>
             قد نقوم بتحديث هذه السياسة عند تغير التطبيق أو أساليب المعالجة. وعند وجود تغيير جوهري سنعرض نسخة محدثة داخل التطبيق أو عبر قنوات الدعم المناسبة.
           </Text>
