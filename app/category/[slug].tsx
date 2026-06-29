@@ -15,11 +15,13 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import { useCityStore } from '../../src/store/city';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
+import { getOffersRemoteWork } from '../../src/utils/providerMappers';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider, ApiResponse, SearchFilters, CategoryDetailData } from '../../src/types';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../src/lib/api';
 import { ENDPOINTS } from '../../src/constants/api';
+import { rtlRow } from '../../src/utils/rtl';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'الأحدث', icon: 'calendar-outline' },
@@ -38,7 +40,7 @@ const FALLBACK_PROVIDER_TYPES = [
 ] as const;
 
 export default function CategoryScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { slug, subcategorySlug } = useLocalSearchParams<{ slug: string; subcategorySlug?: string }>();
   const toggleFavorite = useToggleFavorite();
   const insets = useSafeAreaInsets();
@@ -154,7 +156,9 @@ export default function CategoryScreen() {
           return v !== undefined && v !== '' && v !== 0;
         }),
       );
-      console.log('[CategoryScreen] Query params:', { providerParams, finalParams: params, shouldUseSearch });
+      if (__DEV__) {
+        console.log('[CategoryScreen] Query params:', { providerParams, finalParams: params, shouldUseSearch });
+      }
       if (!shouldUseSearch) {
         // "الكل" (All) tab is active and no active search filters -> Fetch from the category details endpoint directly.
         const res = await api.get<ApiResponse<CategoryDetailData>>(ENDPOINTS.category(slug), { params });
@@ -191,12 +195,13 @@ export default function CategoryScreen() {
 
   useEffect(() => {
     if (!searchData) return;
-    const fresh = searchData.data ?? [];
+    const freshRaw = searchData.data ?? [];
+    const fresh = filters.remote ? freshRaw.filter((provider) => getOffersRemoteWork(provider)) : freshRaw;
 
     setAllProviders((prev) =>
       page === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
     );
-  }, [searchData, page]);
+  }, [searchData, page, filters.remote]);
 
   const category = categoryData?.category;
   const subcategories = category?.subcategories ?? [];
@@ -227,7 +232,9 @@ export default function CategoryScreen() {
   }, [filters, slug]);
 
   const handleModalFilterChange = useCallback((key: keyof SearchFilters, value: any) => {
-    console.log('[CategoryScreen] Modal filter changed:', { key, value });
+    if (__DEV__) {
+      console.log('[CategoryScreen] Modal filter changed:', { key, value });
+    }
     setModalFilters((f) => ({ ...f, [key]: value, page: 1 }));
   }, []);
 
@@ -242,14 +249,18 @@ export default function CategoryScreen() {
         sort: modalFilters.sort ?? 'rating',
         page: 1,
       };
-      console.log('[CategoryScreen] Applying filters:', newFilters);
+      if (__DEV__) {
+        console.log('[CategoryScreen] Applying filters:', newFilters);
+      }
       setFilters(newFilters);
       setPage(1);
       setAllProviders([]);
       setKeyword(modalFilters.keyword || '');
       setShowFilters(false);
     } catch (err) {
-      console.error('[CategoryScreen] handleApplyFilters error:', err);
+      if (__DEV__) {
+        console.error('[CategoryScreen] handleApplyFilters error:', err);
+      }
     }
   }, [modalFilters, slug]);
 
@@ -271,7 +282,9 @@ export default function CategoryScreen() {
       setKeyword('');
       setShowFilters(false);
     } catch (err) {
-      console.error('[CategoryScreen] handleResetFilters error:', err);
+      if (__DEV__) {
+        console.error('[CategoryScreen] handleResetFilters error:', err);
+      }
     }
   }, [activeCity?.slug, slug]);
 
@@ -388,11 +401,19 @@ export default function CategoryScreen() {
           /* Only show "no results" once the query has settled with a zero count —
              never during the fetch gap, so the count and the list always agree. */
           !isProvidersFetching && totalCount === 0 ? (
-            <EmptyState
+            filters.remote ? (
+              <EmptyState
+                icon="desktop-outline"
+                title="لا توجد خدمات متاحة عن بُعد"
+                message="لا توجد حالياً خدمات متاحة عن بُعد ضمن هذا القسم"
+              />
+            ) : (
+              <EmptyState
               icon="briefcase-outline"
               title="لا توجد نتائج"
               message="لا توجد خدمات في هذا القسم الآن"
-            />
+              />
+            )
           ) : null
         }
         ListFooterComponent={
@@ -428,7 +449,6 @@ export default function CategoryScreen() {
       <FavoriteAuthModal
         visible={showAuthAlert}
         colors={colors}
-        isDark={isDark}
         onConfirm={handleConfirmLogin}
         onDismiss={handleDismiss}
       />
@@ -439,7 +459,7 @@ export default function CategoryScreen() {
           {/* Modal header */}
           <View
             style={{
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               justifyContent: 'space-between',
               borderBottomWidth: 1,
@@ -470,13 +490,13 @@ export default function CategoryScreen() {
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
             {/* Search TextInput block inside the filters modal */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 10 }}>
               <Ionicons name="search-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>ابحث عن خدمة أو مقدم</Text>
             </View>
             <View
               style={{
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 backgroundColor: colors.surfaceAlt,
                 borderWidth: 1.5,
@@ -522,14 +542,14 @@ export default function CategoryScreen() {
             </View>
 
             {/* City filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="location-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>المدينة</Text>
             </View>
             <Pressable
               onPress={() => setCityDropdownOpen(!cityDropdownOpen)}
               style={{
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 backgroundColor: colors.surfaceAlt,
@@ -540,7 +560,7 @@ export default function CategoryScreen() {
                 paddingVertical: 14,
               }}
             >
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', gap: 8 }}>
                 <Ionicons name="location-outline" size={18} color={colors.primary} />
                 <Text style={{ fontFamily: 'Cairo-SemiBold', fontSize: 14, color: colors.textPrimary }}>
                   {(cities ?? []).find((c) => c.slug === modalFilters.city)?.name || 'كل المدن'}
@@ -575,7 +595,7 @@ export default function CategoryScreen() {
                           backgroundColor: isSelected ? colors.primarySoft : colors.surface,
                           borderBottomWidth: 1,
                           borderBottomColor: colors.border,
-                          flexDirection: 'row-reverse',
+                          ...rtlRow(),
                           alignItems: 'center',
                           justifyContent: 'space-between',
                         }}
@@ -598,7 +618,7 @@ export default function CategoryScreen() {
             )}
 
             {/* Provider Type filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="briefcase-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع مقدم الخدمة</Text>
             </View>
@@ -607,7 +627,7 @@ export default function CategoryScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               onContentSizeChange={handleProviderTypeContentSizeChange}
-              contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
+              contentContainerStyle={{ ...rtlRow(), gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
             >
               {[{ code: '', name: 'الكل' }, ...(providerTypes?.length ? providerTypes : FALLBACK_PROVIDER_TYPES)].map((type) => {
                 const isSelected = (modalFilters.provider_type || '') === type.code;
@@ -648,11 +668,11 @@ export default function CategoryScreen() {
             </ScrollView>
 
             {/* Sort filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="star-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>الترتيب حسب</Text>
             </View>
-            <View style={{ flexDirection: 'row-reverse', gap: 10, paddingVertical: 4 }}>
+            <View style={{ ...rtlRow(), gap: 10, paddingVertical: 4 }}>
               {SORT_OPTIONS.map((opt) => {
                 const isSelected = modalFilters.sort === opt.value;
                 return (
@@ -666,7 +686,7 @@ export default function CategoryScreen() {
                       borderWidth: 1.5,
                       borderColor: isSelected ? '#1E40AF' : colors.borderStrong,
                       backgroundColor: isSelected ? '#1E40AF' : colors.surface,
-                      flexDirection: 'row-reverse',
+                      ...rtlRow(),
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
@@ -692,10 +712,10 @@ export default function CategoryScreen() {
             </View>
 
             {/* Remote Work Filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: colors.surfaceAlt, borderRadius: 16 }}>
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, flex: 1 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'space-between', marginTop: 24, paddingVertical: 12, paddingHorizontal: 16, backgroundColor: colors.surfaceAlt, borderRadius: 16 }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', gap: 10, flex: 1 }}>
                 <Ionicons name="desktop-outline" size={18} color={colors.primary} />
-                <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>عمل عن بعد</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>العمل عن بُعد</Text>
               </View>
               <Switch
                 value={modalFilters.remote === true}
@@ -707,7 +727,7 @@ export default function CategoryScreen() {
           </ScrollView>
 
           {/* Action buttons */}
-          <View style={{ flexDirection: 'row-reverse', gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View style={{ ...rtlRow(), gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
             <Pressable
               onPress={handleApplyFilters}
               style={{
@@ -715,14 +735,14 @@ export default function CategoryScreen() {
                 backgroundColor: '#1E40AF',
                 borderRadius: 16,
                 height: 52,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
               }}
             >
               <Ionicons name="funnel-outline" size={18} color="#FFFFFF" />
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>تطبيق</Text>
+              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>تطبيق</Text>
             </Pressable>
 
             <Pressable
@@ -734,7 +754,7 @@ export default function CategoryScreen() {
                 borderWidth: 1.5,
                 borderColor: colors.primary,
                 height: 52,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
@@ -766,12 +786,25 @@ function getSubcategoryIcon(slug: string, name: string): keyof typeof Ionicons.g
   return 'briefcase-outline';
 }
 
+function formatCategoryHeroTitle(name: string | null | undefined): string {
+  const text = (name ?? '').trim();
+  if (!text) return '';
+
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length <= 2) return text;
+  if (words.length === 3) return `${words.slice(0, 2).join(' ')}\n${words[2]}`;
+  if (words.length === 4) return `${words.slice(0, 2).join(' ')}\n${words.slice(2).join(' ')}`;
+
+  const splitIndex = Math.ceil(words.length / 2);
+  return `${words.slice(0, splitIndex).join(' ')}\n${words.slice(splitIndex).join(' ')}`;
+}
+
 // Redesigned Section Title with Yellow Dash
 function SectionTitle({ title, extra, colors }: { title: string; extra?: React.ReactNode; colors: ThemeColors }) {
   return (
     <View
       style={{
-        flexDirection: 'row-reverse',
+        ...rtlRow(),
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 20,
@@ -779,7 +812,7 @@ function SectionTitle({ title, extra, colors }: { title: string; extra?: React.R
         paddingBottom: 12,
       }}
     >
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', gap: 8 }}>
         <View style={{ width: 10, height: 4, backgroundColor: colors.gold, borderRadius: 2 }} />
         <Text
           style={{
@@ -836,7 +869,7 @@ function CategoryHeader({
       {/* ── Transparent Top Navbar on Screen Background ── */}
       <View
         style={{
-          flexDirection: 'row-reverse',
+          ...rtlRow(),
           alignItems: 'center',
           justifyContent: 'flex-start',
           paddingHorizontal: 20,
@@ -877,7 +910,7 @@ function CategoryHeader({
           marginHorizontal: 20,
           marginTop: 8,
           padding: 20,
-          flexDirection: 'row-reverse',
+          ...rtlRow(),
           alignItems: 'center',
           justifyContent: 'space-between',
           borderWidth: 1,
@@ -898,10 +931,12 @@ function CategoryHeader({
               fontFamily: 'Cairo-Black',
               color: colors.textPrimary,
               lineHeight: 26,
+              maxWidth: '100%',
+              flexShrink: 1,
             }}
-            numberOfLines={2}
+            numberOfLines={3}
           >
-            {category?.name ?? ''}
+            {formatCategoryHeroTitle(category?.name)}
           </Text>
           <Text
             style={{
@@ -949,7 +984,7 @@ function CategoryHeader({
       <View style={{ paddingHorizontal: 20, marginTop: 16 }}>
         <View
           style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             alignItems: 'center',
             backgroundColor: colors.surface,
             borderRadius: 16,
@@ -1014,7 +1049,7 @@ function CategoryHeader({
                 backgroundColor: colors.gold,
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 10 }}>{activeFilterCount}</Text>
+                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
               </View>
             ) : null}
           </Pressable>

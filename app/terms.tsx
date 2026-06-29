@@ -3,6 +3,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/hooks/useTheme';
 import type { ThemeColors } from '../src/theme/tokens';
+import { rtlRow } from '../src/utils/rtl';
 
 interface TermsCardProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -14,7 +15,7 @@ interface TermsCardProps {
 function TermsCard({ icon, title, children, colors }: TermsCardProps) {
   return (
     <View style={{ marginBottom: 16, borderRadius: 24, backgroundColor: colors.surface, padding: 24, borderWidth: 1, borderColor: colors.border, elevation: 1 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 14 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', marginBottom: 14 }}>
         <View style={{ height: 32, width: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primarySoft, marginLeft: 8 }}>
           <Ionicons name={icon} size={18} color={colors.primary} />
         </View>
@@ -27,7 +28,7 @@ function TermsCard({ icon, title, children, colors }: TermsCardProps) {
 
 function Bullet({ text, colors }: { text: string; colors: ThemeColors }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'flex-start', paddingHorizontal: 4 }}>
+    <View style={{ ...rtlRow(), alignItems: 'flex-start', paddingHorizontal: 4 }}>
       <Ionicons name="ellipse" size={6} color={colors.primary} style={{ marginTop: 8, marginLeft: 8 }} />
       <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, lineHeight: 24, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
         {text}
@@ -67,7 +68,7 @@ export default function TermsScreen() {
               { bold: 'حماية المنصة:', text: 'عدم القيام بأي تصرف من شأنه الإضرار بالمنصة أو تعطيل عملها.' },
               { bold: 'التواصل باحترام:', text: 'يلتزم المستخدمون بالتعامل مع مقدمي الخدمات بأسلوب محترم، ويُحظر توجيه أي تهديدات أو مضايقات أو رسائل مسيئة. وتحتفظ إدارة دلني بحق اتخاذ الإجراءات المناسبة بحق الحسابات المخالفة.' },
             ].map((item, idx) => (
-              <View key={idx} style={{ flexDirection: 'row-reverse', alignItems: 'flex-start', paddingHorizontal: 4 }}>
+              <View key={idx} style={{ ...rtlRow(), alignItems: 'flex-start', paddingHorizontal: 4 }}>
                 <Ionicons name="ellipse" size={6} color={colors.primary} style={{ marginTop: 8, marginLeft: 8 }} />
                 <Text style={{ flex: 1, textAlign: 'right', fontSize: 14, lineHeight: 24, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
                   <Text style={{ fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>{item.bold} </Text>
@@ -115,7 +116,7 @@ export default function TermsScreen() {
 
         <TermsCard icon="card" title="الخدمات والميزات المدفوعة" colors={colors}>
           <Text style={body}>
-            قد تتطلب بعض خدمات أو مزايا الظهور والترويج لمقدمي الخدمات رسوماً أو اشتراكات محددة، وسيتم توضيح تفاصيلها بشكل منفصل.
+            التطبيق لا يبيع خدمات رقمية أو اشتراكات للمستخدمين داخل تطبيق iOS. أي ترتيبات تجارية تخص ظهور أو ترويج مقدمي الخدمات تتم خارج التطبيق وبإدارة منفصلة عن تجربة مستخدم iOS.
           </Text>
         </TermsCard>
 

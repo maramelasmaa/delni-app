@@ -13,6 +13,7 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { rtlRow } from '../../src/utils/rtl';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -219,7 +220,7 @@ export function CitySheet({ visible, onClose }: Props) {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        showRTLAlert('تنبيه', 'يرجى السماح بالوصول إلى الموقع لتحديد مدينتك تلقائياً.', [{ text: 'حسناً', style: 'default' }]);
+        showRTLAlert('تنبيه', 'إذن الموقع اختياري. يمكنك اختيار مدينتك يدوياً من القائمة في أي وقت.', [{ text: 'حسناً', style: 'default' }]);
         setDetecting(false);
         return;
       }
@@ -261,7 +262,9 @@ export function CitySheet({ visible, onClose }: Props) {
           });
         }
       } catch (err) {
-        console.warn('Reverse geocoding failed, using distance fallback:', err);
+        if (__DEV__) {
+          console.warn('Reverse geocoding failed, using distance fallback:', err);
+        }
       }
 
       // 2. Coordinate distance match fallback
@@ -285,7 +288,9 @@ export function CitySheet({ visible, onClose }: Props) {
         showRTLAlert('تنبيه', 'لم نتمكن من تحديد مدينتك تلقائياً أو مدينتك غير مدعومة حالياً.', [{ text: 'حسناً', style: 'default' }]);
       }
     } catch (error) {
-      console.error(error);
+      if (__DEV__) {
+        console.error(error);
+      }
       showRTLAlert('خطأ', 'حدث خطأ أثناء تحديد موقعك. يرجى المحاولة مرة أخرى.', [{ text: 'حسناً', style: 'default' }]);
     } finally {
       setDetecting(false);
@@ -328,7 +333,7 @@ export function CitySheet({ visible, onClose }: Props) {
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
         {/* 1. HEADER (Title stays right, Close button stays left) */}
-        <View style={[styles.header, { flexDirection: 'row-reverse' }]}>
+        <View style={[styles.header, { ...rtlRow() }]}>
           <View style={{ alignItems: 'flex-end', flex: 1, paddingLeft: 12 }}>
             <View style={styles.headerTitleRow}>
               <Text style={[styles.headerDot, { color: colors.primary }]}>.</Text>
@@ -370,7 +375,7 @@ export function CitySheet({ visible, onClose }: Props) {
           ListHeaderComponent={
             <View style={{ width: '100%' }}>
               {/* Search input container */}
-              <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row-reverse' }]}>
+              <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border, ...rtlRow() }]}>
                 <Ionicons name="search-outline" size={20} color={colors.textMuted} style={{ marginLeft: 8 }} />
                 <TextInput
                   style={[styles.searchInput, { color: colors.textPrimary, textAlign: 'right' }]}
@@ -406,7 +411,7 @@ export function CitySheet({ visible, onClose }: Props) {
                   accessibilityRole="button"
                   accessibilityLabel="تحديد الموقع الحالي"
                 >
-                  <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, flex: 1 }}>
+                  <View style={{ ...rtlRow(), alignItems: 'center', gap: 12, flex: 1 }}>
                     <View style={[styles.locationIconBadge, { backgroundColor: colors.primary }]}>
                       {detecting ? (
                         <ActivityIndicator size="small" color="#FFFFFF" />
@@ -717,7 +722,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: 16,
     padding: 16,
-    flexDirection: 'row-reverse',
+    ...rtlRow(),
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -729,7 +734,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sectionHeaderRow: {
-    flexDirection: 'row-reverse',
+    ...rtlRow(),
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
@@ -749,7 +754,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1.5,
-    flexDirection: 'row-reverse',
+    ...rtlRow(),
     alignItems: 'center',
     justifyContent: 'space-between',
   },

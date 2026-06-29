@@ -16,7 +16,8 @@ import type { ThemeColors } from '../../src/theme/tokens';
 import type { PortfolioItem } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { getAvatarTheme } from '../../src/utils/providerMappers';
-import { toEnglishNumbers } from '../../src/utils/numberFormatter';
+import { formatArabicReviewCount, toEnglishNumbers } from '../../src/utils/numberFormatter';
+import { rtlRow } from '../../src/utils/rtl';
 import {
   SectionHeader,
   AboutSection,
@@ -170,12 +171,14 @@ export default function ProviderScreen() {
       value: profile.yearsExperienceText,
     });
   }
-  specs.push({
-    id: 'work',
-    icon: 'desktop-outline',
-    label: 'طبيعة العمل',
-    value: profile.worksRemotely ? 'عمل عن بعد' : 'عمل حضوري',
-  });
+  if (profile.worksRemotely) {
+    specs.push({
+      id: 'work',
+      icon: 'desktop-outline',
+      label: 'طبيعة العمل',
+      value: 'عمل عن بُعد',
+    });
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
@@ -205,9 +208,9 @@ export default function ProviderScreen() {
           />
 
           {/* Navigation Controls (Strict RTL) */}
-          <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
+          <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(tabs)/'))}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
               hitSlop={8}
             >
@@ -291,20 +294,20 @@ export default function ProviderScreen() {
             )}
 
             {/* Rating block - Centered */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'center' }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 8, justifyContent: 'center' }}>
               <Ionicons name="star" size={14} color={colors.gold} />
               <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13, color: colors.textPrimary }}>
                 {toEnglishNumbers(profile.rating > 0 ? profile.rating.toFixed(1) : '0.0')}
               </Text>
               <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 12, color: colors.textMuted }}>
-                ({toEnglishNumbers(profile.reviewsCount)} تقييم)
+                ({formatArabicReviewCount(profile.reviewsCount)})
               </Text>
             </View>
           </View>
 
           {/* Quick Specs Dashboard Bar */}
           <View style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             width: '100%',
             backgroundColor: colors.surfaceAlt,
             borderRadius: 18,
@@ -317,7 +320,7 @@ export default function ProviderScreen() {
             {specs.map((spec, index) => (
               <React.Fragment key={spec.id}>
                 <View style={{ alignItems: 'center', flex: 1 }}>
-                  <Ionicons name={spec.icon as any} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
+                  <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
                   <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12.5, color: colors.textPrimary, textAlign: 'center' }}>
                     {spec.value}
                   </Text>
@@ -334,7 +337,7 @@ export default function ProviderScreen() {
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
-            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 12, marginTop: 12 }}>
+            <View style={{ ...rtlRow(), width: '100%', gap: 12, marginTop: 12 }}>
               {profile.whatsappUrl && (
                 <Pressable
                   onPress={detail.handleWhatsApp}
@@ -344,7 +347,7 @@ export default function ProviderScreen() {
                     height: 48,
                     borderRadius: 14,
                     backgroundColor: colors.whatsapp,
-                    flexDirection: 'row-reverse',
+                    ...rtlRow(),
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
@@ -368,7 +371,7 @@ export default function ProviderScreen() {
                     height: 48,
                     borderRadius: 14,
                     backgroundColor: colors.primary,
-                    flexDirection: 'row-reverse',
+                    ...rtlRow(),
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
@@ -388,7 +391,7 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
               {profile.socialLinks.map((item) => (
                 <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
                   <Ionicons name={item.icon} size={18} color={item.color} />
@@ -453,7 +456,7 @@ export default function ProviderScreen() {
       <Modal visible={reportModal.showReportModal} transparent animationType="slide" onRequestClose={() => reportModal.setShowReportModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.overlayMedium, justifyContent: 'flex-end' }}>
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
               <Pressable onPress={() => reportModal.setShowReportModal(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
@@ -461,15 +464,17 @@ export default function ProviderScreen() {
             </View>
 
             <View style={{ gap: 8, marginBottom: 20 }}>
-              {[
-                { type: 'offensive', label: 'محتوى مسيء أو غير لائق' },
-                { type: 'misleading', label: 'معلومات مضللة أو كاذبة' },
-                { type: 'spam', label: 'رسائل مزعجة (سبام)' },
-                { type: 'other', label: 'سبب آخر (اكتبه بالأسفل)' }
-              ].map((opt) => {
+              {(
+                [
+                  { type: 'offensive' as const, label: 'محتوى مسيء أو غير لائق' },
+                  { type: 'misleading' as const, label: 'معلومات مضللة أو كاذبة' },
+                  { type: 'spam' as const, label: 'رسائل مزعجة (سبام)' },
+                  { type: 'other' as const, label: 'سبب آخر (اكتبه بالأسفل)' }
+                ] as const
+              ).map((opt) => {
                 const isSelected = reportModal.reportReasonType === opt.type;
                 return (
-                  <Pressable key={opt.type} onPress={() => { reportModal.setReportReasonType(opt.type as any); reportModal.setReportError(''); }} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
+                  <Pressable key={opt.type} onPress={() => { reportModal.setReportReasonType(opt.type); reportModal.setReportError(''); }} style={{ ...rtlRow(), alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
                     <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.border, alignItems: 'center', justifyContent: 'center' }}>
                       {isSelected && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
                     </View>
@@ -494,7 +499,7 @@ export default function ProviderScreen() {
               <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12, textAlign: 'right', marginBottom: 12 }}>{reportModal.reportError}</Text>
             ) : null}
 
-            <View style={{ flexDirection: 'row-reverse', gap: 12 }}>
+            <View style={{ ...rtlRow(), gap: 12 }}>
               <Pressable onPress={reportModal.handleReportSubmit} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
@@ -535,7 +540,7 @@ export default function ProviderScreen() {
       {/* ═══ REVIEW ACTION WINDOW MODAL ═══ */}
       <Modal visible={reviewModal.showReviewModal} transparent animationType="slide" onRequestClose={() => reviewModal.setShowReviewModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-          <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
             <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>أضف تقييمك</Text>
             <Pressable onPress={() => reviewModal.setShowReviewModal(false)}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />

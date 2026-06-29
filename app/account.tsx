@@ -347,34 +347,6 @@ export default function AccountScreen() {
               </View>
             </GroupCard>
 
-            {/* Privacy Policy */}
-            <View style={{ height: 28 }} />
-            <SectionLabel colors={colors}>القانوني</SectionLabel>
-            <GroupCard colors={colors}>
-              <Pressable
-                onPress={() => router.push('/privacy')}
-                style={({ pressed }) => ({
-                  ...rtlRow(),
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  paddingHorizontal: 16,
-                  paddingVertical: 14,
-                  gap: 12,
-                  opacity: pressed ? 0.7 : 1,
-                })}
-              >
-                <View style={{ ...rtlRow(), alignItems: 'center', gap: 12, flex: 1 }}>
-                  <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.primarySoft }}>
-                    <Ionicons name="document-text-outline" size={18} color={colors.primary} />
-                  </View>
-                  <View>
-                    <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>سياسة الخصوصية</Text>
-                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>تعرّف على كيفية استخدام بيانات المستخدم</Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-              </Pressable>
-            </GroupCard>
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>

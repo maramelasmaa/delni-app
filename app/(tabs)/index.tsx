@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BannerCarousel } from '../../components/home/BannerCarousel';
-import { TopHeaderNotifications } from '../../src/components/common/TopHeaderNotifications';
 import { CitySheet } from '../../components/city/CitySheet';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
@@ -89,7 +88,31 @@ export default function HomeScreen() {
             justifyContent: 'space-between',
           }}
         >
-          <TopHeaderNotifications />
+          {/* City selector pill (left) */}
+          <Pressable
+            onPress={() => setCitySheetVisible(true)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="اختيار المدينة"
+            style={({ pressed }) => [
+              styles.cityPill,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                shadowColor: colors.shadow,
+                opacity: pressed ? 0.85 : 1,
+                transform: [{ scale: pressed ? 0.97 : 1 }],
+              },
+            ]}
+          >
+            <Ionicons name="location-sharp" size={15} color={colors.primary} style={styles.cityPillIcon} />
+            <Text numberOfLines={1} style={[styles.cityPillText, { color: colors.textPrimary }]}>
+              {activeCity ? activeCity.name : 'كل المدن'}
+            </Text>
+            <Ionicons name="chevron-down" size={13} color={colors.textMuted} style={styles.cityPillCaret} />
+          </Pressable>
+
+          {/* Brand (right) */}
           <View style={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}>
             <Text style={{ fontSize: 26, fontFamily: 'Cairo-Black', color: colors.gold, letterSpacing: -0.5 }}>
               .
@@ -111,10 +134,10 @@ export default function HomeScreen() {
         {categories.length > 0 && (
           <View style={{ marginTop: 32, marginBottom: 8 }}>
             <View style={{ alignItems: 'flex-end', marginBottom: 16, paddingHorizontal: 20 }}>
-              <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4 }}>
+              <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4, textAlign: 'right', writingDirection: 'rtl' }}>
                 اكتشف حسب المجال
               </Text>
-              <Text style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
+              <Text style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
                 التخصصات الرئيسية
               </Text>
             </View>
@@ -164,22 +187,14 @@ export default function HomeScreen() {
         {/* ─── Featured ─── */}
         {featured.length > 0 && (
           <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
-            <Pressable
-              onPress={() => setCitySheetVisible(true)}
-              style={({ pressed }) => [
-                { alignItems: 'flex-end', marginBottom: 16, opacity: pressed ? 0.7 : 1 },
-              ]}
-            >
-              <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4 }}>
+            <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
+              <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4, textAlign: 'right', writingDirection: 'rtl' }}>
                 الخدمات المميزة
               </Text>
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
-                <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
-                  {activeCity ? `مقدمي الخدمات في ${activeCity.name}` : 'مقدمي الخدمات'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color={colors.primary} />
-              </View>
-            </Pressable>
+              <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
+                {activeCity ? `مقدمي الخدمات في ${activeCity.name}` : 'مقدمي الخدمات'}
+              </Text>
+            </View>
 
             <FlatList
               data={featured}
@@ -265,6 +280,35 @@ const HomeCategoryCard = memo(function HomeCategoryCard({
 });
 
 const styles = StyleSheet.create({
+  cityPill: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    alignSelf: 'center',
+    flexShrink: 1,
+    maxWidth: 180,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  cityPillIcon: {
+    flexShrink: 0,
+  },
+  cityPillText: {
+    flexShrink: 1,
+    marginHorizontal: 6,
+    fontSize: 13,
+    fontFamily: 'Cairo-Bold',
+    writingDirection: 'rtl',
+  },
+  cityPillCaret: {
+    flexShrink: 0,
+  },
+
   categoryCard: {
     width: 104,
     height: 120,

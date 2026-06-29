@@ -6,7 +6,7 @@
  * to avoid double-flipping by the OS. Every horizontal layout uses flexDirection: 'row-reverse'.
  */
 
-import { ViewStyle } from 'react-native';
+import { ViewStyle, TextStyle } from 'react-native';
 
 /**
  * Converts position object to use start/end instead of left/right
@@ -77,7 +77,7 @@ export function rtlHorizontalScroll(gap: number = 8): ViewStyle {
  * Fixes text alignment for Arabic content
  * Always right-aligned in RTL (which is the manual RTL context)
  */
-export function rtlText(): ViewStyle {
+export function rtlText(): TextStyle {
   return {
     textAlign: 'right',
     writingDirection: 'rtl',

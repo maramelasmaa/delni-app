@@ -30,6 +30,8 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import type { Provider, SearchFilters } from '../../src/types';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
+import { getOffersRemoteWork } from '../../src/utils/providerMappers';
+import { rtlRow } from '../../src/utils/rtl';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'الأحدث', icon: 'calendar-outline' },
@@ -80,7 +82,7 @@ export default function SearchTabScreen() {
     remote?: string;
     show_filters?: string;
   }>();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   const keywordParam = getSingleParam(params.keyword);
   const categoryParam = getSingleParam(params.category);
@@ -201,13 +203,14 @@ export default function SearchTabScreen() {
   }, [filters.keyword, filters.category, filters.city, filters.sort, filters.provider_type, filters.remote]);
 
   useEffect(() => {
-    const fresh = data?.data;
-    if (!fresh) return;
+    const freshRaw = data?.data;
+    if (!freshRaw) return;
+    const fresh = filters.remote ? freshRaw.filter((provider) => getOffersRemoteWork(provider)) : freshRaw;
     setAllProviders((prev) =>
       (filters.page ?? 1) === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.data, filters.page]);
+  }, [data?.data, filters.page, filters.remote]);
 
   useEffect(() => {
     setKeyword(keywordParam);
@@ -308,7 +311,7 @@ export default function SearchTabScreen() {
         {/* Search input row */}
         <View
           style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             alignItems: 'center',
             gap: 10,
             marginTop: 12,
@@ -317,7 +320,7 @@ export default function SearchTabScreen() {
           <View
             style={{
               flex: 1,
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               backgroundColor: colors.surface,
               borderRadius: 16,
@@ -411,7 +414,7 @@ export default function SearchTabScreen() {
                   backgroundColor: colors.gold,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 10 }}>{activeFilterCount}</Text>
+                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -445,7 +448,7 @@ export default function SearchTabScreen() {
                 backgroundColor: pressed ? colors.surfaceAlt : colors.surface,
                 borderBottomWidth: i < suggestions.length - 1 ? 1 : 0,
                 borderBottomColor: colors.border,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 gap: 12,
                 paddingHorizontal: 16,
@@ -480,7 +483,13 @@ export default function SearchTabScreen() {
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : allProviders.length === 0 && !isFetching ? (
-        keyword || filters.category || filters.city ? (
+        filters.remote ? (
+          <EmptyState
+            icon="desktop-outline"
+            title="لا توجد خدمات متاحة عن بُعد"
+            message="لم نعثر حالياً على خدمات متاحة عن بُعد بهذه التصفية"
+          />
+        ) : keyword || filters.category || filters.city ? (
           <EmptyState
             icon="search-outline"
             title="لا توجد نتائج"
@@ -581,7 +590,7 @@ export default function SearchTabScreen() {
           {/* Modal header */}
           <View
             style={{
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               justifyContent: 'space-between',
               borderBottomWidth: 1,
@@ -612,13 +621,13 @@ export default function SearchTabScreen() {
 
           <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
             {/* Search TextInput block inside the filters modal */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 16, marginBottom: 10 }}>
               <Ionicons name="search-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>البحث عن اسم أو خدمة</Text>
             </View>
             <View
               style={{
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 backgroundColor: colors.surfaceAlt,
                 borderWidth: 1.5,
@@ -664,14 +673,14 @@ export default function SearchTabScreen() {
             </View>
 
             {/* City filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="location-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>المدينة</Text>
             </View>
             <Pressable
               onPress={() => setCityDropdownOpen(!cityDropdownOpen)}
               style={{
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 backgroundColor: colors.surfaceAlt,
@@ -682,7 +691,7 @@ export default function SearchTabScreen() {
                 paddingVertical: 14,
               }}
             >
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', gap: 8 }}>
                 <Ionicons name="location-outline" size={18} color={colors.primary} />
                 <Text style={{ fontFamily: 'Cairo-SemiBold', fontSize: 14, color: colors.textPrimary }}>
                   {cities?.find((c) => c.slug === modalFilters.city)?.name || 'كل المدن'}
@@ -718,7 +727,7 @@ export default function SearchTabScreen() {
                           backgroundColor: isSelected ? colors.primarySoft : colors.surface,
                           borderBottomWidth: 1,
                           borderBottomColor: colors.border,
-                          flexDirection: 'row-reverse',
+                          ...rtlRow(),
                           alignItems: 'center',
                           justifyContent: 'space-between',
                         }}
@@ -741,7 +750,7 @@ export default function SearchTabScreen() {
             )}
 
             {/* Category filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="apps-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>القسم</Text>
             </View>
@@ -752,7 +761,7 @@ export default function SearchTabScreen() {
               showsHorizontalScrollIndicator={false}
               data={[{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])]}
               keyExtractor={(item) => `cat-${item.id}`}
-              contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
+              contentContainerStyle={{ ...rtlRow(), gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
               renderItem={({ item: cat }) => {
                 const isSelected = modalFilters.category === cat.slug || (!modalFilters.category && !cat.slug);
                 const iconName = cat.slug === '' ? 'apps-outline' : getCategoryIcon(cat.slug, cat.name);
@@ -812,7 +821,7 @@ export default function SearchTabScreen() {
             />
 
             {/* Provider Type filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="briefcase-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>نوع مقدم الخدمة</Text>
             </View>
@@ -823,7 +832,7 @@ export default function SearchTabScreen() {
               showsHorizontalScrollIndicator={false}
               data={[{ code: '', name: 'الكل' }, ...(providerTypes && providerTypes.length > 0 ? providerTypes : FALLBACK_PROVIDER_TYPES)]}
               keyExtractor={(item) => `ptype-${item.code}`}
-              contentContainerStyle={{ flexDirection: 'row-reverse', gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
+              contentContainerStyle={{ ...rtlRow(), gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
               renderItem={({ item: type }) => {
                 const isSelected = (modalFilters.provider_type || '') === type.code;
                 return (
@@ -864,7 +873,7 @@ export default function SearchTabScreen() {
             {/* Remote Work filter */}
             <View
               style={{
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 marginTop: 24,
@@ -872,12 +881,12 @@ export default function SearchTabScreen() {
               }}
             >
               <View style={{ alignItems: 'flex-end', flex: 1, marginLeft: 16 }}>
-                <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6 }}>
+                <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
                   <Ionicons name="globe-outline" size={16} color={colors.textPrimary} />
-                  <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>العمل عن بعد</Text>
+                  <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>العمل عن بُعد</Text>
                 </View>
                 <Text style={{ fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textSecondary, marginTop: 2, textAlign: 'right' }}>
-                  عرض مقدمي الخدمات عن بعد فقط
+                  عرض الخدمات المتاحة عن بُعد فقط
                 </Text>
               </View>
               <Switch
@@ -889,11 +898,11 @@ export default function SearchTabScreen() {
             </View>
 
             {/* Sort filter */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, marginTop: 24, marginBottom: 10 }}>
               <Ionicons name="star-outline" size={16} color={colors.textPrimary} />
               <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>الترتيب حسب</Text>
             </View>
-            <View style={{ flexDirection: 'row-reverse', gap: 10, paddingVertical: 4 }}>
+            <View style={{ ...rtlRow(), gap: 10, paddingVertical: 4 }}>
               {SORT_OPTIONS.map((opt) => {
                 const isSelected = modalFilters.sort === opt.value;
                 return (
@@ -907,7 +916,7 @@ export default function SearchTabScreen() {
                       borderWidth: 1.5,
                       borderColor: isSelected ? '#1E40AF' : colors.borderStrong,
                       backgroundColor: isSelected ? '#1E40AF' : colors.surface,
-                      flexDirection: 'row-reverse',
+                      ...rtlRow(),
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: 6,
@@ -934,7 +943,7 @@ export default function SearchTabScreen() {
           </ScrollView>
 
           {/* Action buttons */}
-          <View style={{ flexDirection: 'row-reverse', gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
+          <View style={{ ...rtlRow(), gap: 12, padding: 20, borderTopWidth: 1, borderTopColor: colors.border }}>
             <Pressable
               onPress={handleApplyFilters}
               style={{
@@ -942,14 +951,14 @@ export default function SearchTabScreen() {
                 backgroundColor: '#1E40AF',
                 borderRadius: 16,
                 height: 52,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
               }}
             >
               <Ionicons name="funnel-outline" size={18} color="#FFFFFF" />
-              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : '#000000' }}>تطبيق</Text>
+              <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>تطبيق</Text>
             </Pressable>
 
             <Pressable
@@ -961,7 +970,7 @@ export default function SearchTabScreen() {
                 borderWidth: 1.5,
                 borderColor: colors.primary,
                 height: 52,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
@@ -978,7 +987,6 @@ export default function SearchTabScreen() {
       <FavoriteAuthModal
         visible={showAuthAlert}
         colors={colors}
-        isDark={isDark}
         onConfirm={handleConfirmLogin}
         onDismiss={handleDismiss}
       />

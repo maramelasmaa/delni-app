@@ -4,7 +4,7 @@ import { Platform, View } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 
 export default function TabsLayout() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <Tabs
@@ -23,7 +23,7 @@ export default function TabsLayout() {
           elevation: 8,
           shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: isDark ? 0.3 : 0.06,
+          shadowOpacity: 0.08,
           shadowRadius: 12,
         },
         tabBarLabelStyle: {
@@ -63,20 +63,20 @@ export default function TabsLayout() {
                 width: 56,
                 height: 56,
                 borderRadius: 28,
-                backgroundColor: isDark ? colors.surfaceAlt : '#070E1F',
+                backgroundColor: colors.gold,
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: Platform.OS === 'ios' ? 18 : 16,
-                shadowColor: isDark ? '#000000' : '#070E1F',
+                shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 4 },
                 shadowOpacity: 0.35,
                 shadowRadius: 10,
                 elevation: 8,
                 borderWidth: 3,
-                borderColor: focused ? colors.gold : (isDark ? colors.borderStrong : '#1E293B'),
+                borderColor: focused ? colors.gold : colors.border,
               }}
             >
-              <Ionicons name="trophy" size={24} color={colors.gold} />
+              <Ionicons name="trophy" size={24} color="#FFFFFF" />
             </View>
           ),
         }}

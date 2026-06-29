@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { router } from 'expo-router';
 import { useProvider, useProviderReviews, useToggleFavorite } from './useApi';
 import { useAuthStore } from '../store/auth';
@@ -35,7 +35,10 @@ export function useProviderDetail(slug: string) {
   }, [reviewsData?.data, reviewPage]);
 
   // Derived data
-  const profile = provider ? mapProviderProfile(provider) : null;
+  const profile = useMemo(
+    () => (provider ? mapProviderProfile(provider) : null),
+    [provider]
+  );
   const reviewPagination = reviewsData?.pagination;
   const hasMoreReviews =
     reviewPagination ? reviewPagination.current_page < reviewPagination.last_page : false;
@@ -43,7 +46,9 @@ export function useProviderDetail(slug: string) {
   // Handlers
   const handleFavorite = useCallback(() => {
     if (!isAuthenticated) {
-      router.push({ pathname: '/(auth)/login', params: { redirectTo: `/provider/${String(slug)}` } });
+      requestAnimationFrame(() => {
+        router.push({ pathname: '/(auth)/login', params: { redirectTo: `/provider/${String(slug)}` } });
+      });
       return;
     }
     if (provider) {

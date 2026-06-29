@@ -31,10 +31,10 @@ export interface MappedProvider {
   reviewStatusMessage: string | null;
 }
 
-export function getOffersRemoteWork(provider: Provider | Record<string, any> | null | undefined): boolean {
+export function getOffersRemoteWork(provider: Provider | Record<string, unknown> | null | undefined): boolean {
   if (!provider) return false;
 
-  const anyProvider = provider as any;
+  const anyProvider = provider as unknown as Record<string, unknown>;
   const rawValue =
     anyProvider.offers_remote_work ??
     anyProvider.works_remotely ??
@@ -46,7 +46,7 @@ export function getOffersRemoteWork(provider: Provider | Record<string, any> | n
 }
 
 export function mapProviderProfile(provider: Provider): MappedProvider {
-  const anyProvider = provider as any;
+  const anyProvider = provider as unknown as Record<string, unknown>;
 
   let coverUrl: string | null = null;
   let coverBlur = false;
@@ -87,7 +87,8 @@ export function mapProviderProfile(provider: Provider): MappedProvider {
     }
   });
 
-  const mapUrl = (rawSocials as any).map_url || anyProvider.map_url;
+  const mapUrlRaw = (rawSocials as Record<string, unknown>).map_url ?? anyProvider.map_url;
+  const mapUrl = typeof mapUrlRaw === 'string' ? mapUrlRaw : null;
   if (mapUrl) {
     socialLinks.push({ id: 'map', icon: 'map-outline', color: '#34D399', url: mapUrl });
   }
@@ -106,7 +107,7 @@ export function mapProviderProfile(provider: Provider): MappedProvider {
     reviewsCount: provider.reviews_count ?? 0,
     whatsappUrl: provider.whatsapp_url || null,
     phone: provider.phone || null,
-    email: anyProvider.email || null,
+    email: typeof anyProvider.email === 'string' ? anyProvider.email : null,
     socialLinks,
     about: provider.description || null,
     services: provider.subcategories || null,

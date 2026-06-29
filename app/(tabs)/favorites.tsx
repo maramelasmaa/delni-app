@@ -216,7 +216,6 @@ export default function FavoritesScreen() {
       <FavoriteAuthModal
         visible={showAuthAlert}
         colors={colors}
-        isDark={isDark}
         onConfirm={handleConfirmLogin}
         onDismiss={handleDismiss}
       />

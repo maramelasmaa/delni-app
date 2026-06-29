@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { rtlRow } from '../../src/utils/rtl';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import {
@@ -16,7 +17,7 @@ import { useLogin } from '../../src/hooks/useAuth';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export default function LoginScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { redirectTo } = useLocalSearchParams<{ redirectTo?: string }>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,7 +73,7 @@ export default function LoginScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Header Back Button */}
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 }}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/')} hitSlop={8} style={{ marginLeft: 12 }}>
+        <Pressable onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(tabs)/'))} hitSlop={8} style={{ marginLeft: 12 }}>
           <Ionicons name="arrow-forward" size={22} color={colors.textPrimary} />
         </Pressable>
       </View>
@@ -96,7 +97,7 @@ export default function LoginScreen() {
             </View>
 
             {errors.general ? (
-              <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.12)', padding: 12 }}>
+              <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
                 <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{errors.general}</Text>
               </View>
             ) : null}
@@ -142,7 +143,7 @@ export default function LoginScreen() {
             />
 
             <Pressable
-              onPress={() => router.push('/(auth)/forgot-password')}
+              onPress={() => requestAnimationFrame(() => router.push('/(auth)/forgot-password'))}
               style={{ marginBottom: 24, alignSelf: 'flex-end' }}
             >
               <Text style={{ fontSize: 14, color: colors.primary, fontFamily: 'Cairo-SemiBold' }}>نسيت كلمة المرور؟</Text>
@@ -151,16 +152,16 @@ export default function LoginScreen() {
             <Pressable
               onPress={handleLogin}
               disabled={login.isPending}
-              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: login.isPending ? 0.7 : 1 }}
+              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: login.isPending ? 0.7 : 1 }}
             >
-              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: '#FFFFFF' }}>
+              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
                 {login.isPending ? 'جاري الدخول...' : 'تسجيل الدخول'}
               </Text>
             </Pressable>
 
             {/* Continue as Guest */}
             <Pressable
-              onPress={() => router.replace('/(tabs)/')}
+              onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
               style={{
                 alignItems: 'center',
                 borderRadius: 16,
@@ -176,7 +177,7 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined })}
+              onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined }))}
               style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}
             >
               <Text style={{ fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>

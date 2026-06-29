@@ -7,7 +7,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useForgotPassword } from '../../src/hooks/useAuth';
 
 export default function ForgotPasswordScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -28,7 +28,7 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       {/* Header Back Button */}
       <View style={{ flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 }}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')} hitSlop={8} style={{ marginLeft: 12 }}>
+        <Pressable onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(auth)/login'))} hitSlop={8} style={{ marginLeft: 12 }}>
           <Ionicons name="arrow-forward" size={22} color={colors.textPrimary} />
         </Pressable>
       </View>
@@ -41,7 +41,7 @@ export default function ForgotPasswordScreen() {
           </Text>
 
           {sent ? (
-            <View style={{ borderRadius: 16, backgroundColor: 'rgba(16,185,129,0.12)', padding: 24 }}>
+            <View style={{ borderRadius: 16, backgroundColor: colors.successSoft, padding: 24 }}>
               <Text style={{ textAlign: 'center', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.success }}>
                 تحقق من بريدك. أرسلنا لك رابط لإعادة تعيين كلمتك.
               </Text>
@@ -49,7 +49,7 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               {error ? (
-                <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.12)', padding: 12 }}>
+                <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
                   <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{error}</Text>
                 </View>
               ) : null}
@@ -78,9 +78,9 @@ export default function ForgotPasswordScreen() {
               <Pressable
                 onPress={handleSubmit}
                 disabled={forgot.isPending}
-                style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: forgot.isPending ? 0.7 : 1 }}
+                style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: forgot.isPending ? 0.7 : 1 }}
               >
-                <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>
+                <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: colors.textOnPrimary }}>
                   {forgot.isPending ? 'جاري الإرسال...' : 'أرسل'}
                 </Text>
               </Pressable>

@@ -8,7 +8,7 @@ import { useResetPassword } from '../../src/hooks/useAuth';
 import { PasswordInput } from '../../components/ui/PasswordInput';
 
 export default function ResetPasswordScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const { token, email } = useLocalSearchParams<{ token: string; email: string }>();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -28,7 +28,9 @@ export default function ResetPasswordScreen() {
     try {
       await reset.mutateAsync({ token: token ?? '', email: email ?? '', password, password_confirmation: confirmation });
       // On success, send the user to login with their email prefilled.
-      router.replace({ pathname: '/(auth)/login', params: { email: email ?? '', reset: '1' } });
+      requestAnimationFrame(() => {
+        router.replace({ pathname: '/(auth)/login', params: { email: email ?? '', reset: '1' } });
+      });
     } catch (err: any) {
       setError(err?.response?.data?.message ?? 'حدث خطأ، حاول مجدداً');
     }
@@ -42,7 +44,7 @@ export default function ResetPasswordScreen() {
           <Text style={{ marginBottom: 32, textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>أدخل كلمتك الجديدة</Text>
 
           {error ? (
-            <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: 'rgba(239,68,68,0.12)', padding: 12 }}>
+            <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
               <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{error}</Text>
             </View>
           ) : null}
@@ -69,9 +71,9 @@ export default function ResetPasswordScreen() {
           <Pressable
             onPress={handleReset}
             disabled={reset.isPending}
-            style={{ alignItems: 'center', borderRadius: 16, backgroundColor: '#1E40AF', paddingVertical: 16, opacity: reset.isPending ? 0.7 : 1 }}
+            style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: reset.isPending ? 0.7 : 1 }}
           >
-            <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: isDark ? '#FFFFFF' : '#000000' }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: colors.textOnPrimary }}>
               {reset.isPending ? 'جاري التعيين...' : 'حفظ كلمتك'}
             </Text>
           </Pressable>

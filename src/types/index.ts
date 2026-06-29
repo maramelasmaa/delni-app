@@ -111,6 +111,7 @@ export interface Provider {
   offers_remote_work?: boolean;
   can_review?: boolean;
   review_status_message?: string | null;
+  service_area_note?: string | null;
 }
 
 export interface HomeStats {

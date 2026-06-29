@@ -5,7 +5,6 @@ import type { ThemeColors } from '../../src/theme/tokens';
 interface FavoriteAuthModalProps {
   visible: boolean;
   colors: ThemeColors;
-  isDark: boolean;
   onConfirm: () => void;
   onDismiss: () => void;
 }
@@ -13,7 +12,6 @@ interface FavoriteAuthModalProps {
 export function FavoriteAuthModal({
   visible,
   colors,
-  isDark,
   onConfirm,
   onDismiss,
 }: FavoriteAuthModalProps) {
@@ -58,9 +56,7 @@ export function FavoriteAuthModal({
               width: 72,
               height: 72,
               borderRadius: 36,
-              backgroundColor: isDark
-                ? 'rgba(225, 173, 1, 0.18)'
-                : 'rgba(225, 173, 1, 0.12)',
+              backgroundColor: 'rgba(225, 173, 1, 0.15)',
               alignItems: 'center',
               justifyContent: 'center',
               marginBottom: 24,

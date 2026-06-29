@@ -15,13 +15,15 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useCityStore } from '../../src/store/city';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider } from '../../src/types';
+import { formatArabicReviewCount } from '../../src/utils/numberFormatter';
+import { rtlRow } from '../../src/utils/rtl';
 
 function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
 export default function TopRatedScreen() {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const params = useLocalSearchParams<{ category?: string }>();
   const categoryParam = getSingleParam(params.category);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(
@@ -240,7 +242,6 @@ export default function TopRatedScreen() {
       <FavoriteAuthModal
         visible={showAuthAlert}
         colors={colors}
-        isDark={isDark}
         onConfirm={handleConfirmLogin}
         onDismiss={handleDismiss}
       />
@@ -481,7 +482,7 @@ function PodiumEntry({ provider, position, height, colors }: { provider: Provide
 
       {/* Reviews Count */}
       <Text style={{ fontSize: 9, color: colors.textMuted, fontFamily: 'Cairo-SemiBold', marginBottom: 4 }}>
-        ({provider.reviews_count ?? 0} تقييم)
+        ({formatArabicReviewCount(provider.reviews_count)})
       </Text>
 
       {/* City location */}

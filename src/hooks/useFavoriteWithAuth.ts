@@ -35,9 +35,11 @@ export function useFavoriteWithAuth(config?: FavoriteAuthConfig) {
       : (config?.redirectPath || '/');
     const params = config?.redirectParams || {};
 
-    router.push({
-      pathname: '/(auth)/login',
-      params: { redirectTo: redirectPath, ...params },
+    requestAnimationFrame(() => {
+      router.push({
+        pathname: '/(auth)/login',
+        params: { redirectTo: redirectPath, ...params },
+      });
     });
     setPendingAction(null);
     setPendingProviderSlug(null);

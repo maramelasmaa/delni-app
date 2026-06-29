@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, FlatList, Pressable, Text, View, NativeSyntheticEvent, NativeScrollEvent, I18nManager } from 'react-native';
+import { Dimensions, FlatList, Pressable, Text, View, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { openExternalUrl } from '../../src/utils/links';
 import type { Banner } from '../../src/types';
@@ -23,7 +23,7 @@ type CarouselBanner = Banner & {
   _realIndex: number;
 };
 
-function BannerCarousel({ banners }: Props) {
+const BannerCarousel = memo(function BannerCarousel({ banners }: Props) {
   const { colors } = useTheme();
   const flatListRef = useRef<FlatList<CarouselBanner>>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -167,7 +167,7 @@ function BannerCarousel({ banners }: Props) {
       ) : null}
     </View>
   );
-}
+});
 
 const BannerItem = memo(function BannerItem({ banner, onPress }: { banner: Banner; onPress: (b: Banner) => void }) {
   const isClickable = banner.link_type !== 'none' && !!banner.link_value;

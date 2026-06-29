@@ -1,13 +1,14 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { memo, useCallback, useState } from 'react';
+import { memo, useCallback } from 'react';
 import { Pressable, Text, View, StyleSheet, Platform } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useToggleFavorite } from '../../src/hooks/useApi';
 import { useAuthStore } from '../../src/store/auth';
 import type { Provider } from '../../src/types';
 import { getProviderCover } from '../../src/utils/imageFallback';
+import { rtlRow } from '../../src/utils/rtl';
 import { getOffersRemoteWork } from '../../src/utils/providerMappers';
 
 interface Props {
@@ -20,12 +21,12 @@ const R = 24; // Smooth pill-curved corners
 const COVER_H = 135; // Locked fixed height for the image layer
 
 const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const toggleFavorite = useToggleFavorite();
-  const [isFavorited, setIsFavorited] = useState(!!provider.is_favorited);
 
   const rating = provider.rating_average ?? 0;
+  const isFavorited = provider.is_favorited ?? false;
   const gold = colors.gold;
   const cardBg = colors.surface;
   const textMain = colors.textPrimary;
@@ -39,7 +40,6 @@ const FeaturedCard = memo(function FeaturedCard({ provider }: Props) {
       router.push({ pathname: '/(auth)/login', params: { redirectTo: '/(tabs)/' } });
       return;
     }
-    setIsFavorited(!isFavorited);
     toggleFavorite.mutate({ slug: provider.slug, isFavorited });
   }, [isAuthenticated, provider.slug, isFavorited, toggleFavorite]);
 

@@ -15,6 +15,8 @@ import type { ThemeColors } from '../../src/theme/tokens';
 import type { PortfolioItem, Review, Provider, ProviderCredential } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { formatRelativeTime, formatIssueDate } from '../../src/utils/date';
+import { formatArabicReviewCount } from '../../src/utils/numberFormatter';
+import { rtlRow, rtlText } from '../../src/utils/rtl';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -173,7 +175,7 @@ function getServiceIcon(serviceName: string | undefined): keyof typeof Ionicons.
 
 function SectionHeader({ title, colors }: { title: string; colors: ThemeColors }) {
   return (
-    <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12, width: '100%' }}>
+    <View style={{ ...rtlRow(), alignItems: 'center', gap: 8, marginBottom: 12, width: '100%' }}>
       <View style={{ width: 4, height: 18, backgroundColor: colors.primary, borderRadius: 2 }} />
       <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
         {title}
@@ -227,7 +229,7 @@ function AboutSection({ about, colors }: AboutSectionProps) {
             style={{
               marginTop: 10,
               alignSelf: 'flex-start',
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               gap: 6,
             }}
@@ -257,12 +259,12 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
   return (
     <View style={{ marginBottom: 16, width: '100%' }}>
       <SectionHeader title="الخدمات المقدمة" colors={colors} />
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
+      <View style={{ ...rtlRow(), flexWrap: 'wrap', gap: 10, width: '100%' }}>
         {services.map((svc) => (
           <View
             key={svc.id}
             style={{
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               gap: 10,
               width: '48%',
@@ -352,7 +354,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{
-          flexDirection: 'row-reverse',
+          ...rtlRow(),
           gap: gapSize,
         }}
         style={{ width: '100%' }}
@@ -395,7 +397,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                         borderRadius: 12,
                         paddingHorizontal: 10,
                         paddingVertical: 5,
-                        flexDirection: 'row-reverse',
+                        ...rtlRow(),
                         alignItems: 'center',
                         gap: 4,
                       }}
@@ -445,7 +447,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
       {projects.length > 1 && (
         <View
           style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             justifyContent: 'center',
             alignItems: 'center',
             gap: 6,
@@ -527,7 +529,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
               </Text>
             )}
             {cred.issue_date && (
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
                 <Text
                   style={{
@@ -556,7 +558,7 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
   return (
     <View
       style={{
-        flexDirection: 'row-reverse',
+        ...rtlRow(),
         paddingBottom: 12,
         marginBottom: 12,
         borderBottomWidth: isLast ? 0 : 1,
@@ -581,11 +583,11 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
       </View>
 
       <View style={{ flex: 1, alignItems: 'flex-end' }}>
-        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
             {review.user_name}
           </Text>
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10 }}>
+          <View style={{ ...rtlRow(), alignItems: 'center', gap: 10 }}>
             <Text style={{ fontSize: 11.5, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
               {formatRelativeTime(review.created_at)}
             </Text>
@@ -601,7 +603,7 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
             </Pressable>
           </View>
         </View>
-        <View style={{ flexDirection: 'row-reverse', marginTop: 2, marginBottom: 4 }}>
+        <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 4 }}>
           <StarRating value={review.rating} size={13} />
         </View>
         {review.comment ? (
@@ -661,7 +663,7 @@ function ReviewsSection({
   const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
   return (
     <View style={{ width: '100%', marginTop: 0 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <View style={{ width: 14, height: 3, backgroundColor: colors.gold, borderRadius: 2 }} />
         <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
           التقييمات ({reviewsCount})
@@ -676,7 +678,7 @@ function ReviewsSection({
             padding: 14,
             borderWidth: 1,
             borderColor: colors.border,
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
@@ -687,7 +689,7 @@ function ReviewsSection({
             </Text>
             <StarRating value={rating} size={16} />
             <Text style={{ fontSize: 12, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
-              بناءً على {reviewsCount} تقييم
+              بناءً على {formatArabicReviewCount(reviewsCount)}
             </Text>
           </View>
           <View style={{ width: '60%', gap: 4 }}>
@@ -697,7 +699,7 @@ function ReviewsSection({
               else if (stars === Math.round(rating) - 1) weight = 0.4;
               else if (stars === Math.round(rating) + 1) weight = 0.2;
               return (
-                <View key={stars} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+                <View key={stars} style={{ ...rtlRow(), alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, width: 14 }}>
                     {stars}
                   </Text>
@@ -712,7 +714,7 @@ function ReviewsSection({
       )}
       {isAuthenticated ? (
         canWriteReview ? (
-          <View style={{ marginBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' }}>
+          <View style={{ marginBottom: 12, ...rtlRow(), alignItems: 'center' }}>
             <View
               style={{
                 width: 40,
@@ -732,7 +734,7 @@ function ReviewsSection({
               onPress={onWriteReviewPress}
               style={{
                 flex: 1,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderRadius: 18,
@@ -754,7 +756,7 @@ function ReviewsSection({
             <View
               style={{
                 marginBottom: 12,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 gap: 10,
                 borderRadius: 14,
@@ -771,7 +773,7 @@ function ReviewsSection({
           ) : null
         )
       ) : (
-        <View style={{ marginBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' }}>
+        <View style={{ marginBottom: 12, ...rtlRow(), alignItems: 'center' }}>
           <View
             style={{
               width: 40,
@@ -789,7 +791,7 @@ function ReviewsSection({
             onPress={onUnauthenticatedWriteReview}
             style={{
               flex: 1,
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               justifyContent: 'space-between',
               borderRadius: 18,
@@ -1114,12 +1116,14 @@ export default function ProviderScreen() {
       value: profile.yearsExperienceText,
     });
   }
-  specs.push({
-    id: 'work',
-    icon: 'desktop-outline',
-    label: 'طبيعة العمل',
-    value: profile.worksRemotely ? 'عمل عن بعد' : 'عمل حضوري',
-  });
+  if (profile.worksRemotely) {
+    specs.push({
+      id: 'work',
+      icon: 'desktop-outline',
+      label: 'طبيعة العمل',
+      value: 'عمل عن بُعد',
+    });
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
@@ -1149,9 +1153,9 @@ export default function ProviderScreen() {
           />
 
           {/* Navigation Controls */}
-          <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
+          <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', zIndex: 30 }}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(tabs)/'))}
               style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
               hitSlop={8}
             >
@@ -1228,12 +1232,13 @@ export default function ProviderScreen() {
               {profile.name}
             </Text>
 
-            {/* Type & Category & Rating Badges - Same Line */}
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
-              {translatedType && (
-                <View style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9 }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.primary }}>
-                    {translatedType}
+            {/* City, category, rating, and featured badges */}
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {profile.cityName && (
+                <View style={{ backgroundColor: colors.surfaceAlt, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, ...rtlRow(), alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="location-outline" size={11} color={colors.textSecondary} />
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.textSecondary }}>
+                    {profile.cityName}
                   </Text>
                 </View>
               )}
@@ -1247,10 +1252,19 @@ export default function ProviderScreen() {
               )}
 
               {profile.rating > 0 && (
-                <View style={{ backgroundColor: 'rgba(234,179,8,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, flexDirection: 'row-reverse', alignItems: 'center', gap: 3 }}>
+                <View style={{ backgroundColor: 'rgba(234,179,8,0.12)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, ...rtlRow(), alignItems: 'center', gap: 3 }}>
                   <Ionicons name="star" size={11} color={colors.gold} />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 11, color: colors.gold }}>
                     {profile.rating.toFixed(1)}
+                  </Text>
+                </View>
+              )}
+
+              {profile.isFeatured && (
+                <View style={{ backgroundColor: 'rgba(234,179,8,0.18)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, ...rtlRow(), alignItems: 'center', gap: 4 }}>
+                  <Ionicons name="sparkles" size={11} color={colors.gold} />
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.gold }}>
+                    مميز
                   </Text>
                 </View>
               )}
@@ -1259,7 +1273,7 @@ export default function ProviderScreen() {
 
           {/* Quick Specs Dashboard Bar */}
           <View style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             width: '100%',
             backgroundColor: colors.surfaceAlt,
             borderRadius: 16,
@@ -1272,7 +1286,7 @@ export default function ProviderScreen() {
             {specs.map((spec, index) => (
               <React.Fragment key={spec.id}>
                 <View style={{ alignItems: 'center', flex: 1 }}>
-                  <Ionicons name={spec.icon as any} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
+                  <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
                   <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12, color: colors.textPrimary, textAlign: 'center' }}>
                     {spec.value}
                   </Text>
@@ -1289,7 +1303,7 @@ export default function ProviderScreen() {
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
-            <View style={{ flexDirection: 'row-reverse', width: '100%', gap: 10, marginTop: 16 }}>
+            <View style={{ ...rtlRow(), width: '100%', gap: 10, marginTop: 16 }}>
               {profile.whatsappUrl && (
                 <Pressable
                   onPress={handleWhatsApp}
@@ -1299,7 +1313,7 @@ export default function ProviderScreen() {
                     height: 48,
                     borderRadius: 12,
                     backgroundColor: '#25D366',
-                    flexDirection: 'row-reverse',
+                    ...rtlRow(),
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
@@ -1323,7 +1337,7 @@ export default function ProviderScreen() {
                     height: 48,
                     borderRadius: 12,
                     backgroundColor: colors.primary,
-                    flexDirection: 'row-reverse',
+                    ...rtlRow(),
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 8,
@@ -1343,7 +1357,7 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
               {profile.socialLinks.map((item) => (
                 <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
                   <Ionicons name={item.icon} size={18} color={item.color} />
@@ -1410,7 +1424,7 @@ export default function ProviderScreen() {
       <Modal visible={showReportModal} transparent animationType="slide" onRequestClose={() => setShowReportModal(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
-            <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
               <Pressable onPress={() => setShowReportModal(false)}>
                 <Ionicons name="close" size={24} color={colors.textSecondary} />
@@ -1418,15 +1432,17 @@ export default function ProviderScreen() {
             </View>
 
             <View style={{ gap: 8, marginBottom: 20 }}>
-              {[
-                { type: 'offensive', label: 'محتوى مسيء أو غير لائق' },
-                { type: 'misleading', label: 'معلومات مضللة أو كاذبة' },
-                { type: 'spam', label: 'رسائل مزعجة (سبام)' },
-                { type: 'other', label: 'سبب آخر (اكتبه بالأسفل)' }
-              ].map((opt) => {
+              {(
+                [
+                  { type: 'offensive' as const, label: 'محتوى مسيء أو غير لائق' },
+                  { type: 'misleading' as const, label: 'معلومات مضللة أو كاذبة' },
+                  { type: 'spam' as const, label: 'رسائل مزعجة (سبام)' },
+                  { type: 'other' as const, label: 'سبب آخر (اكتبه بالأسفل)' }
+                ] as const
+              ).map((opt) => {
                 const isSelected = reportReasonType === opt.type;
                 return (
-                  <Pressable key={opt.type} onPress={() => { setReportReasonType(opt.type as any); setReportError(''); }} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
+                  <Pressable key={opt.type} onPress={() => { setReportReasonType(opt.type); setReportError(''); }} style={{ ...rtlRow(), alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 14, backgroundColor: isSelected ? colors.primarySoft : 'transparent' }}>
                     <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.border, alignItems: 'center', justifyContent: 'center' }}>
                       {isSelected && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary }} />}
                     </View>
@@ -1451,7 +1467,7 @@ export default function ProviderScreen() {
               <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12, textAlign: 'right', marginBottom: 12 }}>{reportError}</Text>
             ) : null}
 
-            <View style={{ flexDirection: 'row-reverse', gap: 12 }}>
+            <View style={{ ...rtlRow(), gap: 12 }}>
               <Pressable onPress={handleReportSubmit} style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
@@ -1492,7 +1508,7 @@ export default function ProviderScreen() {
       {/* ═══ REVIEW ACTION WINDOW MODAL ═══ */}
       <Modal visible={showReviewModal} transparent animationType="slide" onRequestClose={() => setShowReviewModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-          <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
             <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>أضف تقييمك</Text>
             <Pressable onPress={() => setShowReviewModal(false)}>
               <Ionicons name="close" size={24} color={colors.textSecondary} />

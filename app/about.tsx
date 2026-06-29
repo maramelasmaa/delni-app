@@ -2,6 +2,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../src/hooks/useTheme';
+import { rtlRow } from '../src/utils/rtl';
 
 export default function AboutScreen() {
   const { colors } = useTheme();
@@ -16,7 +17,7 @@ export default function AboutScreen() {
     elevation: 1,
   } as const;
 
-  const cardTitleRow = { flexDirection: 'row-reverse' as const, alignItems: 'center' as const, marginBottom: 12 };
+  const cardTitleRow = { ...rtlRow(), alignItems: 'center' as const, marginBottom: 12 };
   const cardIcon = { height: 32, width: 32, alignItems: 'center' as const, justifyContent: 'center' as const, borderRadius: 999, backgroundColor: colors.primarySoft, marginLeft: 8 };
   const cardTitle = { textAlign: 'right' as const, fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary };
   const body = { textAlign: 'right' as const, fontSize: 14, lineHeight: 28, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' as const };
@@ -29,7 +30,7 @@ export default function AboutScreen() {
           <View style={{ height: 80, width: 80, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: colors.primarySoft, marginBottom: 16 }}>
             <Ionicons name="compass" size={44} color={colors.primary} />
           </View>
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
+          <View style={{ ...rtlRow(), alignItems: 'center' }}>
             <Text style={{ fontSize: 30, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>دلني</Text>
             <Text style={{ fontSize: 30, fontFamily: 'Cairo-Black', color: colors.gold }}>.</Text>
           </View>
@@ -64,11 +65,11 @@ export default function AboutScreen() {
           </Text>
 
           <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 16 }}>
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 8 }}>
+            <View style={{ ...rtlRow(), alignItems: 'center', marginBottom: 8 }}>
               <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
               <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>ابحث وتواصل بسهولة</Text>
             </View>
-            <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
+            <View style={{ ...rtlRow(), alignItems: 'center' }}>
               <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
               <Text style={{ textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>تقييمات موثوقة وحقيقية</Text>
             </View>

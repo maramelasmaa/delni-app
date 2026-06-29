@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { rtlRow } from '../../src/utils/rtl';
 import { Pressable, View } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 

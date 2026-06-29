@@ -6,17 +6,18 @@ import type { PortfolioItem, Review, ProviderCredential } from '../../src/types'
 import type { ThemeColors } from '../../src/theme/tokens';
 import { StarRating } from '../ui/StarRating';
 import { formatRelativeTime, formatIssueDate } from '../../src/utils/date';
-import { toEnglishNumbers } from '../../src/utils/numberFormatter';
+import { formatArabicReviewCount, toEnglishNumbers } from '../../src/utils/numberFormatter';
 import { getServiceIcon, getAvatarTheme } from '../../src/utils/providerMappers';
 import { useTheme } from '../../src/hooks/useTheme';
 import { openExternalUrl } from '../../src/utils/links';
+import { rtlRow } from '../../src/utils/rtl';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const SectionHeader = React.memo(({ title, colors }: { title: string; colors: ThemeColors }) => {
   return (
     <View style={{
-      flexDirection: 'row-reverse',
+      ...rtlRow(),
       alignItems: 'center',
       gap: 10,
       marginBottom: 16,
@@ -83,7 +84,7 @@ export function AboutSection({ about, colors }: AboutSectionProps) {
             style={{
               marginTop: 10,
               alignSelf: 'flex-start',
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               gap: 4,
             }}
@@ -113,12 +114,12 @@ export function ServicesSection({ services, colors }: ServicesSectionProps) {
   return (
     <View style={{ marginBottom: 8, width: '100%' }}>
       <SectionHeader title="الخدمات المقدمة" colors={colors} />
-      <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 10, width: '100%' }}>
+      <View style={{ ...rtlRow(), flexWrap: 'wrap', gap: 10, width: '100%' }}>
         {services.map((svc) => (
           <View
             key={svc.id}
             style={{
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               gap: 10,
               width: '48%',
@@ -199,7 +200,7 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
         onScroll={handleScroll}
         scrollEventThrottle={16}
         contentContainerStyle={{
-          flexDirection: 'row-reverse',
+          ...rtlRow(),
           gap: gapSize,
         }}
         style={{ width: '100%' }}
@@ -242,13 +243,13 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
                         borderRadius: 12,
                         paddingHorizontal: 10,
                         paddingVertical: 5,
-                        flexDirection: 'row-reverse',
+                        ...rtlRow(),
                         alignItems: 'center',
                         gap: 4,
                       }}
                     >
                       <Ionicons name="images-outline" size={13} color="#FFFFFF" />
-                      <Text style={{ color: isDark ? '#FFFFFF' : '#000000', fontFamily: 'Cairo-Bold', fontSize: 11 }}>
+                      <Text style={{ color: '#FFFFFF', fontFamily: 'Cairo-Bold', fontSize: 11 }}>
                         {toEnglishNumbers(imageCount)} صور
                       </Text>
                     </View>
@@ -291,7 +292,7 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
       {projects.length > 1 && (
         <View
           style={{
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             justifyContent: 'center',
             alignItems: 'center',
             gap: 6,
@@ -373,7 +374,7 @@ export function CredentialsSection({ credentials, colors }: CredentialsSectionPr
               </Text>
             )}
             {cred.issue_date && (
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 4, marginTop: 2 }}>
+              <View style={{ ...rtlRow(), alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
                 <Text
                   style={{
@@ -402,7 +403,7 @@ export function ReviewCard({ review, colors, onReport, isLast }: { review: Revie
   return (
     <View
       style={{
-        flexDirection: 'row-reverse',
+        ...rtlRow(),
         paddingBottom: 16,
         marginBottom: 16,
         borderBottomWidth: isLast ? 0 : 1,
@@ -427,11 +428,11 @@ export function ReviewCard({ review, colors, onReport, isLast }: { review: Revie
       </View>
 
       <View style={{ flex: 1, alignItems: 'flex-end' }}>
-        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+        <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
           <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
             {review.user_name}
           </Text>
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10 }}>
+          <View style={{ ...rtlRow(), alignItems: 'center', gap: 10 }}>
             <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
               {formatRelativeTime(review.created_at)}
             </Text>
@@ -447,7 +448,7 @@ export function ReviewCard({ review, colors, onReport, isLast }: { review: Revie
             </Pressable>
           </View>
         </View>
-        <View style={{ flexDirection: 'row-reverse', marginTop: 2, marginBottom: 6 }}>
+        <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 6 }}>
           <StarRating value={review.rating} size={13} />
         </View>
         {review.comment ? (
@@ -507,7 +508,7 @@ export function ReviewsSection({
   const displayedReviews = showAll ? reviews : reviews.slice(0, 3);
   return (
     <View style={{ width: '100%', marginTop: 0 }}>
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <View style={{ ...rtlRow(), alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <View style={{ width: 14, height: 3, backgroundColor: colors.gold, borderRadius: 2 }} />
         <Text style={{ fontSize: 17, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>
           التقييمات ({toEnglishNumbers(reviewsCount)})
@@ -522,7 +523,7 @@ export function ReviewsSection({
             padding: 16,
             borderWidth: 1,
             borderColor: colors.border,
-            flexDirection: 'row-reverse',
+            ...rtlRow(),
             alignItems: 'center',
             justifyContent: 'space-between',
           }}
@@ -533,7 +534,7 @@ export function ReviewsSection({
             </Text>
             <StarRating value={rating} size={16} />
             <Text style={{ fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textMuted, marginTop: 4, textAlign: 'center' }}>
-              بناءً على {toEnglishNumbers(reviewsCount)} تقييم
+              بناءً على {formatArabicReviewCount(reviewsCount)}
             </Text>
           </View>
           <View style={{ width: '60%', gap: 4 }}>
@@ -543,7 +544,7 @@ export function ReviewsSection({
               else if (stars === Math.round(rating) - 1) weight = 0.4;
               else if (stars === Math.round(rating) + 1) weight = 0.2;
               return (
-                <View key={stars} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
+                <View key={stars} style={{ ...rtlRow(), alignItems: 'center', gap: 8 }}>
                   <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, width: 14 }}>
                     {stars}
                   </Text>
@@ -558,7 +559,7 @@ export function ReviewsSection({
       )}
       {isAuthenticated ? (
         canWriteReview ? (
-          <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
+          <View style={{ marginBottom: 20, ...rtlRow(), alignItems: 'center' }}>
             <View
               style={{
                 width: 40,
@@ -578,7 +579,7 @@ export function ReviewsSection({
               onPress={onWriteReviewPress}
               style={{
                 flex: 1,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 borderRadius: 24,
@@ -600,7 +601,7 @@ export function ReviewsSection({
             <View
               style={{
                 marginBottom: 14,
-                flexDirection: 'row-reverse',
+                ...rtlRow(),
                 alignItems: 'center',
                 gap: 10,
                 borderRadius: 16,
@@ -617,7 +618,7 @@ export function ReviewsSection({
           ) : null
         )
       ) : (
-        <View style={{ marginBottom: 20, flexDirection: 'row-reverse', alignItems: 'center' }}>
+        <View style={{ marginBottom: 20, ...rtlRow(), alignItems: 'center' }}>
           <View
             style={{
               width: 40,
@@ -635,7 +636,7 @@ export function ReviewsSection({
             onPress={onUnauthenticatedWriteReview}
             style={{
               flex: 1,
-              flexDirection: 'row-reverse',
+              ...rtlRow(),
               alignItems: 'center',
               justifyContent: 'space-between',
               borderRadius: 24,

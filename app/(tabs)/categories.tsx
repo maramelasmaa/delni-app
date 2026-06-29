@@ -10,6 +10,7 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useCategories } from '../../src/hooks/useApi';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
+import { rtlRow } from '../../src/utils/rtl';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Category } from '../../src/types';
 
