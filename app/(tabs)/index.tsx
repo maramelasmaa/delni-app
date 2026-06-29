@@ -30,7 +30,7 @@ import type { Category } from '../../src/types';
 
 export default function HomeScreen() {
   const [citySheetVisible, setCitySheetVisible] = useState(false);
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const activeCity = useCityStore((s) => s.activeCity);
   const { data, isLoading, isError, refetch, isRefetching } = useHome(activeCity?.slug);
   const toggleFavorite = useToggleFavorite();
@@ -105,11 +105,9 @@ export default function HomeScreen() {
               },
             ]}
           >
-            <Ionicons name="location-sharp" size={15} color={colors.primary} style={styles.cityPillIcon} />
-            <Text numberOfLines={1} style={[styles.cityPillText, { color: colors.textPrimary }]}>
+            <Text numberOfLines={1} style={[styles.cityPillText, { color: isDark ? colors.textSecondary : colors.textPrimary }]}>
               {activeCity ? activeCity.name : 'كل المدن'}
             </Text>
-            <Ionicons name="chevron-down" size={13} color={colors.textMuted} style={styles.cityPillCaret} />
           </Pressable>
 
           {/* Brand (right) */}
@@ -295,18 +293,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
-  cityPillIcon: {
-    flexShrink: 0,
-  },
   cityPillText: {
     flexShrink: 1,
     marginHorizontal: 6,
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: 'Cairo-Bold',
     writingDirection: 'rtl',
-  },
-  cityPillCaret: {
-    flexShrink: 0,
+    lineHeight: 18,
   },
 
   categoryCard: {
