@@ -1,84 +1,110 @@
 import { router, useLocalSearchParams } from 'expo-router';
-// NOTE: also see the matching email template in the Laravel repo: resources/views/emails/reset-password.blade.php
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
-import { useResetPassword } from '../../src/hooks/useAuth';
+import { useRef, useState } from 'react';
+import { Text, TextInput } from 'react-native';
+import { AuthButton, AuthNotice, AuthScreen } from '../../components/auth/AuthPrimitives';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { useResetPassword } from '../../src/hooks/useAuth';
+import { useTheme } from '../../src/hooks/useTheme';
+import { parseApiError } from '../../src/lib/error-parser';
+import { isValidEmail, isValidPassword, normalizeEmail } from '../../src/utils/authValidation';
 
 export default function ResetPasswordScreen() {
   const { colors } = useTheme();
   const { token, email } = useLocalSearchParams<{ token: string; email: string }>();
+  const emailValue = normalizeEmail(Array.isArray(email) ? (email[0] ?? '') : (email ?? ''));
+  const tokenValue = Array.isArray(token) ? (token[0] ?? '') : (token ?? '');
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
   const [error, setError] = useState('');
+  const confirmationRef = useRef<TextInput>(null);
   const reset = useResetPassword();
-
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
+  const isLinkInvalid = !tokenValue || !isValidEmail(emailValue);
 
   const handleReset = async () => {
     setError('');
-    if (!password) { setError('أدخل كلمتك'); return; }
-    if (!passwordRegex.test(password)) {
-      setError('8 أحرف: حروف كبيرة وصغيرة ورقم');
+    if (isLinkInvalid) {
+      setError('رابط إعادة التعيين غير صالح. اطلب رابطًا جديدًا.');
       return;
     }
-    if (password !== confirmation) { setError('كلمات المرور غير متطابقة'); return; }
+    if (!password) {
+      setError('أدخل كلمة المرور الجديدة');
+      return;
+    }
+    if (!isValidPassword(password)) {
+      setError('استخدم 8 أحرف على الأقل مع حرف كبير وحرف صغير ورقم');
+      return;
+    }
+    if (password !== confirmation) {
+      setError('كلمتا المرور غير متطابقتين');
+      return;
+    }
+
     try {
-      await reset.mutateAsync({ token: token ?? '', email: email ?? '', password, password_confirmation: confirmation });
-      // On success, send the user to login with their email prefilled.
+      await reset.mutateAsync({ token: tokenValue, email: emailValue, password, password_confirmation: confirmation });
       requestAnimationFrame(() => {
-        router.replace({ pathname: '/(auth)/login', params: { email: email ?? '', reset: '1' } });
+        router.replace({ pathname: '/(auth)/login', params: { email: emailValue, reset: '1' } });
       });
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'حدث خطأ، حاول مجدداً');
+    } catch (err: unknown) {
+      setError(parseApiError(err).message);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24 }}>
-          <Text style={{ marginBottom: 8, textAlign: 'center', fontSize: 24, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>إعادة تعيين كلمتك</Text>
-          <Text style={{ marginBottom: 32, textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>أدخل كلمتك الجديدة</Text>
+    <AuthScreen
+      title="إعادة تعيين كلمة المرور"
+      subtitle="اختر كلمة مرور جديدة لحسابك"
+      backTo="/(auth)/login"
+    >
+      {error ? <AuthNotice>{error}</AuthNotice> : null}
 
-          {error ? (
-            <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
-              <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{error}</Text>
-            </View>
-          ) : null}
-
+      {isLinkInvalid ? (
+        <AuthButton
+          title="طلب رابط جديد"
+          onPress={() => requestAnimationFrame(() => router.replace('/(auth)/forgot-password'))}
+          colors={colors}
+        />
+      ) : (
+        <>
           <PasswordInput
             value={password}
             onChangeText={setPassword}
-            placeholder="كلمتك الجديدة"
+            label="كلمة المرور الجديدة"
+            placeholder="أدخل كلمة المرور الجديدة"
             placeholderTextColor={colors.textMuted}
             autoComplete="new-password"
             textContentType="newPassword"
-            containerStyle={{ marginBottom: 16 }}
+            returnKeyType="next"
+            onSubmitEditing={() => confirmationRef.current?.focus()}
+            containerStyle={{ marginBottom: 6 }}
           />
+          {!error ? (
+            <Text style={{ marginBottom: 16, textAlign: 'right', fontSize: 12, lineHeight: 18, color: colors.textMuted, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
+              8 أحرف على الأقل، مع حرف كبير وحرف صغير ورقم.
+            </Text>
+          ) : null}
           <PasswordInput
+            ref={confirmationRef}
             value={confirmation}
             onChangeText={setConfirmation}
-            placeholder="أعد كتابة كلمتك"
+            label="تأكيد كلمة المرور"
+            placeholder="أعد إدخال كلمة المرور"
             placeholderTextColor={colors.textMuted}
             autoComplete="new-password"
             textContentType="newPassword"
+            returnKeyType="done"
+            onSubmitEditing={handleReset}
             containerStyle={{ marginBottom: 24 }}
           />
 
-          <Pressable
+          <AuthButton
+            title="حفظ كلمة المرور"
+            loadingTitle="جاري الحفظ..."
+            loading={reset.isPending}
             onPress={handleReset}
-            disabled={reset.isPending}
-            style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: reset.isPending ? 0.7 : 1 }}
-          >
-            <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: colors.textOnPrimary }}>
-              {reset.isPending ? 'جاري التعيين...' : 'حفظ كلمتك'}
-            </Text>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            colors={colors}
+          />
+        </>
+      )}
+    </AuthScreen>
   );
 }

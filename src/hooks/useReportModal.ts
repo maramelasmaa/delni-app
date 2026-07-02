@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useFlagReview } from './useApi';
+import { parseReportError, REPORT_MESSAGES } from '../lib/report-errors';
 
 type ReportReason = 'offensive' | 'misleading' | 'spam' | 'other';
 
@@ -12,7 +13,10 @@ export function useReportModal() {
   const flagReview = useFlagReview();
 
   const handleReportSubmit = useCallback(() => {
-    if (!reportReviewIdState) return;
+    if (!reportReviewIdState) {
+      setReportError('تعذر تحديد التقييم المراد الإبلاغ عنه. أغلق النافذة وحاول مرة أخرى.');
+      return;
+    }
 
     const label =
       reportReasonType === 'offensive'
@@ -28,7 +32,7 @@ export function useReportModal() {
       : `تم الإبلاغ من مستخدم التطبيق - ${label}`;
 
     if (combinedReason.length < 10) {
-      setReportError('تفاصيل البلاغ يجب أن تكون 10 أحرف على الأقل.');
+      setReportError(REPORT_MESSAGES.reasonTooShort);
       return;
     }
 
@@ -47,8 +51,8 @@ export function useReportModal() {
           setReportReasonType('offensive');
           setReportError('');
         },
-        onError: () => {
-          setReportError('تعذر إرسال البلاغ، يرجى المحاولة مجدداً.');
+        onError: (error) => {
+          setReportError(parseReportError(error));
         },
       }
     );

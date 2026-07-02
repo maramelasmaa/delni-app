@@ -1,4 +1,4 @@
-const DEV_API_BASE_URL = 'http://192.168.1.106:8000/api/v1';
+const DEV_API_BASE_URL = 'https://delni.ly/api/v1';
 const PROD_API_BASE_URL = 'https://delni.ly/api/v1';
 
 // Expo inlines EXPO_PUBLIC_* variables at bundle time. Keep a safe production

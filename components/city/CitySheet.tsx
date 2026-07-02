@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { rtlRow } from '../../src/utils/rtl';
+import { RTLAlert, useRTLAlert } from '../ui/RTLAlert';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -171,30 +172,7 @@ export function CitySheet({ visible, onClose }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  const [customAlert, setCustomAlert] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>;
-  }>({
-    visible: false,
-    title: '',
-    message: '',
-    buttons: [],
-  });
-
-  const showRTLAlert = useCallback((
-    title: string,
-    message: string,
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>
-  ) => {
-    setCustomAlert({
-      visible: true,
-      title,
-      message,
-      buttons,
-    });
-  }, []);
+  const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
 
   // Debounce search query to keep list changes smooth and snappy
   useEffect(() => {
@@ -329,6 +307,23 @@ export function CitySheet({ visible, onClose }: Props) {
     [handleSelect]
   );
 
+  const renderCityItem = useCallback(
+    ({ item }: { item: any }) => {
+      const isActive = activeCity?.slug === item.slug;
+      return <CityRow city={item} isSelected={isActive} onPress={handleSelectCity} colors={colors} />;
+    },
+    [activeCity?.slug, colors, handleSelectCity],
+  );
+
+  const getCityItemLayout = useCallback(
+    (_: ArrayLike<any> | null | undefined, index: number) => ({
+      length: 76 + 12,
+      offset: (76 + 12) * index,
+      index,
+    }),
+    [],
+  );
+
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={handleClose}>
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]} edges={['top', 'bottom']}>
@@ -360,18 +355,13 @@ export function CitySheet({ visible, onClose }: Props) {
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          removeClippedSubviews
+          getItemLayout={getCityItemLayout}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => {
-            const isActive = activeCity?.slug === item.slug;
-            return (
-              <CityRow
-                city={item}
-                isSelected={isActive}
-                onPress={handleSelectCity}
-                colors={colors}
-              />
-            );
-          }}
+          renderItem={renderCityItem}
           ListHeaderComponent={
             <View style={{ width: '100%' }}>
               {/* Search input container */}
@@ -487,181 +477,8 @@ export function CitySheet({ visible, onClose }: Props) {
         />
       </SafeAreaView>
 
-      {/* Custom RTL Alert Modal */}
-      <Modal
-        visible={customAlert.visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 24,
-          }}
-        >
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 400,
-              backgroundColor: colors.surface,
-              borderRadius: 28,
-              padding: 24,
-              borderWidth: 1,
-              borderColor: colors.border,
-              alignItems: 'center',
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 10 },
-              shadowOpacity: 0.15,
-              shadowRadius: 20,
-              elevation: 10,
-            }}
-          >
-            {(() => {
-              const t = customAlert.title || '';
-              let iconName: keyof typeof Ionicons.glyphMap = 'information-circle-outline';
-              let iconColor = colors.primary;
-              let iconBg = colors.primarySoft;
-
-              if (t.includes('تعذّر') || t.includes('مسبقاً') || t.includes('خطأ') || t.includes('تنبيه')) {
-                iconName = 'alert-circle-outline';
-                iconColor = colors.gold;
-                iconBg = colors.goldSoft || 'rgba(245, 158, 11, 0.12)';
-              } else if (t.includes('تم') || t.includes('نجاح')) {
-                iconName = 'checkmark-circle-outline';
-                iconColor = colors.success;
-                iconBg = isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(16, 185, 129, 0.10)';
-              }
-
-              return (
-                <View
-                  style={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: 28,
-                    backgroundColor: iconBg,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: 16,
-                  }}
-                >
-                  <Ionicons name={iconName} size={28} color={iconColor} />
-                </View>
-              );
-            })()}
-
-            <Text
-              style={{
-                fontSize: 18,
-                fontFamily: 'Cairo-Bold',
-                color: colors.textPrimary,
-                textAlign: 'center',
-                marginBottom: 8,
-              }}
-            >
-              {customAlert.title}
-            </Text>
-
-            <Text
-              style={{
-                fontSize: 14,
-                fontFamily: 'Cairo-SemiBold',
-                color: colors.textSecondary,
-                textAlign: 'center',
-                lineHeight: 22,
-                marginBottom: 24,
-                writingDirection: 'rtl',
-              }}
-            >
-              {customAlert.message}
-            </Text>
-
-            <View style={{ width: '100%', flexDirection: (customAlert.buttons || []).length === 2 ? 'row' : 'column', gap: 12 }}>
-              {(() => {
-                const actionButtons = customAlert.buttons || [];
-                
-                if (actionButtons.length === 0) {
-                  return (
-                    <Pressable
-                      onPress={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-                      style={{
-                        width: '100%',
-                        height: 48,
-                        borderRadius: 16,
-                        backgroundColor: '#1E40AF',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontFamily: 'Cairo-Bold',
-                          color: isDark ? '#FFFFFF' : '#000000',
-                        }}
-                      >
-                        حسناً
-                      </Text>
-                    </Pressable>
-                  );
-                }
-
-                const sortedButtons = [...actionButtons].sort((a, b) => {
-                  if (a.style === 'cancel' && b.style !== 'cancel') return -1;
-                  if (a.style !== 'cancel' && b.style === 'cancel') return 1;
-                  return 0;
-                });
-
-                return sortedButtons.map((btn, idx) => {
-                  const isCancel = btn.style === 'cancel';
-                  const isDestructive = btn.style === 'destructive';
-                  const isSideBySide = actionButtons.length === 2;
-                  
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        setCustomAlert((prev) => ({ ...prev, visible: false }));
-                        btn.onPress?.();
-                      }}
-                      style={{
-                        flex: isSideBySide ? 1 : undefined,
-                        width: isSideBySide ? undefined : '100%',
-                        height: 48,
-                        borderRadius: 16,
-                        backgroundColor: isCancel
-                          ? colors.surfaceAlt
-                          : isDestructive
-                          ? colors.error
-                          : colors.primary,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        borderWidth: isCancel ? 1 : 0,
-                        borderColor: isCancel ? colors.border : undefined,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontFamily: 'Cairo-Bold',
-                          color: isCancel
-                            ? colors.textPrimary
-                            : colors.textOnPrimary,
-                        }}
-                      >
-                        {btn.text}
-                      </Text>
-                    </Pressable>
-                  );
-                });
-              })()}
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Shared themed RTL alert (extracted from the copy-pasted modal). */}
+      <RTLAlert alert={alert} onDismiss={hideAlert} />
     </Modal>
   );
 }

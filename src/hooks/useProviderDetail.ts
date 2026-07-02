@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { useProvider, useProviderReviews, useToggleFavorite } from './useApi';
 import { useAuthStore } from '../store/auth';
 import type { Review } from '../types';
 import { mapProviderProfile } from '../utils/providerMappers';
+import { mergeUniqueById } from '../utils/searchFilters';
 
 export function useProviderDetail(slug: string) {
   // Data fetching
-  const { data: provider, isLoading, isError, refetch } = useProvider(slug);
+  const { data: provider, isLoading, isError, error, refetch } = useProvider(slug);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const toggleFavorite = useToggleFavorite();
@@ -15,22 +16,20 @@ export function useProviderDetail(slug: string) {
   // Review pagination
   const [reviewPage, setReviewPage] = useState(1);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const prevSlugRef = useRef(slug);
   const { data: reviewsData, isFetching: isFetchingReviews } = useProviderReviews(slug, reviewPage);
 
-  // Reset on slug change
-  if (prevSlugRef.current !== slug) {
-    prevSlugRef.current = slug;
+  // Reset on slug change without mutating state during render.
+  useEffect(() => {
     setReviewPage(1);
     setAllReviews([]);
-  }
+  }, [slug]);
 
   // Accumulate reviews
   useEffect(() => {
     const fresh = reviewsData?.data;
     if (!fresh?.length) return;
     setAllReviews((prev) =>
-      reviewPage === 1 ? fresh : [...prev, ...fresh.filter((r) => !prev.some((x) => x.id === r.id))]
+      reviewPage === 1 ? fresh : mergeUniqueById(prev, fresh)
     );
   }, [reviewsData?.data, reviewPage]);
 
@@ -72,6 +71,7 @@ export function useProviderDetail(slug: string) {
     // Loading states
     isLoading,
     isError,
+    error,
     refetch,
 
     // Data

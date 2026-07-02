@@ -1,6 +1,7 @@
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { InfoCard } from '../components/ui/InfoCard';
 import { useTheme } from '../src/hooks/useTheme';
 import type { ThemeColors } from '../src/theme/tokens';
 import { rtlRow } from '../src/utils/rtl';
@@ -13,17 +14,7 @@ interface PrivacyCardProps {
 }
 
 function PrivacyCard({ icon, title, children, colors }: PrivacyCardProps) {
-  return (
-    <View style={{ marginBottom: 16, borderRadius: 24, backgroundColor: colors.surface, padding: 24, borderWidth: 1, borderColor: colors.border, elevation: 1 }}>
-      <View style={{ ...rtlRow(), alignItems: 'center', marginBottom: 14 }}>
-        <View style={{ height: 32, width: 32, alignItems: 'center', justifyContent: 'center', borderRadius: 999, backgroundColor: colors.primarySoft, marginLeft: 8 }}>
-          <Ionicons name={icon} size={18} color={colors.primary} />
-        </View>
-        <Text style={{ textAlign: 'right', fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>{title}</Text>
-      </View>
-      {children}
-    </View>
-  );
+  return <InfoCard icon={icon} title={title} colors={colors}>{children}</InfoCard>;
 }
 
 function Bullet({ text, colors }: { text: string; colors: ThemeColors }) {

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -26,49 +26,30 @@ import {
   useProviderTypes,
 } from '../../src/hooks/useApi';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/store/auth';
 import type { Provider, SearchFilters } from '../../src/types';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
-import { getOffersRemoteWork } from '../../src/utils/providerMappers';
+import { getProviderLogo } from '../../src/utils/imageFallback';
 import { rtlRow } from '../../src/utils/rtl';
+import {
+  getSingleParam,
+  mergeUniqueProviders,
+  normalizeSearchFilters,
+  parsePositiveIntegerParam,
+  parseRemoteParam,
+  parseSortParam,
+  toSearchRouteParams,
+} from '../../src/utils/searchFilters';
+import { PROVIDER_TYPE_FILTER_OPTIONS } from '../../src/utils/providerTypes';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'الأحدث', icon: 'calendar-outline' },
   { value: 'rating', label: 'الأعلى تقييماً', icon: 'star-outline' },
 ] as const;
 
-const FALLBACK_PROVIDER_TYPES = [
-  { code: '', name: 'الكل' },
-  { code: 'individual', name: 'فرد' },
-  { code: 'company', name: 'شركة' },
-  { code: 'agency', name: 'وكالة' },
-  { code: 'clinic', name: 'عيادة' },
-  { code: 'studio', name: 'استوديو' },
-  { code: 'freelancer', name: 'مستقل' },
-  { code: 'other', name: 'أخرى' },
-] as const;
-
-function getSingleParam(value?: string | string[]) {
-  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
-}
-
-function isRemoteParamEnabled(value?: string) {
-  return value === '1' || value === 'true';
-}
-
-function toSearchRouteParams(filters: Partial<SearchFilters>) {
-  return {
-    keyword: filters.keyword || undefined,
-    category: filters.category || undefined,
-    category_id: filters.category_id ? String(filters.category_id) : undefined,
-    city: filters.city || undefined,
-    city_id: filters.city_id ? String(filters.city_id) : undefined,
-    sort: filters.sort || undefined,
-    provider_type: filters.provider_type || undefined,
-    remote: filters.remote ? '1' : undefined,
-  };
-}
+// Shared single source of truth (was a hardcoded copy that drifted from the others).
+const FALLBACK_PROVIDER_TYPES = PROVIDER_TYPE_FILTER_OPTIONS;
 
 export default function SearchTabScreen() {
   const params = useLocalSearchParams<{
@@ -92,6 +73,17 @@ export default function SearchTabScreen() {
   const sortParam = getSingleParam(params.sort);
   const providerTypeParam = getSingleParam(params.provider_type);
   const remoteParam = getSingleParam(params.remote);
+  const routeFilters = normalizeSearchFilters({
+    keyword: keywordParam,
+    category: categoryParam,
+    category_id: parsePositiveIntegerParam(categoryIdParam),
+    city: cityParam,
+    city_id: parsePositiveIntegerParam(cityIdParam),
+    sort: parseSortParam(sortParam),
+    provider_type: providerTypeParam,
+    remote: parseRemoteParam(remoteParam),
+    page: 1,
+  });
 
   const inputRef = useRef<TextInput>(null);
   const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
@@ -103,28 +95,8 @@ export default function SearchTabScreen() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
-  const [filters, setFilters] = useState<SearchFilters>({
-    keyword: keywordParam,
-    category: categoryParam,
-    category_id: categoryIdParam ? Number(categoryIdParam) : undefined,
-    city: cityParam,
-    city_id: cityIdParam ? Number(cityIdParam) : undefined,
-    sort: sortParam === 'newest' ? 'newest' : 'rating',
-    provider_type: providerTypeParam || undefined,
-    remote: isRemoteParamEnabled(remoteParam),
-    page: 1,
-  });
-  const [modalFilters, setModalFilters] = useState<SearchFilters>({
-    keyword: keywordParam,
-    category: categoryParam,
-    category_id: categoryIdParam ? Number(categoryIdParam) : undefined,
-    city: cityParam,
-    city_id: cityIdParam ? Number(cityIdParam) : undefined,
-    sort: sortParam === 'newest' ? 'newest' : 'rating',
-    provider_type: providerTypeParam || undefined,
-    remote: isRemoteParamEnabled(remoteParam),
-    page: 1,
-  });
+  const [filters, setFilters] = useState<SearchFilters>(routeFilters);
+  const [modalFilters, setModalFilters] = useState<SearchFilters>(routeFilters);
 
   const [allProviders, setAllProviders] = useState<Provider[]>([]);
 
@@ -149,7 +121,7 @@ export default function SearchTabScreen() {
   }, []);
 
   const handleApplyFilters = useCallback(() => {
-    const nextFilters: SearchFilters = {
+    const nextFilters = normalizeSearchFilters({
       keyword: modalFilters.keyword,
       city: modalFilters.city,
       city_id: modalFilters.city_id,
@@ -159,29 +131,23 @@ export default function SearchTabScreen() {
       remote: modalFilters.remote === true,
       sort: modalFilters.sort || 'rating',
       page: 1,
-    };
+    });
     setFilters(nextFilters);
     setKeyword(nextFilters.keyword || '');
+    setDebouncedQ(nextFilters.keyword || '');
     setShowFilters(false);
     router.setParams(toSearchRouteParams(nextFilters));
   }, [modalFilters]);
 
   const handleResetFilters = useCallback(() => {
-    const defaults: SearchFilters = {
-      keyword: undefined,
-      category: undefined,
-      category_id: undefined,
-      city: undefined,
-      city_id: undefined,
-      sort: 'rating' as const,
-      provider_type: undefined,
-      remote: false,
-      page: 1,
-    };
+    const defaults = normalizeSearchFilters({ sort: 'rating', remote: false, page: 1 });
     setModalFilters(defaults);
     setFilters(defaults);
     setKeyword('');
+    setDebouncedQ('');
+    setShowSuggestions(false);
     setShowFilters(false);
+    setCityDropdownOpen(false);
     router.setParams(toSearchRouteParams(defaults));
   }, []);
 
@@ -190,40 +156,45 @@ export default function SearchTabScreen() {
     return () => clearTimeout(t);
   }, [keyword]);
 
-  const { data, isLoading, isFetching, isError, refetch } = useSearch(filters);
-  const { data: suggestions } = useSearchSuggestions(debouncedQ);
+  const { data, isLoading, isFetching, isError, error, refetch } = useSearch(filters);
+  const {
+    data: suggestions,
+    isFetching: isFetchingSuggestions,
+    isError: isSuggestionsError,
+  } = useSearchSuggestions(debouncedQ.trim());
   const { data: cities } = useCities();
   const { data: categories } = useCategories();
   const { data: providerTypes } = useProviderTypes();
   const toggleFavorite = useToggleFavorite();
 
-  // Clear providers when core filters change to prevent "flash" of old results
-  useEffect(() => {
-    setAllProviders([]);
-  }, [filters.keyword, filters.category, filters.city, filters.sort, filters.provider_type, filters.remote]);
-
+  // Single source of truth for the visible list: the query result drives it.
+  // Page 1 (initial load OR any filter change, which resets page to 1) REPLACES the
+  // list; later pages append. We deliberately do NOT clear allProviders in a separate
+  // effect — that created a desync where Clear All landing on a cached query left the
+  // list emptied but never refilled (the refill effect's data dep didn't change), so
+  // every provider vanished. Stale results during a fresh fetch are hidden by the
+  // page-1 loading spinner in the render below instead.
   useEffect(() => {
     const freshRaw = data?.data;
     if (!freshRaw) return;
-    const fresh = filters.remote ? freshRaw.filter((provider) => getOffersRemoteWork(provider)) : freshRaw;
     setAllProviders((prev) =>
-      (filters.page ?? 1) === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
+      (filters.page ?? 1) === 1 ? freshRaw : mergeUniqueProviders(prev, freshRaw),
     );
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data?.data, filters.page, filters.remote]);
+  }, [data, filters.page]);
 
   useEffect(() => {
     setKeyword(keywordParam);
-    setFilters((cur) => ({
+    setDebouncedQ(keywordParam.trim());
+    setFilters((cur) => normalizeSearchFilters({
       ...cur,
       keyword: keywordParam,
       category: categoryParam,
-      category_id: categoryIdParam ? Number(categoryIdParam) : undefined,
+      category_id: parsePositiveIntegerParam(categoryIdParam),
       city: cityParam,
-      city_id: cityIdParam ? Number(cityIdParam) : undefined,
-      sort: sortParam === 'newest' ? 'newest' : 'rating',
-      provider_type: providerTypeParam || undefined,
-      remote: isRemoteParamEnabled(remoteParam),
+      city_id: parsePositiveIntegerParam(cityIdParam),
+      sort: parseSortParam(sortParam),
+      provider_type: providerTypeParam,
+      remote: parseRemoteParam(remoteParam),
       page: 1,
     }));
   }, [keywordParam, categoryParam, categoryIdParam, cityParam, cityIdParam, sortParam, providerTypeParam, remoteParam]);
@@ -242,9 +213,12 @@ export default function SearchTabScreen() {
 
   const commitSearch = useCallback(
     (term: string) => {
+      const normalizedTerm = term.trim();
       setShowSuggestions(false);
-      const nextFilters: SearchFilters = { ...filters, keyword: term, page: 1 };
+      const nextFilters = normalizeSearchFilters({ ...filters, keyword: normalizedTerm, page: 1 });
       setFilters(nextFilters);
+      setKeyword(normalizedTerm);
+      setDebouncedQ(normalizedTerm);
       router.setParams(toSearchRouteParams(nextFilters));
     },
     [filters.category, filters.category_id, filters.city, filters.city_id, filters.sort, filters.provider_type, filters.remote],
@@ -265,21 +239,9 @@ export default function SearchTabScreen() {
 
   const handleLoadMore = useCallback(() => {
     if (!isFetching && hasMore) {
-      setFilters((f) => ({ ...f, page: (f.page ?? 1) + 1 }));
+      setFilters((f) => normalizeSearchFilters({ ...f, page: (f.page ?? 1) + 1 }));
     }
   }, [isFetching, hasMore]);
-
-  const buildRedirect = useCallback(() => {
-    const q = new URLSearchParams();
-    if (filters.keyword) q.set('keyword', filters.keyword);
-    if (filters.category) q.set('category', filters.category);
-    if (filters.city) q.set('city', filters.city);
-    if (filters.sort) q.set('sort', filters.sort);
-    if (filters.provider_type) q.set('provider_type', filters.provider_type);
-    if (filters.remote) q.set('remote', '1');
-    const qs = q.toString();
-    return qs ? `/(tabs)/search?${qs}` : '/(tabs)/search';
-  }, [filters]);
 
   const handleFavorite = useCallback(
     (slug: string, isFavorited: boolean) => {
@@ -294,11 +256,135 @@ export default function SearchTabScreen() {
   );
 
   const activeFilterCount = [
+    filters.keyword,
     filters.city,
     filters.category,
     filters.provider_type,
     filters.remote ? 'remote' : null,
+    filters.sort !== 'rating' ? filters.sort : null,
   ].filter(Boolean).length;
+
+  const categoryFilterData = useMemo(
+    () => [{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])],
+    [categories],
+  );
+  const providerTypeFilterData = useMemo(
+    () => [{ code: '', name: 'الكل' }, ...(providerTypes && providerTypes.length > 0 ? providerTypes : FALLBACK_PROVIDER_TYPES)],
+    [providerTypes],
+  );
+
+  usePrefetchImages(
+    allProviders.slice(0, 8).map((provider) => getProviderLogo(provider.logo_url, provider.id)),
+    { cachePolicy: 'memory-disk', limit: 8 },
+  );
+
+  const renderProviderItem = useCallback(
+    ({ item: p }: { item: Provider }) => (
+      <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
+        <ProviderRowCard provider={p} onFavoritePress={handleFavorite} />
+      </View>
+    ),
+    [handleFavorite],
+  );
+
+  const renderCategoryFilterItem = useCallback(
+    ({ item: cat }: { item: { id: number; name: string; slug: string } }) => {
+      const isSelected = modalFilters.category === cat.slug || (!modalFilters.category && !cat.slug);
+      const iconName = cat.slug === '' ? 'apps-outline' : getCategoryIcon(cat.slug, cat.name);
+      return (
+        <Pressable
+          onPress={() => {
+            handleModalFilterChange('category', cat.slug || undefined);
+            handleModalFilterChange('category_id', cat.id || undefined);
+          }}
+          style={{
+            width: 80,
+            height: 96,
+            borderRadius: 16,
+            borderWidth: 1.5,
+            borderColor: isSelected ? colors.primary : colors.borderStrong,
+            backgroundColor: isSelected ? colors.primarySoft : colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 6,
+          }}
+        >
+          {isSelected && (
+            <View style={{ position: 'absolute', top: 6, start: 6, zIndex: 10 }}>
+              <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+            </View>
+          )}
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 12,
+              backgroundColor: isSelected ? colors.surface : colors.surfaceAlt,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: 6,
+              borderWidth: isSelected ? 1 : 0,
+              borderColor: colors.primary,
+            }}
+          >
+            <Ionicons name={iconName} size={18} color={isSelected ? colors.primary : colors.textSecondary} />
+          </View>
+          <Text
+            numberOfLines={2}
+            style={{
+              fontSize: 11,
+              fontFamily: 'Cairo-Bold',
+              textAlign: 'center',
+              color: isSelected ? colors.primary : colors.textSecondary,
+              lineHeight: 14,
+            }}
+          >
+            {cat.name}
+          </Text>
+        </Pressable>
+      );
+    },
+    [colors.borderStrong, colors.primary, colors.primarySoft, colors.surface, colors.surfaceAlt, colors.textSecondary, handleModalFilterChange, modalFilters.category],
+  );
+
+  const renderProviderTypeItem = useCallback(
+    ({ item: type }: { item: { code: string; name: string } }) => {
+      const isSelected = (modalFilters.provider_type || '') === type.code;
+      return (
+        <Pressable
+          onPress={() => handleModalFilterChange('provider_type', type.code || undefined)}
+          style={{
+            minWidth: 76,
+            height: 48,
+            borderRadius: 14,
+            borderWidth: 1.5,
+            borderColor: isSelected ? colors.primary : colors.borderStrong,
+            backgroundColor: isSelected ? colors.primarySoft : colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: 12,
+          }}
+        >
+          {isSelected && (
+            <View style={{ position: 'absolute', top: 4, start: 4, zIndex: 10 }}>
+              <Ionicons name="checkmark-circle" size={12} color={colors.primary} />
+            </View>
+          )}
+          <Text
+            style={{
+              fontSize: 12,
+              fontFamily: 'Cairo-Bold',
+              textAlign: 'center',
+              color: isSelected ? colors.primary : colors.textSecondary,
+            }}
+          >
+            {type.name}
+          </Text>
+        </Pressable>
+      );
+    },
+    [colors.borderStrong, colors.primary, colors.primarySoft, colors.surface, colors.textSecondary, handleModalFilterChange, modalFilters.provider_type],
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -363,10 +449,16 @@ export default function SearchTabScreen() {
             {keyword.length > 0 ? (
               <Pressable
                 onPress={() => {
+                  const nextFilters = normalizeSearchFilters({
+                    ...filters,
+                    keyword: undefined,
+                    page: 1,
+                  });
                   setKeyword('');
                   setDebouncedQ('');
                   setShowSuggestions(false);
-                  setFilters((f) => ({ ...f, keyword: '', page: 1 }));
+                  setFilters(nextFilters);
+                  router.setParams(toSearchRouteParams(nextFilters));
                 }}
                 hitSlop={8}
                 style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.88 : 1 }] })}
@@ -423,7 +515,49 @@ export default function SearchTabScreen() {
       </View>
 
       {/* Autocomplete suggestions */}
-      {showSuggestions && suggestions && suggestions.length > 0 ? (
+      {showSuggestions && debouncedQ.trim().length >= 2 && isFetchingSuggestions ? (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 8,
+            borderRadius: 16,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            ...rtlRow(),
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={{ flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
+            جاري تحميل الاقتراحات...
+          </Text>
+        </View>
+      ) : showSuggestions && debouncedQ.trim().length >= 2 && isSuggestionsError ? (
+        <View
+          style={{
+            marginHorizontal: 16,
+            marginBottom: 8,
+            borderRadius: 16,
+            backgroundColor: colors.surface,
+            borderWidth: 1,
+            borderColor: colors.border,
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            ...rtlRow(),
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <Ionicons name="alert-circle-outline" size={16} color={colors.gold} />
+          <Text style={{ flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
+            تعذر تحميل الاقتراحات. يمكنك متابعة البحث مباشرة.
+          </Text>
+        </View>
+      ) : showSuggestions && suggestions && suggestions.length > 0 ? (
         <View
           style={{
             marginHorizontal: 16,
@@ -477,23 +611,31 @@ export default function SearchTabScreen() {
 
       {/* Results */}
       {isError && !isFetching ? (
-        <ErrorView message="فشل البحث" onRetry={refetch} />
-      ) : isLoading && (filters.page ?? 1) === 1 ? (
+        <ErrorView error={error} onRetry={refetch} />
+      ) : (isLoading || isFetching) && (filters.page ?? 1) === 1 ? (
+        // Page-1 fetch (initial load or ANY filter change, incl. Clear All): show a
+        // spinner. This covers both the uncached case (isLoading) and the cached-but-
+        // refetching case (isFetching), and hides stale results during the transition.
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
-      ) : allProviders.length === 0 && !isFetching ? (
+      ) : allProviders.length === 0 ? (
+        // Reached only once the page-1 request has SETTLED with zero rows.
         filters.remote ? (
           <EmptyState
             icon="desktop-outline"
             title="لا توجد خدمات متاحة عن بُعد"
             message="لم نعثر حالياً على خدمات متاحة عن بُعد بهذه التصفية"
+            actionLabel="مسح التصفية"
+            onAction={handleResetFilters}
           />
         ) : keyword || filters.category || filters.city ? (
           <EmptyState
             icon="search-outline"
             title="لا توجد نتائج"
             message="جرّب كلمات أخرى أو غيّر التصفية"
+            actionLabel="مسح التصفية"
+            onAction={handleResetFilters}
           />
         ) : (
           <View
@@ -550,6 +692,10 @@ export default function SearchTabScreen() {
           keyExtractor={(p) => `tab-search-${p.id}`}
           style={{ flex: 1 }}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 28, gap: 12 }}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          removeClippedSubviews
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           onEndReached={handleLoadMore}
@@ -571,14 +717,22 @@ export default function SearchTabScreen() {
               </Text>
             ) : null
           }
-          renderItem={({ item: p }) => (
-            <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
-              <ProviderRowCard provider={p} onFavoritePress={handleFavorite} />
-            </View>
-          )}
+          renderItem={renderProviderItem}
           ListFooterComponent={
             isFetching && (filters.page ?? 1) > 1 ? (
               <ActivityIndicator size="small" color={colors.primary} style={{ marginVertical: 16 }} />
+            ) : !hasMore && allProviders.length > 0 ? (
+              <Text
+                style={{
+                  paddingVertical: 16,
+                  textAlign: 'center',
+                  fontSize: 12,
+                  fontFamily: 'Cairo-SemiBold',
+                  color: colors.textMuted,
+                }}
+              >
+                وصلت إلى نهاية النتائج
+              </Text>
             ) : null
           }
         />
@@ -759,65 +913,10 @@ export default function SearchTabScreen() {
               inverted
               scrollEnabled
               showsHorizontalScrollIndicator={false}
-              data={[{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])]}
+              data={categoryFilterData}
               keyExtractor={(item) => `cat-${item.id}`}
               contentContainerStyle={{ ...rtlRow(), gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
-              renderItem={({ item: cat }) => {
-                const isSelected = modalFilters.category === cat.slug || (!modalFilters.category && !cat.slug);
-                const iconName = cat.slug === '' ? 'apps-outline' : getCategoryIcon(cat.slug, cat.name);
-                return (
-                  <Pressable
-                    onPress={() => {
-                      handleModalFilterChange('category', cat.slug || undefined);
-                      handleModalFilterChange('category_id', cat.id || undefined);
-                    }}
-                    style={{
-                      width: 80,
-                      height: 96,
-                      borderRadius: 16,
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? colors.primary : colors.borderStrong,
-                      backgroundColor: isSelected ? colors.primarySoft : colors.surface,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: 6,
-                    }}
-                  >
-                    {isSelected && (
-                      <View style={{ position: 'absolute', top: 6, start: 6, zIndex: 10 }}>
-                        <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
-                      </View>
-                    )}
-                    <View
-                      style={{
-                        width: 38,
-                        height: 38,
-                        borderRadius: 12,
-                        backgroundColor: isSelected ? colors.surface : colors.surfaceAlt,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: 6,
-                        borderWidth: isSelected ? 1 : 0,
-                        borderColor: colors.primary,
-                      }}
-                    >
-                      <Ionicons name={iconName} size={18} color={isSelected ? colors.primary : colors.textSecondary} />
-                    </View>
-                    <Text
-                      numberOfLines={2}
-                      style={{
-                        fontSize: 11,
-                        fontFamily: 'Cairo-Bold',
-                        textAlign: 'center',
-                        color: isSelected ? colors.primary : colors.textSecondary,
-                        lineHeight: 14,
-                      }}
-                    >
-                      {cat.name}
-                    </Text>
-                  </Pressable>
-                );
-              }}
+              renderItem={renderCategoryFilterItem}
             />
 
             {/* Provider Type filter */}
@@ -830,44 +929,10 @@ export default function SearchTabScreen() {
               inverted
               scrollEnabled
               showsHorizontalScrollIndicator={false}
-              data={[{ code: '', name: 'الكل' }, ...(providerTypes && providerTypes.length > 0 ? providerTypes : FALLBACK_PROVIDER_TYPES)]}
+              data={providerTypeFilterData}
               keyExtractor={(item) => `ptype-${item.code}`}
               contentContainerStyle={{ ...rtlRow(), gap: 10, paddingHorizontal: 4, paddingVertical: 4 }}
-              renderItem={({ item: type }) => {
-                const isSelected = (modalFilters.provider_type || '') === type.code;
-                return (
-                  <Pressable
-                    onPress={() => handleModalFilterChange('provider_type', type.code || undefined)}
-                    style={{
-                      minWidth: 76,
-                      height: 48,
-                      borderRadius: 14,
-                      borderWidth: 1.5,
-                      borderColor: isSelected ? colors.primary : colors.borderStrong,
-                      backgroundColor: isSelected ? colors.primarySoft : colors.surface,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      paddingHorizontal: 12,
-                    }}
-                  >
-                    {isSelected && (
-                      <View style={{ position: 'absolute', top: 4, start: 4, zIndex: 10 }}>
-                        <Ionicons name="checkmark-circle" size={12} color={colors.primary} />
-                      </View>
-                    )}
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontFamily: 'Cairo-Bold',
-                        textAlign: 'center',
-                        color: isSelected ? colors.primary : colors.textSecondary,
-                      }}
-                    >
-                      {type.name}
-                    </Text>
-                  </Pressable>
-                );
-              }}
+              renderItem={renderProviderTypeItem}
             />
 
             {/* Remote Work filter */}

@@ -1,20 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
-import { rtlRow } from '../../src/utils/rtl';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
-import { useRegister } from '../../src/hooks/useAuth';
+import { Text, TextInput, View } from 'react-native';
+import { AuthButton, AuthNotice, AuthScreen, AuthTextField } from '../../components/auth/AuthPrimitives';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { useRegister } from '../../src/hooks/useAuth';
+import { useTheme } from '../../src/hooks/useTheme';
+import { parseApiError } from '../../src/lib/error-parser';
+import { isValidEmail, isValidName, isValidPassword, normalizeEmail, normalizeName } from '../../src/utils/authValidation';
 
 export default function RegisterScreen() {
   const { colors } = useTheme();
@@ -28,231 +20,152 @@ export default function RegisterScreen() {
   const emailRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmationRef = useRef<TextInput>(null);
-
   const register = useRegister();
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // Matches backend: min 8 chars, at least one uppercase, one lowercase, one digit
-  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
   const handleRegister = async () => {
     setErrors({});
-    if (!name.trim()) {
-      setErrors({ name: 'أدخل اسمك' });
+    const normalizedName = normalizeName(name);
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!isValidName(normalizedName)) {
+      setErrors({ name: 'أدخل اسمًا صحيحًا بدون أرقام أو رموز' });
       return;
     }
-    if (!email.trim() || !emailRegex.test(email.trim())) {
-      setErrors({ email: 'أدخل بريدك الإلكتروني' });
+    if (!isValidEmail(normalizedEmail)) {
+      setErrors({ email: 'أدخل بريدًا إلكترونيًا صحيحًا' });
       return;
     }
     if (!password) {
-      setErrors({ password: 'أدخل كلمتك' });
+      setErrors({ password: 'أدخل كلمة المرور' });
       return;
     }
-    if (!passwordRegex.test(password)) {
-      setErrors({ password: '8 أحرف: حروف كبيرة وصغيرة ورقم' });
+    if (!isValidPassword(password)) {
+      setErrors({ password: 'استخدم 8 أحرف على الأقل مع حرف كبير وحرف صغير ورقم' });
       return;
     }
     if (password !== confirmation) {
-      setErrors({ password_confirmation: 'كلمات المرور غير متطابقة' });
+      setErrors({ password_confirmation: 'كلمتا المرور غير متطابقتين' });
       return;
     }
+
     try {
       await register.mutateAsync({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
+        name: normalizedName,
+        email: normalizedEmail,
         password,
         password_confirmation: confirmation,
         redirectTo,
       });
     } catch (err: unknown) {
-      const axiosErr = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
-      if (!axiosErr.response) {
-        setErrors({ general: 'فشل الاتصال. تحقق من اتصالك بالإنترنت' });
-        return;
-      }
-      const data = axiosErr.response.data;
-      if (data?.errors) {
-        const mapped: Record<string, string> = {};
-        for (const [k, v] of Object.entries(data.errors)) mapped[k] = v[0];
-        setErrors(mapped);
-      } else {
-        setErrors({ general: data?.message ?? 'حدث خطأ، حاول مجدداً' });
-      }
+      const parsed = parseApiError(err);
+      setErrors(Object.keys(parsed.fieldErrors).length ? parsed.fieldErrors : { general: parsed.message });
     }
   };
 
-  const inputStyle = (hasError: boolean) => ({
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: hasError ? colors.error : colors.border,
-    backgroundColor: colors.surfaceAlt,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    textAlign: 'right' as const,
-    color: colors.textPrimary,
-    fontFamily: 'Cairo-Regular',
-    fontSize: 14,
-    writingDirection: 'rtl' as const,
-  });
-
-  const label = { marginBottom: 6, textAlign: 'right' as const, fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary };
-  const errorText = { marginTop: 4, textAlign: 'right' as const, fontSize: 12, color: colors.error, fontFamily: 'Cairo-Regular' };
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header Back Button */}
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 }}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(tabs)/'))} hitSlop={8} style={{ marginLeft: 12 }}>
-          <Ionicons name="arrow-forward" size={22} color={colors.textPrimary} />
-        </Pressable>
+    <AuthScreen title="إنشاء حساب" subtitle="استخدم اسمك الحقيقي وبريدًا يمكنك الوصول إليه">
+      {errors.general ? <AuthNotice>{errors.general}</AuthNotice> : null}
+
+      <AuthTextField
+        value={name}
+        onChangeText={setName}
+        label="الاسم الكامل"
+        error={errors.name}
+        placeholder="أدخل اسمك الكامل"
+        autoComplete="name"
+        textContentType="name"
+        autoCapitalize="words"
+        returnKeyType="next"
+        onSubmitEditing={() => emailRef.current?.focus()}
+      />
+
+      <AuthTextField
+        ref={emailRef}
+        value={email}
+        onChangeText={setEmail}
+        label="البريد الإلكتروني"
+        error={errors.email}
+        placeholder="أدخل بريدك الإلكتروني"
+        keyboardType="email-address"
+        inputMode="email"
+        autoCapitalize="none"
+        autoCorrect={false}
+        autoComplete="email"
+        textContentType="emailAddress"
+        returnKeyType="next"
+        onSubmitEditing={() => passwordRef.current?.focus()}
+      />
+
+      <PasswordInput
+        ref={passwordRef}
+        value={password}
+        onChangeText={setPassword}
+        label="كلمة المرور"
+        error={errors.password}
+        placeholder="أدخل كلمة المرور"
+        placeholderTextColor={colors.textMuted}
+        autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="next"
+        onSubmitEditing={() => confirmationRef.current?.focus()}
+        containerStyle={{ marginBottom: 6 }}
+      />
+      {!errors.password ? (
+        <Text style={{ marginBottom: 16, textAlign: 'right', fontSize: 12, lineHeight: 18, color: colors.textMuted, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
+          8 أحرف على الأقل، مع حرف كبير وحرف صغير ورقم.
+        </Text>
+      ) : null}
+
+      <PasswordInput
+        ref={confirmationRef}
+        value={confirmation}
+        onChangeText={setConfirmation}
+        label="تأكيد كلمة المرور"
+        error={errors.password_confirmation}
+        placeholder="أعد إدخال كلمة المرور"
+        placeholderTextColor={colors.textMuted}
+        autoComplete="new-password"
+        textContentType="newPassword"
+        returnKeyType="done"
+        onSubmitEditing={handleRegister}
+        containerStyle={{ marginBottom: 24 }}
+      />
+
+      <View style={{ width: '100%', gap: 12 }}>
+        <AuthButton
+          title="إنشاء حساب"
+          loadingTitle="جاري إنشاء الحساب..."
+          loading={register.isPending}
+          onPress={handleRegister}
+          colors={colors}
+        />
+        <AuthButton
+          title="تصفح كضيف"
+          onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
+          colors={colors}
+        />
       </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
+      <Text style={{ marginTop: 16, textAlign: 'center', fontSize: 12, lineHeight: 20, color: colors.textMuted, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
+        بإنشاء الحساب، أنت توافق على{' '}
+        <Text style={{ color: colors.primary }} onPress={() => requestAnimationFrame(() => router.push('/privacy'))}>
+          سياسة الخصوصية
+        </Text>
+        {' '}و{' '}
+        <Text style={{ color: colors.primary }} onPress={() => requestAnimationFrame(() => router.push('/terms'))}>
+          شروط الاستخدام
+        </Text>
+      </Text>
+
+      <Text style={{ marginTop: 18, textAlign: 'center', fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
+        لديك حساب؟{' '}
+        <Text
+          style={{ fontFamily: 'Cairo-Bold', color: colors.primary }}
+          onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/login', params: redirectTo ? { redirectTo } : undefined }))}
         >
-          <View style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 32 }}>
-            {/* Header */}
-            <View style={{ marginBottom: 24, alignItems: 'center' }}>
-              <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
-                <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>دلني</Text>
-                <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.gold }}>.</Text>
-              </View>
-              <Text style={{ marginTop: 4, fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-SemiBold' }}>إنشاء حساب</Text>
-            </View>
-
-            {errors.general ? (
-              <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
-                <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{errors.general}</Text>
-              </View>
-            ) : null}
-
-            {/* Full name */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={label}>اسمك</Text>
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                placeholder="أحمد محمد"
-                placeholderTextColor={colors.textMuted}
-                autoComplete="name"
-                textContentType="name"
-                autoCapitalize="words"
-                returnKeyType="next"
-                onSubmitEditing={() => emailRef.current?.focus()}
-                style={inputStyle(!!errors.name)}
-              />
-              {errors.name ? <Text style={errorText}>{errors.name}</Text> : null}
-            </View>
-
-            {/* Email */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={label}>بريدك الإلكتروني</Text>
-              <TextInput
-                ref={emailRef}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@email.com"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="email"
-                textContentType="emailAddress"
-                returnKeyType="next"
-                onSubmitEditing={() => passwordRef.current?.focus()}
-                style={inputStyle(!!errors.email)}
-              />
-              {errors.email ? <Text style={errorText}>{errors.email}</Text> : null}
-            </View>
-
-            {/* Password */}
-            <PasswordInput
-              ref={passwordRef}
-              value={password}
-              onChangeText={setPassword}
-              label="كلمتك"
-              error={errors.password}
-              placeholder="8 أحرف على الأقل"
-              placeholderTextColor={colors.textMuted}
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="next"
-              onSubmitEditing={() => confirmationRef.current?.focus()}
-            />
-
-            {/* Confirm password */}
-            <PasswordInput
-              ref={confirmationRef}
-              value={confirmation}
-              onChangeText={setConfirmation}
-              label="أعد كتابة كلمتك"
-              error={errors.password_confirmation}
-              placeholder="أعد كتابة كلمتك"
-              placeholderTextColor={colors.textMuted}
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="done"
-              onSubmitEditing={handleRegister}
-              containerStyle={{ marginBottom: 24 }}
-            />
-
-            <Pressable
-              onPress={handleRegister}
-              disabled={register.isPending}
-              style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: register.isPending ? 0.7 : 1 }}
-            >
-              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>
-                {register.isPending ? 'جاري التسجيل...' : 'أنشئ حسابك'}
-              </Text>
-            </Pressable>
-
-            {/* Continue as Guest */}
-            <Pressable
-              onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
-              style={{
-                alignItems: 'center',
-                borderRadius: 16,
-                borderWidth: 1,
-                borderColor: colors.border,
-                paddingVertical: 16,
-                marginTop: 12,
-              }}
-            >
-              <Text style={{ fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>
-                تصفح كضيف
-              </Text>
-            </Pressable>
-
-            {/* Privacy policy — required by App Store 5.1.1 before data collection */}
-            <Text style={{ marginTop: 16, textAlign: 'center', fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
-              بالتسجيل، أنت توافق على{' '}
-              <Text style={{ color: colors.primary }} onPress={() => requestAnimationFrame(() => router.push('/privacy'))}>
-                سياسة الخصوصية
-              </Text>
-              {' '}و{' '}
-              <Text style={{ color: colors.primary }} onPress={() => requestAnimationFrame(() => router.push('/terms'))}>
-                شروط الاستخدام
-              </Text>
-            </Text>
-
-            <Pressable
-              onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/login', params: redirectTo ? { redirectTo } : undefined }))}
-              style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}
-            >
-              <Text style={{ fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular' }}>
-                لديك حساب؟{' '}
-                <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary }}>تسجيل الدخول</Text>
-              </Text>
-            </Pressable>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          تسجيل الدخول
+        </Text>
+      </Text>
+    </AuthScreen>
   );
 }

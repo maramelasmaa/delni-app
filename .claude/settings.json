@@ -1,10 +1,12 @@
 {
-  "enabledPlugins": {
-    "expo@claude-plugins-official": true
-  },
   "permissions": {
     "allow": [
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "PowerShell(wsl -d Ubuntu-22.04 -- bash -lc \"curl -fsSL https://cli.coderabbit.ai/install.sh | sh\")",
+      "PowerShell(wsl -d Ubuntu-22.04 -- bash -lc \"~/.local/bin/coderabbit auth status 2>&1 | head -5\")"
     ]
+  },
+  "enabledPlugins": {
+    "expo@claude-plugins-official": true
   }
 }

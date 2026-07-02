@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorView } from '../components/ui/ErrorView';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { useTheme } from '../src/hooks/useTheme';
@@ -9,10 +10,10 @@ import { buildSocialUrl, openExternalUrl } from '../src/utils/links';
 
 export default function ContactScreen() {
   const { colors } = useTheme();
-  const { data: contact, isLoading, isError, refetch } = useContact();
+  const { data: contact, isLoading, isError, error, refetch } = useContact();
 
   if (isLoading) return <LoadingSpinner />;
-  if (isError) return <ErrorView onRetry={refetch} />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   // Active contact channels (Filament-managed). Icon-only — no raw values shown.
   const items = [
@@ -74,9 +75,13 @@ export default function ContactScreen() {
 
         {/* Icon-only contact buttons */}
         {items.length === 0 ? (
-          <View style={{ marginHorizontal: 16, backgroundColor: colors.surface, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
-            <Text style={{ color: colors.textMuted, fontFamily: 'Cairo-Regular', fontSize: 14, textAlign: 'center' }}>لا توجد معلومات اتصال</Text>
-          </View>
+          <EmptyState
+            icon="chatbubble-ellipses-outline"
+            title="لا توجد معلومات اتصال"
+            message="لا توجد قنوات تواصل متاحة حالياً. حاول تحديث الصفحة لاحقاً."
+            actionLabel="إعادة المحاولة"
+            onAction={() => refetch()}
+          />
         ) : (
           <View style={{ flexDirection: 'row-reverse', flexWrap: 'wrap', justifyContent: 'center', gap: 18, paddingHorizontal: 24 }}>
             {items.map((item) => (
@@ -85,10 +90,11 @@ export default function ContactScreen() {
                 onPress={item.action}
                 accessibilityRole="button"
                 accessibilityLabel={item.label}
+                hitSlop={6}
                 style={({ pressed }) => ({
-                  height: 60,
-                  width: 60,
-                  borderRadius: 30,
+                  height: 68,
+                  width: 68,
+                  borderRadius: 34,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: colors.surface,
@@ -102,7 +108,7 @@ export default function ContactScreen() {
                   transform: [{ scale: pressed ? 0.93 : 1 }],
                 })}
               >
-                <Ionicons name={item.icon} size={26} color={item.iconColor} />
+                <Ionicons name={item.icon} size={32} color={item.iconColor} />
               </Pressable>
             ))}
           </View>

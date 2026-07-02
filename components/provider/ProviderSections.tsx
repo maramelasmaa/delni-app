@@ -83,7 +83,7 @@ export function AboutSection({ about, colors }: AboutSectionProps) {
             onPress={() => setExpanded(!expanded)}
             style={{
               marginTop: 10,
-              alignSelf: 'flex-start',
+              alignSelf: 'flex-end',
               ...rtlRow(),
               alignItems: 'center',
               gap: 4,
@@ -674,16 +674,20 @@ export function ReviewsSection({
           onPress={() => setShowAll(true)}
           style={{
             marginTop: 8,
-            alignItems: 'center',
+            alignItems: 'flex-end',
             borderRadius: 16,
             borderWidth: 1,
             borderColor: colors.primary,
             paddingVertical: 12,
+            paddingHorizontal: 16,
           }}
         >
-          <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
-            عرض كل التقييمات ({reviews.length})
-          </Text>
+          <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
+              عرض كل التقييمات ({reviews.length})
+            </Text>
+            <Ionicons name="chevron-down" size={16} color={colors.primary} />
+          </View>
         </Pressable>
       )}
       {showAll && hasMore && (
@@ -692,19 +696,23 @@ export function ReviewsSection({
           disabled={isFetching}
           style={{
             marginTop: 8,
-            alignItems: 'center',
+            alignItems: 'flex-end',
             borderRadius: 16,
             borderWidth: 1,
             borderColor: colors.primary,
             paddingVertical: 12,
+            paddingHorizontal: 16,
           }}
         >
           {isFetching ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
-              تحميل المزيد من التقييمات
-            </Text>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>
+                تحميل المزيد من التقييمات
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={colors.primary} />
+            </View>
           )}
         </Pressable>
       )}

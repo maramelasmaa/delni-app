@@ -1,94 +1,83 @@
-import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useTheme } from '../../src/hooks/useTheme';
+import { View } from 'react-native';
+import { AuthButton, AuthNotice, AuthScreen, AuthTextField } from '../../components/auth/AuthPrimitives';
 import { useForgotPassword } from '../../src/hooks/useAuth';
+import { useTheme } from '../../src/hooks/useTheme';
+import { parseApiError } from '../../src/lib/error-parser';
+import { isValidEmail, normalizeEmail } from '../../src/utils/authValidation';
 
 export default function ForgotPasswordScreen() {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const forgot = useForgotPassword();
 
   const handleSubmit = async () => {
     setError('');
-    if (!email.trim()) { setError('أدخل بريدك الإلكتروني'); return; }
+    setEmailError('');
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!isValidEmail(normalizedEmail)) {
+      setEmailError('أدخل بريدًا إلكترونيًا صحيحًا');
+      return;
+    }
+
     try {
-      await forgot.mutateAsync(email.trim());
+      await forgot.mutateAsync(normalizedEmail);
       setSent(true);
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'حدث خطأ، حاول مجدداً');
+    } catch (err: unknown) {
+      setError(parseApiError(err).message);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-      {/* Header Back Button */}
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 8, paddingTop: 12 }}>
-        <Pressable onPress={() => router.canGoBack() ? router.back() : requestAnimationFrame(() => router.replace('/(auth)/login'))} hitSlop={8} style={{ marginLeft: 12 }}>
-          <Ionicons name="arrow-forward" size={22} color={colors.textPrimary} />
-        </Pressable>
-      </View>
-
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <View style={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 80 }}>
-          <Text style={{ marginBottom: 8, textAlign: 'center', fontSize: 24, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>نسيت كلمة المرور؟</Text>
-          <Text style={{ marginBottom: 32, textAlign: 'center', fontSize: 14, color: colors.textMuted, fontFamily: 'Cairo-Regular' }}>
-            سنرسل لك رابط إعادة التعيين على بريدك الإلكتروني
-          </Text>
-
-          {sent ? (
-            <View style={{ borderRadius: 16, backgroundColor: colors.successSoft, padding: 24 }}>
-              <Text style={{ textAlign: 'center', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.success }}>
-                تحقق من بريدك. أرسلنا لك رابط لإعادة تعيين كلمتك.
-              </Text>
-            </View>
-          ) : (
-            <>
-              {error ? (
-                <View style={{ marginBottom: 16, borderRadius: 12, backgroundColor: colors.errorSoft, padding: 12 }}>
-                  <Text style={{ textAlign: 'center', fontSize: 14, color: colors.error, fontFamily: 'Cairo-SemiBold' }}>{error}</Text>
-                </View>
-              ) : null}
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="بريدك الإلكتروني"
-                placeholderTextColor={colors.textMuted}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                style={{
-                  marginBottom: 16,
-                  borderRadius: 12,
-                  borderWidth: 1,
-                  borderColor: error ? colors.error : colors.border,
-                  backgroundColor: colors.surfaceAlt,
-                  paddingHorizontal: 16,
-                  paddingVertical: 12,
-                  textAlign: 'right',
-                  color: colors.textPrimary,
-                  fontFamily: 'Cairo-Regular',
-                  fontSize: 14,
-                  writingDirection: 'rtl',
-                }}
-              />
-              <Pressable
-                onPress={handleSubmit}
-                disabled={forgot.isPending}
-                style={{ alignItems: 'center', borderRadius: 16, backgroundColor: colors.primary, paddingVertical: 16, opacity: forgot.isPending ? 0.7 : 1 }}
-              >
-                <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 16, color: colors.textOnPrimary }}>
-                  {forgot.isPending ? 'جاري الإرسال...' : 'أرسل'}
-                </Text>
-              </Pressable>
-            </>
-          )}
+    <AuthScreen
+      title="استعادة كلمة المرور"
+      subtitle="أدخل بريدك الإلكتروني وسنرسل لك رابط إعادة التعيين"
+      backTo="/(auth)/login"
+    >
+      {sent ? (
+        <View>
+          <AuthNotice type="success">
+            تحقق من بريدك الإلكتروني. أرسلنا رابطًا لإعادة تعيين كلمة المرور.
+          </AuthNotice>
+          <AuthButton
+            title="العودة لتسجيل الدخول"
+            onPress={() => requestAnimationFrame(() => router.replace({ pathname: '/(auth)/login', params: { email: normalizeEmail(email) } }))}
+            colors={colors}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      ) : (
+        <>
+          {error ? <AuthNotice>{error}</AuthNotice> : null}
+          <AuthTextField
+            value={email}
+            onChangeText={setEmail}
+            label="البريد الإلكتروني"
+            error={emailError}
+            placeholder="أدخل بريدك الإلكتروني"
+            keyboardType="email-address"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            returnKeyType="send"
+            onSubmitEditing={handleSubmit}
+            containerStyle={{ marginBottom: 24 }}
+          />
+          <AuthButton
+            title="إرسال رابط إعادة التعيين"
+            loadingTitle="جاري الإرسال..."
+            loading={forgot.isPending}
+            onPress={handleSubmit}
+            colors={colors}
+          />
+        </>
+      )}
+    </AuthScreen>
   );
 }

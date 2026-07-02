@@ -5,6 +5,7 @@ import { Dimensions, FlatList, Pressable, Text, View, NativeSyntheticEvent, Nati
 import { useTheme } from '../../src/hooks/useTheme';
 import { openExternalUrl } from '../../src/utils/links';
 import type { Banner } from '../../src/types';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = SCREEN_WIDTH - 40;
@@ -29,6 +30,7 @@ const BannerCarousel = memo(function BannerCarousel({ banners }: Props) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const realCount = banners.length;
+  usePrefetchImages(banners.map((banner) => banner.image_url), { cachePolicy: 'memory-disk', limit: 6 });
   
   // Create a 3x padded array to allow seamless infinite scrolling left and right
   const data = useMemo<CarouselBanner[]>(() => {
@@ -183,6 +185,8 @@ const BannerItem = memo(function BannerItem({ banner, onPress }: { banner: Banne
         source={{ uri: banner.image_url }}
         style={{ width: CARD_WIDTH, height: CARD_HEIGHT }}
         contentFit="cover"
+        cachePolicy="memory-disk"
+        priority="high"
         recyclingKey={`banner-${banner.id}`}
       />
       {banner.title || banner.subtitle ? (

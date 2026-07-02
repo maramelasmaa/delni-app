@@ -5,9 +5,15 @@ import { queryClient } from '../lib/queryClient';
 import { useAuthStore } from '../store/auth';
 import type { ApiResponse, AuthCredentials, RegisterData, User } from '../types';
 import { ENDPOINTS } from '../constants/api';
+import { showNativeAlert } from '../utils/themedAlert';
 
 function resolveRedirectTarget(redirectTo?: string) {
-  return redirectTo && redirectTo.startsWith('/') ? redirectTo : '/(tabs)/';
+  // Must be an in-app absolute path. Reject protocol-relative ("//host") and
+  // scheme-like values so a crafted redirectTo can never point off-app.
+  const isSafeInAppPath =
+    !!redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//');
+
+  return isSafeInAppPath ? redirectTo : '/(tabs)/';
 }
 
 export function useLogin() {
@@ -22,7 +28,7 @@ export function useLogin() {
     },
     onSuccess: async ({ user, token }, variables) => {
       await setAuth(user, token);
-      await queryClient.invalidateQueries();
+      queryClient.clear();
       requestAnimationFrame(() => {
         router.replace(resolveRedirectTarget(variables.redirectTo) as never);
       });
@@ -42,7 +48,7 @@ export function useRegister() {
     },
     onSuccess: async ({ user, token }, variables) => {
       await setAuth(user, token);
-      await queryClient.invalidateQueries();
+      queryClient.clear();
       requestAnimationFrame(() => {
         router.replace(resolveRedirectTarget(variables.redirectTo) as never);
       });
@@ -137,12 +143,18 @@ export function useDeleteAccount() {
     mutationFn: async () => {
       await api.delete(ENDPOINTS.auth.deleteAccount);
     },
-    onSettled: async () => {
+    onSuccess: async () => {
       await clearAuth();
       queryClient.clear();
       requestAnimationFrame(() => {
         router.replace('/(auth)/login');
       });
+    },
+    onError: () => {
+      showNativeAlert(
+        'تعذر حذف الحساب',
+        'لم نتمكن من حذف الحساب الآن. تحقق من اتصالك وحاول مرة أخرى.',
+      );
     },
   });
 }

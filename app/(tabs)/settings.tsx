@@ -140,9 +140,9 @@ function MenuItem({
 }
 
 const THEME_OPTIONS: { value: ThemePreference; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { value: 'light', label: 'فاتح', icon: 'sunny' },
+  { value: 'light', label: 'الوضع الفاتح', icon: 'sunny' },
   { value: 'system', label: 'النظام', icon: 'phone-portrait' },
-  { value: 'dark', label: 'داكن', icon: 'moon' },
+  { value: 'dark', label: 'الوضع الداكن', icon: 'moon' },
 ];
 
 function ThemeToggle({ colors }: { colors: ThemeColors }) {
@@ -406,10 +406,12 @@ export default function SettingsScreen() {
             <MenuItem
               icon="log-out"
               iconColor={colors.error}
-              label="تسجيل الخروج"
-              subtitle="الخروج من حسابك الحالي"
+              label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'}
+              subtitle={logout.isPending ? 'يرجى الانتظار لحظة' : 'الخروج من حسابك الحالي'}
               danger
-              onPress={() => logout.mutate()}
+              onPress={() => {
+                if (!logout.isPending) logout.mutate();
+              }}
               colors={colors}
               isLast
             />

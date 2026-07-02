@@ -16,6 +16,9 @@ import type { ThemeColors } from '../../src/theme/tokens';
 import type { PortfolioItem } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { getAvatarTheme } from '../../src/utils/providerMappers';
+import { getProviderTypeIcon, getProviderTypeLabel } from '../../src/utils/providerTypes';
+import { RTLAlert, useRTLAlert } from '../ui/RTLAlert';
+import { REPORT_MESSAGES } from '../../src/lib/report-errors';
 import { formatArabicReviewCount, toEnglishNumbers } from '../../src/utils/numberFormatter';
 import { rtlRow } from '../../src/utils/rtl';
 import {
@@ -41,25 +44,7 @@ export default function ProviderScreen() {
   const reportModal = useReportModal();
 
   // Custom alert state
-  const [customAlert, setCustomAlert] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>;
-  }>({
-    visible: false,
-    title: "",
-    message: "",
-    buttons: [],
-  });
-
-  const showRTLAlert = useCallback((
-    title: string,
-    message: string,
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>
-  ) => {
-    setCustomAlert({ visible: true, title, message, buttons });
-  }, []);
+  const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
 
   const handleReportReview = useCallback((reviewId: number) => {
     if (!detail.isAuthenticated) {
@@ -79,9 +64,15 @@ export default function ProviderScreen() {
       );
       return;
     }
+    const review = detail.allReviews.find((item) => item.id === reviewId);
+    if (review?.user_id === detail.user?.id) {
+      showRTLAlert('لا يمكن إرسال البلاغ', REPORT_MESSAGES.ownReview, [{ text: 'حسناً', style: 'default' }]);
+      return;
+    }
+    reportModal.setReportError('');
     reportModal.setReportReviewIdState(reviewId);
     reportModal.setShowReportModal(true);
-  }, [detail.isAuthenticated, slug, showRTLAlert, reportModal]);
+  }, [detail.allReviews, detail.isAuthenticated, detail.user?.id, slug, showRTLAlert, reportModal]);
 
   React.useEffect(() => {
     if (writeReview === 'true' && detail.isAuthenticated && detail.provider) {
@@ -139,30 +130,18 @@ export default function ProviderScreen() {
   }, [detail.provider?.can_review, detail.provider?.review_status_message, reviewModal, showRTLAlert]);
 
   if (detail.isLoading) return <LoadingSpinner />;
-  if (detail.isError || !detail.provider || !detail.profile) return <ErrorView onRetry={detail.refetch} />;
+  if (detail.isError || !detail.provider || !detail.profile) return <ErrorView error={detail.error} onRetry={detail.refetch} />;
 
   const profile = detail.profile;
   const HERO_HEIGHT = 250;
   const AVATAR_SIZE = 96;
 
-  const translatedType = (() => {
-    if (!profile.providerType) return null;
-    const t = profile.providerType.toLowerCase().trim();
-    if (t === 'individual') return 'مستقل';
-    if (t === 'company') return 'شركة';
-    if (t === 'agency') return 'وكالة';
-    return profile.providerType;
-  })();
+  // Shared label source — was a local map that returned "مستقل" for `individual`,
+  // disagreeing with search/filter ("فرد"). Now consistent everywhere.
+  const translatedType = getProviderTypeLabel(profile.providerType);
+  const typeIcon = getProviderTypeIcon(profile.providerType);
 
   const specs = [];
-  if (profile.cityName) {
-    specs.push({
-      id: 'city',
-      icon: 'location-outline',
-      label: 'المدينة',
-      value: profile.cityName,
-    });
-  }
   if (profile.yearsExperienceText) {
     specs.push({
       id: 'exp',
@@ -177,6 +156,14 @@ export default function ProviderScreen() {
       icon: 'desktop-outline',
       label: 'طبيعة العمل',
       value: 'عمل عن بُعد',
+    });
+  }
+  if (translatedType) {
+    specs.push({
+      id: 'type',
+      icon: typeIcon,
+      label: 'النوع',
+      value: translatedType,
     });
   }
 
@@ -306,34 +293,36 @@ export default function ProviderScreen() {
           </View>
 
           {/* Quick Specs Dashboard Bar */}
-          <View style={{
-            ...rtlRow(),
-            width: '100%',
-            backgroundColor: colors.surfaceAlt,
-            borderRadius: 18,
-            paddingVertical: 10,
-            paddingHorizontal: 8,
-            marginTop: 12,
-            alignItems: 'center',
-            justifyContent: 'space-around',
-          }}>
-            {specs.map((spec, index) => (
-              <React.Fragment key={spec.id}>
-                <View style={{ alignItems: 'center', flex: 1 }}>
-                  <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
-                  <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12.5, color: colors.textPrimary, textAlign: 'center' }}>
-                    {spec.value}
-                  </Text>
-                  <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 2 }}>
-                    {spec.label}
-                  </Text>
-                </View>
-                {index < specs.length - 1 && (
-                  <View style={{ width: 1, height: 26, backgroundColor: colors.border }} />
-                )}
-              </React.Fragment>
-            ))}
-          </View>
+          {specs.length > 0 ? (
+            <View style={{
+              ...rtlRow(),
+              width: '100%',
+              backgroundColor: colors.surfaceAlt,
+              borderRadius: 18,
+              paddingVertical: 10,
+              paddingHorizontal: 8,
+              marginTop: 12,
+              alignItems: 'center',
+              justifyContent: 'space-around',
+            }}>
+              {specs.map((spec, index) => (
+                <React.Fragment key={spec.id}>
+                  <View style={{ alignItems: 'center', flex: 1 }}>
+                    <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
+                    <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12.5, color: colors.textPrimary, textAlign: 'center' }}>
+                      {spec.value}
+                    </Text>
+                    <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 2 }}>
+                      {spec.label}
+                    </Text>
+                  </View>
+                  {index < specs.length - 1 && (
+                    <View style={{ width: 1, height: 26, backgroundColor: colors.border }} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          ) : null}
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
@@ -358,7 +347,7 @@ export default function ProviderScreen() {
                     elevation: 2,
                   }}
                 >
-                  <Ionicons name="logo-whatsapp" size={18} color={colors.textOnPrimary} />
+                  <Ionicons name="logo-whatsapp" size={22} color={colors.textOnPrimary} />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: colors.textOnPrimary }}>واتساب</Text>
                 </Pressable>
               )}
@@ -382,7 +371,7 @@ export default function ProviderScreen() {
                     elevation: 2,
                   }}
                 >
-                  <Ionicons name="call" size={16} color={colors.textOnPrimary} />
+                  <Ionicons name="call" size={20} color={colors.textOnPrimary} />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: colors.textOnPrimary }}>اتصال هاتفي</Text>
                 </Pressable>
               )}
@@ -391,10 +380,27 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderColor: colors.border, width: '100%', flexWrap: 'wrap' }}>
               {profile.socialLinks.map((item) => (
-                <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
-                  <Ionicons name={item.icon} size={18} color={item.color} />
+                <Pressable
+                  key={item.id}
+                  onPress={() => openExternalUrl(item.url)}
+                  accessibilityRole="button"
+                  hitSlop={6}
+                  style={({ pressed }) => ({
+                    width: 50,
+                    height: 50,
+                    borderRadius: 14,
+                    backgroundColor: colors.surfaceAlt,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.7 : 1,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    transform: [{ scale: pressed ? 0.94 : 1 }],
+                  })}
+                >
+                  <Ionicons name={item.icon} size={25} color={item.color} />
                 </Pressable>
               ))}
             </View>
@@ -504,45 +510,38 @@ export default function ProviderScreen() {
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
               <Pressable onPress={() => reportModal.setShowReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textSecondary }}>إلغاء</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : colors.textSecondary }}>إلغاء</Text>
               </Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ═══ CUSTOM SYSTEM ALERTS MODAL ═══ */}
-      <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}>
-        <View style={{ flex: 1, backgroundColor: colors.overlayHeavy, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ width: '90%', maxWidth: 360, backgroundColor: colors.surface, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, marginBottom: 12, textAlign: 'center' }}>{customAlert.title}</Text>
-            <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24, writingDirection: 'rtl' }}>{customAlert.message}</Text>
-            <View style={{ width: '100%', flexDirection: customAlert.buttons.length === 2 ? 'row-reverse' : 'column', gap: 10 }}>
-              {customAlert.buttons.length === 0 ? (
-                <Pressable onPress={() => setCustomAlert((prev) => ({ ...prev, visible: false }))} style={{ width: '100%', height: 44, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 14 }}>حسناً</Text>
-                </Pressable>
-              ) : (
-                customAlert.buttons.map((btn, idx) => {
-                  const isCancel = btn.style === 'cancel';
-                  return (
-                    <Pressable key={idx} onPress={() => { setCustomAlert((prev) => ({ ...prev, visible: false })); btn.onPress?.(); }} style={{ flex: customAlert.buttons.length === 2 ? 1 : undefined, width: '100%', height: 44, borderRadius: 12, backgroundColor: isCancel ? colors.surfaceAlt : colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: isCancel ? 1 : 0, borderColor: colors.border }}>
-                      <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 14, color: isCancel ? colors.textSecondary : colors.textOnPrimary }}>{btn.text}</Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* ═══ CUSTOM SYSTEM ALERTS MODAL (shared) ═══ */}
+      <RTLAlert alert={alert} onDismiss={hideAlert} />
 
       {/* ═══ REVIEW ACTION WINDOW MODAL ═══ */}
       <Modal visible={reviewModal.showReviewModal} transparent animationType="slide" onRequestClose={() => reviewModal.setShowReviewModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-            <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>أضف تقييمك</Text>
-            <Pressable onPress={() => reviewModal.setShowReviewModal(false)}>
+          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 24, paddingBottom: 14, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+            <View style={{ alignItems: 'flex-end', flex: 1, paddingLeft: 12 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right' }}>قيّم الخدمة</Text>
+              <Text style={{ marginTop: 2, fontSize: 12, fontFamily: 'Cairo-Regular', color: colors.textMuted, textAlign: 'right' }}>أضف عدد النجوم ثم اكتب تجربتك إن أحببت</Text>
+            </View>
+            <Pressable
+              onPress={() => reviewModal.setShowReviewModal(false)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="إغلاق"
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
+              })}
+            >
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -550,6 +549,9 @@ export default function ProviderScreen() {
             <Text style={{ marginBottom: 12, marginTop: 24, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تقييمك</Text>
             <View style={{ alignItems: 'center' }}>
               <StarRating value={reviewModal.reviewRating} size={40} interactive onChange={reviewModal.setReviewRating} />
+              <Text style={{ marginTop: 10, fontSize: 13, fontFamily: 'Cairo-SemiBold', color: reviewModal.reviewRating ? colors.primary : colors.textMuted, textAlign: 'center' }}>
+                {reviewModal.reviewRating ? `تقييمك: ${reviewModal.reviewRating} من 5` : 'اضغط على النجوم لإضافة التقييم'}
+              </Text>
             </View>
             <Text style={{ marginBottom: 8, marginTop: 20, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تعليقك (اختياري)</Text>
             <TextInput
@@ -566,8 +568,8 @@ export default function ProviderScreen() {
             ) : null}
           </ScrollView>
           <Pressable onPress={reviewModal.handleReviewSubmit} disabled={!reviewModal.reviewRating || reviewModal.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewModal.reviewRating ? colors.primary : colors.surfaceAlt }}>
-            <Text style={{ fontFamily: 'Cairo-Bold', color: reviewModal.reviewRating ? colors.textOnPrimary : colors.textMuted }}>
-              {reviewModal.isPending ? 'جاري الإرسال...' : 'إرسال التقييم'}
+            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewModal.reviewRating ? colors.textOnPrimary : colors.textMuted }}>
+              {reviewModal.isPending ? 'جاري الإرسال...' : reviewModal.reviewRating ? 'إرسال التقييم' : 'اختر التقييم أولاً'}
             </Text>
           </Pressable>
         </SafeAreaView>

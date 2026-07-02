@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMe, useUpdateProfile, useChangePassword, useDeleteAccount } from '../src/hooks/useAuth';
 import { useTheme } from '../src/hooks/useTheme';
 import { useAuthStore } from '../src/store/auth';
 import type { ThemeColors } from '../src/theme/tokens';
 import { rtlRow } from '../src/utils/rtl';
+import { RTLAlert, useRTLAlert } from '../components/ui/RTLAlert';
+import { isValidEmail, isValidName, normalizeEmail, normalizeName } from '../src/utils/authValidation';
 
 function extractError(err: unknown, fallback: string): string {
   const e = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
@@ -58,6 +60,7 @@ function FieldRow({
   initialValue,
   placeholder,
   keyboardType,
+  type = 'text',
   onSave,
   colors,
 }: {
@@ -65,19 +68,44 @@ function FieldRow({
   initialValue: string;
   placeholder?: string;
   keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  type?: 'name' | 'email' | 'text';
   onSave: (value: string) => Promise<unknown>;
   colors: ThemeColors;
 }) {
   const [value, setValue] = useState(initialValue);
+  const [baseline, setBaseline] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const dirty = value.trim() !== initialValue.trim() && value.trim() !== '';
+  const [saved, setSaved] = useState(false);
+  const normalizedValue = type === 'email' ? normalizeEmail(value) : type === 'name' ? normalizeName(value) : value.trim();
+  const dirty = normalizedValue !== baseline.trim() && normalizedValue !== '';
+  const canSave = dirty && !saving;
+
+  useEffect(() => {
+    setValue(initialValue);
+    setBaseline(initialValue);
+    setError('');
+    setSaved(false);
+  }, [initialValue]);
 
   const save = async () => {
+    if (!canSave) return;
     setError('');
+    setSaved(false);
+    if (type === 'name' && !isValidName(normalizedValue)) {
+      setError('أدخل اسمًا صحيحًا بدون أرقام أو رموز');
+      return;
+    }
+    if (type === 'email' && !isValidEmail(normalizedValue)) {
+      setError('أدخل بريدًا إلكترونيًا صحيحًا');
+      return;
+    }
     setSaving(true);
     try {
-      await onSave(value.trim());
+      await onSave(normalizedValue);
+      setValue(normalizedValue);
+      setBaseline(normalizedValue);
+      setSaved(true);
     } catch (err) {
       setError(extractError(err, 'لم نتمكن من الحفظ'));
     } finally {
@@ -99,33 +127,62 @@ function FieldRow({
             placeholderTextColor={colors.textMuted}
             keyboardType={keyboardType}
             autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
+            autoComplete={type === 'email' ? 'email' : type === 'name' ? 'name' : undefined}
             autoCorrect={false}
+            inputMode={type === 'email' ? 'email' : undefined}
+            returnKeyType="done"
+            onSubmitEditing={save}
+            enablesReturnKeyAutomatically
             textAlign="right"
             style={{ color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 15.5, writingDirection: 'rtl', paddingVertical: Platform.OS === 'ios' ? 4 : 2 }}
           />
         </View>
 
-        {dirty ? (
-          <Pressable
-            onPress={save}
-            hitSlop={8}
-            style={({ pressed }) => ({
-              paddingHorizontal: 14,
-              paddingVertical: 7,
-              borderRadius: 999,
-              backgroundColor: colors.primary,
-              transform: [{ scale: pressed ? 0.96 : 1 }],
-              opacity: saving ? 0.7 : 1,
-            })}
-          >
-            <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>
-              {saving ? '...' : 'حفظ'}
+        <Pressable
+          onPress={save}
+          disabled={!canSave}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !canSave, busy: saving }}
+          accessibilityLabel={`حفظ ${label}`}
+          hitSlop={8}
+          style={({ pressed }) => ({
+            minWidth: 70,
+            minHeight: 36,
+            paddingHorizontal: 14,
+            paddingVertical: 7,
+            borderRadius: 999,
+            backgroundColor: dirty ? colors.primary : colors.surfaceAlt,
+            borderWidth: dirty ? 0 : 1,
+            borderColor: colors.border,
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: [{ scale: pressed && canSave ? 0.96 : 1 }],
+            opacity: saving ? 0.7 : 1,
+          })}
+        >
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.textOnPrimary} />
+          ) : (
+            <Text
+              style={{
+                color: dirty ? colors.textOnPrimary : colors.textMuted,
+                fontFamily: 'Cairo-Bold',
+                fontSize: 12.5,
+              }}
+            >
+              {dirty ? 'حفظ' : saved ? 'تم الحفظ' : 'محفوظ'}
             </Text>
-          </Pressable>
-        ) : (
-          <Ionicons name="create-outline" size={17} color={colors.textDisabled} />
-        )}
+          )}
+        </Pressable>
       </View>
+      {saved && !dirty ? (
+        <View style={{ ...rtlRow(), alignItems: 'center', gap: 5, marginTop: 6 }}>
+          <Ionicons name="checkmark-circle" size={14} color={colors.success} />
+          <Text style={{ textAlign: 'right', fontSize: 12, color: colors.success, fontFamily: 'Cairo-SemiBold' }}>
+            تم حفظ التغيير
+          </Text>
+        </View>
+      ) : null}
       {error ? <Text style={{ marginTop: 6, textAlign: 'right', fontSize: 12, color: colors.error, fontFamily: 'Cairo-Regular' }}>{error}</Text> : null}
     </View>
   );
@@ -157,9 +214,9 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
 
   const submit = async () => {
     setError('');
-    if (!current) return setError('أدخل كلمتك الحالية');
+    if (!current) return setError('أدخل كلمة المرور الحالية');
     if (!passwordRegex.test(next)) return setError('8 أحرف: حروف كبيرة وصغيرة ورقم');
-    if (next === current) return setError('كلمتك الجديدة يجب أن تختلف عن الحالية');
+    if (next === current) return setError('كلمة المرور الجديدة يجب أن تختلف عن الحالية');
     if (next !== confirm) return setError('كلمات المرور غير متطابقة');
     try {
       await changePassword.mutateAsync({ current_password: current, password: next, password_confirmation: confirm });
@@ -167,7 +224,7 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
       setCurrent(''); setNext(''); setConfirm('');
       setTimeout(() => { setOpen(false); setDone(false); }, 1200);
     } catch (err) {
-      setError(extractError(err, 'فشل تغيير كلمتك'));
+      setError(extractError(err, 'فشل تغيير كلمة المرور'));
     }
   };
 
@@ -179,7 +236,7 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
             <Ionicons name="lock-closed-outline" size={18} color={colors.primary} />
           </View>
           <View>
-            <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>كلمتك</Text>
+            <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>كلمة المرور</Text>
             <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>••••••••</Text>
           </View>
         </View>
@@ -197,20 +254,20 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
           {done ? (
             <View style={{ ...rtlRow(), alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 12 }}>
               <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-              <Text style={{ textAlign: 'center', color: colors.success, fontFamily: 'Cairo-Bold', fontSize: 14 }}>تم تغيير كلمتك بنجاح</Text>
+              <Text style={{ textAlign: 'center', color: colors.success, fontFamily: 'Cairo-Bold', fontSize: 14 }}>تم تغيير كلمة المرور بنجاح</Text>
             </View>
           ) : (
             <>
-              <TextInput value={current} onChangeText={setCurrent} placeholder="كلمتك الحالية" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
-              <TextInput value={next} onChangeText={setNext} placeholder="كلمتك الجديدة" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
-              <TextInput value={confirm} onChangeText={setConfirm} placeholder="أعد كتابة كلمتك" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={current} onChangeText={setCurrent} placeholder="أدخل كلمة المرور الحالية" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={next} onChangeText={setNext} placeholder="أدخل كلمة المرور الجديدة" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
+              <TextInput value={confirm} onChangeText={setConfirm} placeholder="أعد إدخال كلمة المرور الجديدة" placeholderTextColor={colors.textMuted} secureTextEntry textAlign="right" style={input} />
               {error ? <Text style={{ marginTop: 8, textAlign: 'right', color: colors.error, fontFamily: 'Cairo-Regular', fontSize: 12 }}>{error}</Text> : null}
               <Pressable
                 onPress={submit}
                 disabled={changePassword.isPending}
                 style={({ pressed }) => ({ marginTop: 16, marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, opacity: changePassword.isPending ? 0.65 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
               >
-                <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمتك'}</Text>
+                <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}</Text>
               </Pressable>
             </>
           )}
@@ -238,20 +295,7 @@ export default function AccountScreen() {
     ]).start();
   }, [fade, rise]);
 
-  const [customAlert, setCustomAlert] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>;
-  }>({ visible: false, title: '', message: '', buttons: [] });
-
-  const showRTLAlert = useCallback((
-    title: string,
-    message: string,
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>,
-  ) => {
-    setCustomAlert({ visible: true, title, message, buttons });
-  }, []);
+  const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
 
   const confirmDelete = () => {
     showRTLAlert(
@@ -301,15 +345,15 @@ export default function AccountScreen() {
             {/* Personal info */}
             <SectionLabel colors={colors}>المعلومات الشخصية</SectionLabel>
             <GroupCard colors={colors}>
-              {user?.name && (
+              {user?.name ? (
                 <>
-                  <FieldRow label="اسمك" initialValue={user.name} placeholder="اسمك" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
-                  {user?.email && <Divider colors={colors} />}
+                  <FieldRow label="الاسم الكامل" initialValue={user.name} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
+                  {user?.email ? <Divider colors={colors} /> : null}
                 </>
-              )}
-              {user?.email && (
-                <FieldRow label="بريدك الإلكتروني" initialValue={user.email} placeholder="بريدك الإلكتروني" keyboardType="email-address" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
-              )}
+              ) : null}
+              {user?.email ? (
+                <FieldRow label="البريد الإلكتروني" initialValue={user.email} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
+              ) : null}
             </GroupCard>
 
             {/* Security */}
@@ -351,137 +395,19 @@ export default function AccountScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Custom RTL Alert Modal */}
-      <Modal
-        visible={customAlert.visible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-      >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.65)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-          <View
-            style={{
-              width: '90%',
-              maxWidth: 380,
-              backgroundColor: colors.surface,
-              borderRadius: 32,
-              paddingTop: 36,
-              paddingHorizontal: 28,
-              paddingBottom: 28,
-              borderWidth: 1,
-              borderColor: colors.border,
-              alignItems: 'center',
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 12 },
-              shadowOpacity: 0.18,
-              shadowRadius: 24,
-              elevation: 12,
-            }}
-          >
-            {(() => {
-              const t = customAlert.title || '';
-              let iconName: keyof typeof Ionicons.glyphMap = 'information-circle-outline';
-              let iconColor = colors.primary;
-              let iconBg = colors.primarySoft;
-              let shouldBeDestructive = false;
+      {/* Shared themed RTL alert (extracted from the copy-pasted modal). */}
+      <RTLAlert alert={alert} onDismiss={hideAlert} />
 
-              if (t.includes('حذف')) {
-                iconName = 'trash-outline';
-                iconColor = colors.error;
-                iconBg = colors.errorSoft;
-                shouldBeDestructive = true;
-              } else if (t.includes('تسجيل الدخول')) {
-                iconName = 'lock-closed-outline';
-                iconColor = colors.primary;
-                iconBg = colors.primarySoft;
-              } else if (t.includes('تعذّر') || t.includes('مسبقاً') || t.includes('خطأ')) {
-                iconName = 'alert-circle-outline';
-                iconColor = colors.gold;
-                iconBg = colors.goldSoft;
-              } else if (t.includes('تم') || t.includes('نجاح')) {
-                iconName = 'checkmark-circle-outline';
-                iconColor = colors.success;
-                iconBg = colors.successSoft;
-              }
-
-              return (
-                <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: iconBg, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-                  <Ionicons name={iconName} size={36} color={iconColor} />
-                </View>
-              );
-            })()}
-
-            <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'center', marginBottom: 14, lineHeight: 28 }}>
-              {customAlert.title}
+      <Modal visible={deleteAccount.isPending} transparent animationType="fade">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.55)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+          <View style={{ width: '86%', maxWidth: 340, borderRadius: 24, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: 'center' }}>
+            <ActivityIndicator size="large" color={colors.error} />
+            <Text style={{ marginTop: 16, fontSize: 16, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'center' }}>
+              جاري حذف الحساب...
             </Text>
-
-            <Text style={{ fontSize: 15, fontFamily: 'Cairo-Regular', color: colors.textSecondary, textAlign: 'center', lineHeight: 24, marginBottom: 32, writingDirection: 'rtl' }}>
-              {customAlert.message}
+            <Text style={{ marginTop: 8, fontSize: 13, fontFamily: 'Cairo-Regular', color: colors.textSecondary, textAlign: 'center', lineHeight: 22 }}>
+              يرجى الانتظار حتى تكتمل العملية.
             </Text>
-
-            <View style={{ width: '100%', flexDirection: 'row', gap: 12, justifyContent: 'space-between' }}>
-              {(() => {
-                const actionButtons = customAlert.buttons || [];
-
-                if (actionButtons.length === 0) {
-                  return (
-                    <Pressable
-                      onPress={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-                      style={({ pressed }) => ({
-                        flex: 1,
-                        height: 52,
-                        borderRadius: 18,
-                        backgroundColor: colors.primary,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: pressed ? 0.85 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      })}
-                    >
-                      <Text style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>حسناً</Text>
-                    </Pressable>
-                  );
-                }
-
-                const sortedButtons = [...actionButtons].sort((a, b) => {
-                  // Cancel first (left), then destructive/primary (right)
-                  if (a.style === 'cancel' && b.style !== 'cancel') return -1;
-                  if (a.style !== 'cancel' && b.style === 'cancel') return 1;
-                  return 0;
-                });
-
-                return sortedButtons.map((btn, idx) => {
-                  const isCancel = btn.style === 'cancel';
-                  const isDestructive = btn.style === 'destructive';
-
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        setCustomAlert((prev) => ({ ...prev, visible: false }));
-                        btn.onPress?.();
-                      }}
-                      style={({ pressed }) => ({
-                        flex: isDestructive ? 1.5 : 1,
-                        height: 52,
-                        borderRadius: 18,
-                        backgroundColor: isCancel ? colors.surfaceAlt : isDestructive ? colors.error : colors.primary,
-                        borderWidth: isCancel ? 1.5 : 0,
-                        borderColor: isCancel ? colors.borderStrong : undefined,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        opacity: pressed ? 0.85 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      })}
-                    >
-                      <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isCancel ? colors.textPrimary : colors.textOnPrimary }}>
-                        {btn.text}
-                      </Text>
-                    </Pressable>
-                  );
-                });
-              })()}
-            </View>
           </View>
         </View>
       </Modal>

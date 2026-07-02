@@ -60,7 +60,10 @@ export function Avatar({ logoUrl, name, id, size, radius, recyclingKey }: Props)
       <Image
         source={{ uri: logoUrl as string }}
         style={{ width: size, height: size, borderRadius: r, backgroundColor: colors.surfaceAlt }}
-        contentFit="cover"
+        // contain: logos are stored padded-square by the backend; contain guarantees the
+        // full mark is shown and is never cropped even for a stray non-square logo.
+        contentFit="contain"
+        cachePolicy="memory-disk"
         transition={150}
         onError={() => setFailed(true)}
         recyclingKey={recyclingKey}

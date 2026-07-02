@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { forwardRef, useState } from 'react';
 import {
-  Platform,
   Pressable,
   Text,
   TextInput,
@@ -48,7 +47,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             borderWidth: 1,
             backgroundColor: colors.surfaceAlt,
             borderColor: error ? colors.error : colors.border,
-            height: 48, // 🔥 FIX 1: Explicit fixed height prevents the box from resizing
+            height: 48,
             justifyContent: 'center',
           }}
         >
@@ -57,24 +56,32 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             value={value}
             secureTextEntry={isSecure}
             textAlign="right"
+            selectionColor={colors.primary}
             style={[
               {
                 width: '100%',
-                height: '100%', // Takes up full parent fixed height
+                height: '100%',
                 color: colors.textPrimary,
                 fontFamily: 'Cairo-Regular',
                 writingDirection: 'rtl',
-                paddingLeft: 16,
-                paddingRight: 44,
+                textAlign: 'right',
+                paddingLeft: 48,
+                paddingRight: 16,
+                paddingVertical: 0,
                 fontSize: 14,
+                includeFontPadding: false,
               },
               style,
             ]}
+            accessibilityLabel={label}
+            accessibilityHint={error || props.placeholder}
             {...props}
           />
           <Pressable
             onPress={() => setShowPassword((v) => !v)}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={showPassword ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
             style={{
               position: 'absolute',
               bottom: 0,

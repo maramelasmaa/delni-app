@@ -17,6 +17,11 @@ import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { formatRelativeTime, formatIssueDate } from '../../src/utils/date';
 import { formatArabicReviewCount } from '../../src/utils/numberFormatter';
 import { rtlRow, rtlText } from '../../src/utils/rtl';
+import { getProviderTypeLabel, getProviderTypeIcon } from '../../src/utils/providerTypes';
+import { getAvatarTheme } from '../../src/utils/providerMappers';
+import { RTLAlert, useRTLAlert } from '../../components/ui/RTLAlert';
+import { mergeUniqueById } from '../../src/utils/searchFilters';
+import { parseReportError, REPORT_MESSAGES } from '../../src/lib/report-errors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -136,29 +141,7 @@ function mapProviderProfile(provider: Provider): MappedProvider {
   };
 }
 
-function getAvatarTheme(name: string, isDark: boolean) {
-  const cleanName = name?.trim() || 'U';
-  const colorsList = isDark ? [
-    { bg: 'rgba(235, 94, 40, 0.15)', text: '#EB5E28' },
-    { bg: 'rgba(74, 115, 232, 0.15)', text: '#4A73E8' },
-    { bg: 'rgba(38, 166, 154, 0.15)', text: '#26A69A' },
-    { bg: 'rgba(156, 39, 176, 0.15)', text: '#9C27B0' },
-    { bg: 'rgba(233, 30, 99, 0.15)', text: '#E91E63' },
-    { bg: 'rgba(76, 175, 80, 0.15)', text: '#4CAF50' },
-  ] : [
-    { bg: '#FFEBE5', text: '#EB5E28' },
-    { bg: '#EBF0FF', text: '#4A73E8' },
-    { bg: '#E0F2F1', text: '#00695C' },
-    { bg: '#F3E5F5', text: '#6A1B9A' },
-    { bg: '#FCE4EC', text: '#C2185B' },
-    { bg: '#E8F5E9', text: '#2E7D32' },
-  ];
-  let sum = 0;
-  for (let i = 0; i < cleanName.length; i++) {
-    sum += cleanName.charCodeAt(i);
-  }
-  return colorsList[sum % colorsList.length];
-}
+// getAvatarTheme now lives in src/utils/providerMappers (single source of truth).
 
 function getServiceIcon(serviceName: string | undefined): keyof typeof Ionicons.glyphMap {
   if (!serviceName) return 'construct-outline';
@@ -228,7 +211,7 @@ function AboutSection({ about, colors }: AboutSectionProps) {
             onPress={() => setExpanded(!expanded)}
             style={{
               marginTop: 10,
-              alignSelf: 'flex-start',
+              alignSelf: 'flex-end',
               ...rtlRow(),
               alignItems: 'center',
               gap: 6,
@@ -422,7 +405,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                 >
                   {project.title}
                 </Text>
-                {project.short_description && (
+                {project.short_description ? (
                   <Text
                     numberOfLines={3}
                     style={{
@@ -437,7 +420,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                   >
                     {project.short_description}
                   </Text>
-                )}
+                ) : null}
               </View>
             </View>
           );
@@ -514,7 +497,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
             >
               {cred.title}
             </Text>
-            {cred.issuer && (
+            {cred.issuer ? (
               <Text
                 style={{
                   fontFamily: 'Cairo-SemiBold',
@@ -527,8 +510,8 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
               >
                 جهة الإصدار: {cred.issuer}
               </Text>
-            )}
-            {cred.issue_date && (
+            ) : null}
+            {cred.issue_date ? (
               <View style={{ ...rtlRow(), alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <Ionicons name="calendar-outline" size={12} color={colors.textMuted} />
                 <Text
@@ -543,7 +526,7 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
                   تاريخ الإصدار: {formatIssueDate(cred.issue_date)}
                 </Text>
               </View>
-            )}
+            ) : null}
           </View>
         ))}
       </View>
@@ -829,16 +812,20 @@ function ReviewsSection({
           onPress={() => setShowAll(true)}
           style={{
             marginTop: 6,
-            alignItems: 'center',
+            alignItems: 'flex-end',
             borderRadius: 14,
             borderWidth: 1,
             borderColor: colors.primary,
             paddingVertical: 10,
+            paddingHorizontal: 16,
           }}
         >
-          <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
-            عرض كل التقييمات ({reviews.length})
-          </Text>
+          <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
+              عرض كل التقييمات ({reviews.length})
+            </Text>
+            <Ionicons name="chevron-down" size={15} color={colors.primary} />
+          </View>
         </Pressable>
       )}
       {showAll && hasMore && (
@@ -847,19 +834,23 @@ function ReviewsSection({
           disabled={isFetching}
           style={{
             marginTop: 6,
-            alignItems: 'center',
             borderRadius: 14,
             borderWidth: 1,
             borderColor: colors.primary,
             paddingVertical: 10,
+            paddingHorizontal: 16,
+            alignItems: 'flex-end',
           }}
         >
           {isFetching ? (
             <ActivityIndicator size="small" color={colors.primary} />
           ) : (
-            <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
-              تحميل المزيد من التقييمات
-            </Text>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 13 }}>
+                تحميل المزيد من التقييمات
+              </Text>
+              <Ionicons name="chevron-down" size={15} color={colors.primary} />
+            </View>
           )}
         </Pressable>
       )}
@@ -870,23 +861,21 @@ function ReviewsSection({
 export default function ProviderScreen() {
   const { colors, isDark } = useTheme();
   const { slug, writeReview, reportReviewId } = useLocalSearchParams<{ slug: string; writeReview?: string; reportReviewId?: string }>();
-  const { data: provider, isLoading, isError, refetch } = useProvider(slug);
+  const { data: provider, isLoading, isError, error, refetch } = useProvider(slug);
   const [reviewPage, setReviewPage] = useState(1);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const prevSlugRef = useRef(slug);
   const { data: reviewsData, isFetching: isFetchingReviews } = useProviderReviews(slug, reviewPage);
 
-  if (prevSlugRef.current !== slug) {
-    prevSlugRef.current = slug;
+  useEffect(() => {
     setReviewPage(1);
     setAllReviews([]);
-  }
+  }, [slug]);
 
   useEffect(() => {
     const fresh = reviewsData?.data;
     if (!fresh?.length) return;
     setAllReviews((prev) =>
-      reviewPage === 1 ? fresh : [...prev, ...fresh.filter((r) => !prev.some((x) => x.id === r.id))]
+      reviewPage === 1 ? fresh : mergeUniqueById(prev, fresh)
     );
   }, [reviewsData?.data, reviewPage]);
 
@@ -897,25 +886,7 @@ export default function ProviderScreen() {
   const user = useAuthStore((s) => s.user);
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const [customAlert, setCustomAlert] = useState<{
-    visible: boolean;
-    title: string;
-    message: string;
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>;
-  }>({
-    visible: false,
-    title: "",
-    message: "",
-    buttons: [],
-  });
-
-  const showRTLAlert = useCallback((
-    title: string,
-    message: string,
-    buttons: Array<{ text: string; style?: 'cancel' | 'destructive' | 'default'; onPress?: () => void }>
-  ) => {
-    setCustomAlert({ visible: true, title, message, buttons });
-  }, []);
+  const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReviewIdState, setReportReviewIdState] = useState<number | null>(null);
@@ -924,7 +895,10 @@ export default function ProviderScreen() {
   const [reportError, setReportError] = useState("");
 
   const handleReportSubmit = useCallback(() => {
-    if (!reportReviewIdState) return;
+    if (!reportReviewIdState) {
+      setReportError('تعذر تحديد التقييم المراد الإبلاغ عنه. أغلق النافذة وحاول مرة أخرى.');
+      return;
+    }
     const label = reportReasonType === 'offensive' ? 'محتوى مسيء أو غير لائق' :
                   reportReasonType === 'misleading' ? 'معلومات مضللة أو كاذبة' :
                   reportReasonType === 'spam' ? 'رسائل مزعجة (سبام)' : 'سبب آخر';
@@ -950,8 +924,8 @@ export default function ProviderScreen() {
           setReportError("");
           showRTLAlert('تم الإبلاغ', 'شكراً لك. سيراجع فريقنا هذا التقييم.', [{ text: 'حسناً', style: 'default' }]);
         },
-        onError: () => {
-          setReportError('تعذر إرسال البلاغ، يرجى المحاولة مجدداً.');
+        onError: (error) => {
+          setReportError(parseReportError(error));
         }
       }
     );
@@ -975,9 +949,15 @@ export default function ProviderScreen() {
       );
       return;
     }
+    const review = allReviews.find((item) => item.id === reviewId);
+    if (review?.user_id === user?.id) {
+      showRTLAlert('لا يمكن إرسال البلاغ', REPORT_MESSAGES.ownReview, [{ text: 'حسناً', style: 'default' }]);
+      return;
+    }
+    setReportError('');
     setReportReviewIdState(reviewId);
     setShowReportModal(true);
-  }, [isAuthenticated, slug, showRTLAlert]);
+  }, [allReviews, isAuthenticated, slug, showRTLAlert, user?.id]);
 
   useEffect(() => {
     if (writeReview === 'true' && isAuthenticated && provider) {
@@ -1084,30 +1064,22 @@ export default function ProviderScreen() {
   }, [provider?.can_review, provider?.review_status_message, showRTLAlert]);
 
   if (isLoading) return <LoadingSpinner />;
-  if (isError || !provider) return <ErrorView onRetry={refetch} />;
+  if (isError || !provider) return <ErrorView error={error} onRetry={refetch} />;
 
   const profile = mapProviderProfile(provider);
   const HERO_HEIGHT = 250;
   const AVATAR_SIZE = 140;
 
-  const translatedType = (() => {
-    if (!profile.providerType) return null;
-    const t = profile.providerType.toLowerCase().trim();
-    if (t === 'individual') return 'مستقل';
-    if (t === 'company') return 'شركة';
-    if (t === 'agency') return 'وكالة';
-    return profile.providerType;
-  })();
+  // Provider/service type → Arabic label + icon, from the single shared source
+  // (src/utils/providerTypes) so it matches the API, search and category filters.
+  const typeMeta = profile.providerType
+    ? {
+        label: getProviderTypeLabel(profile.providerType) ?? profile.providerType,
+        icon: getProviderTypeIcon(profile.providerType),
+      }
+    : null;
 
   const specs = [];
-  if (profile.cityName) {
-    specs.push({
-      id: 'city',
-      icon: 'location-outline',
-      label: 'المدينة',
-      value: profile.cityName,
-    });
-  }
   if (profile.yearsExperienceText) {
     specs.push({
       id: 'exp',
@@ -1122,6 +1094,14 @@ export default function ProviderScreen() {
       icon: 'desktop-outline',
       label: 'طبيعة العمل',
       value: 'عمل عن بُعد',
+    });
+  }
+  if (typeMeta) {
+    specs.push({
+      id: 'type',
+      icon: typeMeta.icon,
+      label: 'النوع',
+      value: typeMeta.label,
     });
   }
 
@@ -1194,7 +1174,7 @@ export default function ProviderScreen() {
               }}
             >
               {profile.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <Image source={{ uri: profile.avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
               ) : (
                 <View style={{ flex: 1, backgroundColor: getAvatarTheme(profile.name, isDark).bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 32, color: getAvatarTheme(profile.name, isDark).text }}>
@@ -1272,34 +1252,36 @@ export default function ProviderScreen() {
           </View>
 
           {/* Quick Specs Dashboard Bar */}
-          <View style={{
-            ...rtlRow(),
-            width: '100%',
-            backgroundColor: colors.surfaceAlt,
-            borderRadius: 16,
-            paddingVertical: 14,
-            paddingHorizontal: 10,
-            marginTop: 16,
-            alignItems: 'center',
-            justifyContent: 'space-around',
-          }}>
-            {specs.map((spec, index) => (
-              <React.Fragment key={spec.id}>
-                <View style={{ alignItems: 'center', flex: 1 }}>
-                  <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
-                  <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12, color: colors.textPrimary, textAlign: 'center' }}>
-                    {spec.value}
-                  </Text>
-                  <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 1 }}>
-                    {spec.label}
-                  </Text>
-                </View>
-                {index < specs.length - 1 && (
-                  <View style={{ width: 1, height: 26, backgroundColor: colors.border }} />
-                )}
-              </React.Fragment>
-            ))}
-          </View>
+          {specs.length > 0 ? (
+            <View style={{
+              ...rtlRow(),
+              width: '100%',
+              backgroundColor: colors.surfaceAlt,
+              borderRadius: 16,
+              paddingVertical: 14,
+              paddingHorizontal: 14,
+              marginTop: 16,
+              alignItems: 'center',
+              justifyContent: 'space-around',
+            }}>
+              {specs.map((spec, index) => (
+                <React.Fragment key={spec.id}>
+                  <View style={{ alignItems: 'center', flex: 1, paddingHorizontal: 6, gap: 2 }}>
+                    <Ionicons name={spec.icon as keyof typeof Ionicons.glyphMap} size={16} color={colors.primary} style={{ marginBottom: 4 }} />
+                    <Text numberOfLines={1} style={{ fontFamily: 'Cairo-Bold', fontSize: 12, color: colors.textPrimary, textAlign: 'center' }}>
+                      {spec.value}
+                    </Text>
+                    <Text style={{ fontFamily: 'Cairo-Regular', fontSize: 10, color: colors.textMuted, textAlign: 'center', marginTop: 1 }}>
+                      {spec.label}
+                    </Text>
+                  </View>
+                  {index < specs.length - 1 && (
+                    <View style={{ width: 1, height: 26, backgroundColor: colors.border }} />
+                  )}
+                </React.Fragment>
+              ))}
+            </View>
+          ) : null}
 
           {/* Action Call & WhatsApp Buttons */}
           {(profile.phone || profile.whatsappUrl) && (
@@ -1324,7 +1306,7 @@ export default function ProviderScreen() {
                     elevation: 2,
                   }}
                 >
-                  <Ionicons name="logo-whatsapp" size={18} color="#FFFFFF" />
+                  <Ionicons name="logo-whatsapp" size={22} color="#FFFFFF" />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: '#FFFFFF' }}>واتساب</Text>
                 </Pressable>
               )}
@@ -1348,7 +1330,7 @@ export default function ProviderScreen() {
                     elevation: 2,
                   }}
                 >
-                  <Ionicons name="call" size={16} color={colors.textOnPrimary} />
+                  <Ionicons name="call" size={20} color={colors.textOnPrimary} />
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 13.5, color: colors.textOnPrimary }}>اتصال هاتفي</Text>
                 </Pressable>
               )}
@@ -1357,10 +1339,27 @@ export default function ProviderScreen() {
 
           {/* Social Links Row */}
           {profile.socialLinks.length > 0 && (
-            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 14, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%' }}>
+            <View style={{ ...rtlRow(), justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderColor: colors.border, width: '100%', flexWrap: 'wrap' }}>
               {profile.socialLinks.map((item) => (
-                <Pressable key={item.id} onPress={() => openExternalUrl(item.url)} style={({ pressed }) => ({ width: 38, height: 38, borderRadius: 10, backgroundColor: colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', opacity: pressed ? 0.7 : 1, borderWidth: 1, borderColor: colors.border })}>
-                  <Ionicons name={item.icon} size={18} color={item.color} />
+                <Pressable
+                  key={item.id}
+                  onPress={() => openExternalUrl(item.url)}
+                  accessibilityRole="button"
+                  hitSlop={6}
+                  style={({ pressed }) => ({
+                    width: 50,
+                    height: 50,
+                    borderRadius: 14,
+                    backgroundColor: colors.surfaceAlt,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: pressed ? 0.7 : 1,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    transform: [{ scale: pressed ? 0.94 : 1 }],
+                  })}
+                >
+                  <Ionicons name={item.icon} size={25} color={item.color} />
                 </Pressable>
               ))}
             </View>
@@ -1472,45 +1471,38 @@ export default function ProviderScreen() {
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
               <Pressable onPress={() => setShowReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
-                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textSecondary }}>إلغاء</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : colors.textSecondary }}>إلغاء</Text>
               </Pressable>
             </View>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* ═══ CUSTOM SYSTEM ALERTS MODAL ═══ */}
-      <Modal visible={customAlert.visible} transparent animationType="fade" onRequestClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}>
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-          <View style={{ width: '90%', maxWidth: 360, backgroundColor: colors.surface, borderRadius: 24, padding: 24, borderWidth: 1, borderColor: colors.border, alignItems: 'center' }}>
-            <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, marginBottom: 12, textAlign: 'center' }}>{customAlert.title}</Text>
-            <Text style={{ fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24, writingDirection: 'rtl' }}>{customAlert.message}</Text>
-            <View style={{ width: '100%', flexDirection: customAlert.buttons.length === 2 ? 'row-reverse' : 'column', gap: 10 }}>
-              {customAlert.buttons.length === 0 ? (
-                <Pressable onPress={() => setCustomAlert((prev) => ({ ...prev, visible: false }))} style={{ width: '100%', height: 44, borderRadius: 12, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 14 }}>حسناً</Text>
-                </Pressable>
-              ) : (
-                customAlert.buttons.map((btn, idx) => {
-                  const isCancel = btn.style === 'cancel';
-                  return (
-                    <Pressable key={idx} onPress={() => { setCustomAlert((prev) => ({ ...prev, visible: false })); btn.onPress?.(); }} style={{ flex: customAlert.buttons.length === 2 ? 1 : undefined, width: '100%', height: 44, borderRadius: 12, backgroundColor: isCancel ? colors.surfaceAlt : colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: isCancel ? 1 : 0, borderColor: colors.border }}>
-                      <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 14, color: isCancel ? colors.textSecondary : colors.textOnPrimary }}>{btn.text}</Text>
-                    </Pressable>
-                  );
-                })
-              )}
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* ═══ CUSTOM SYSTEM ALERTS MODAL (shared) ═══ */}
+      <RTLAlert alert={alert} onDismiss={hideAlert} />
 
       {/* ═══ REVIEW ACTION WINDOW MODAL ═══ */}
       <Modal visible={showReviewModal} transparent animationType="slide" onRequestClose={() => setShowReviewModal(false)}>
         <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
-            <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>أضف تقييمك</Text>
-            <Pressable onPress={() => setShowReviewModal(false)}>
+          <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 24, paddingBottom: 14, borderBottomWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }}>
+            <View style={{ alignItems: 'flex-end', flex: 1, paddingLeft: 12 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right' }}>قيّم الخدمة</Text>
+              <Text style={{ marginTop: 2, fontSize: 12, fontFamily: 'Cairo-Regular', color: colors.textMuted, textAlign: 'right' }}>أضف عدد النجوم ثم اكتب تجربتك إن أحببت</Text>
+            </View>
+            <Pressable
+              onPress={() => setShowReviewModal(false)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="إغلاق"
+              style={({ pressed }) => ({
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: pressed ? colors.surfaceAlt : 'transparent',
+              })}
+            >
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </Pressable>
           </View>
@@ -1518,6 +1510,9 @@ export default function ProviderScreen() {
             <Text style={{ marginBottom: 12, marginTop: 24, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تقييمك</Text>
             <View style={{ alignItems: 'center' }}>
               <StarRating value={reviewRating} size={40} interactive onChange={setReviewRating} />
+              <Text style={{ marginTop: 10, fontSize: 13, fontFamily: 'Cairo-SemiBold', color: reviewRating ? colors.primary : colors.textMuted, textAlign: 'center' }}>
+                {reviewRating ? `تقييمك: ${reviewRating} من 5` : 'اضغط على النجوم لإضافة التقييم'}
+              </Text>
             </View>
             <Text style={{ marginBottom: 8, marginTop: 20, textAlign: 'right', fontSize: 14, fontFamily: 'Cairo-SemiBold', color: colors.textPrimary }}>تعليقك (اختياري)</Text>
             <TextInput
@@ -1534,8 +1529,8 @@ export default function ProviderScreen() {
             ) : null}
           </ScrollView>
           <Pressable onPress={handleReviewSubmit} disabled={!reviewRating || submitReview.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewRating ? colors.primary : colors.surfaceAlt }}>
-            <Text style={{ fontFamily: 'Cairo-Bold', color: reviewRating ? colors.textOnPrimary : colors.textMuted }}>
-              {submitReview.isPending ? 'جاري الإرسال...' : 'إرسال التقييم'}
+            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewRating ? colors.textOnPrimary : colors.textMuted }}>
+              {submitReview.isPending ? 'جاري الإرسال...' : reviewRating ? 'إرسال التقييم' : 'اختر التقييم أولاً'}
             </Text>
           </Pressable>
         </SafeAreaView>

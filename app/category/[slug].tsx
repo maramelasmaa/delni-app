@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Modal, Pressable, RefreshControl, ScrollView, Switch, Text, TextInput, View, Linking } from 'react-native';
+import { ActivityIndicator, FlatList, Modal, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
@@ -11,40 +11,96 @@ import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useCategory, useToggleFavorite, useCities, useProviderTypes } from '../../src/hooks/useApi';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/store/auth';
 import { useCityStore } from '../../src/store/city';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
-import { getOffersRemoteWork } from '../../src/utils/providerMappers';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { Provider, ApiResponse, SearchFilters, CategoryDetailData } from '../../src/types';
+import type { Provider, ApiResponse, SearchFilters } from '../../src/types';
 import { useQuery } from '@tanstack/react-query';
 import api from '../../src/lib/api';
 import { ENDPOINTS } from '../../src/constants/api';
 import { rtlRow } from '../../src/utils/rtl';
+import { getProviderLogo } from '../../src/utils/imageFallback';
+import { PROVIDER_TYPE_FILTER_OPTIONS } from '../../src/utils/providerTypes';
+import {
+  getSingleParam,
+  mergeUniqueProviders,
+  normalizeSearchFilters,
+  parseRemoteParam,
+  parseSortParam,
+  toSearchRequestParams,
+} from '../../src/utils/searchFilters';
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'الأحدث', icon: 'calendar-outline' },
   { value: 'rating', label: 'الأعلى تقييماً', icon: 'star-outline' },
 ] as const;
 
-const FALLBACK_PROVIDER_TYPES = [
-  { code: '', name: 'الكل' },
-  { code: 'individual', name: 'فرد' },
-  { code: 'company', name: 'شركة' },
-  { code: 'agency', name: 'وكالة' },
-  { code: 'clinic', name: 'عيادة' },
-  { code: 'studio', name: 'استوديو' },
-  { code: 'freelancer', name: 'مستقل' },
-  { code: 'other', name: 'أخرى' },
-] as const;
+// Shared single source of truth (was a hardcoded copy that drifted from the others).
+const FALLBACK_PROVIDER_TYPES = PROVIDER_TYPE_FILTER_OPTIONS;
+
+function toCategoryRouteParams(filters: Partial<SearchFilters>, subcategorySlug?: string) {
+  const normalized = normalizeSearchFilters(filters);
+
+  const params: {
+    keyword?: string;
+    city?: string;
+    provider_type?: string;
+    remote?: string;
+    sort?: string;
+    subcategorySlug?: string;
+  } = {
+    keyword: normalized.keyword,
+    city: normalized.city,
+    provider_type: normalized.provider_type,
+    remote: normalized.remote ? '1' : undefined,
+    sort: normalized.sort === 'newest' ? 'newest' : undefined,
+  };
+
+  if (subcategorySlug !== undefined) {
+    params.subcategorySlug = subcategorySlug;
+  }
+
+  return params;
+}
 
 export default function CategoryScreen() {
   const { colors } = useTheme();
-  const { slug, subcategorySlug } = useLocalSearchParams<{ slug: string; subcategorySlug?: string }>();
+  const {
+    slug,
+    subcategorySlug,
+    keyword: keywordRouteParam,
+    city: cityRouteParam,
+    provider_type: providerTypeRouteParam,
+    remote: remoteRouteParam,
+    sort: sortRouteParam,
+  } = useLocalSearchParams<{
+    slug: string;
+    subcategorySlug?: string;
+    keyword?: string;
+    city?: string;
+    provider_type?: string;
+    remote?: string;
+    sort?: string;
+  }>();
   const toggleFavorite = useToggleFavorite();
   const insets = useSafeAreaInsets();
   const activeCity = useCityStore((s) => s.activeCity);
+  const keywordParam = getSingleParam(keywordRouteParam);
+  const cityParam = getSingleParam(cityRouteParam);
+  const providerTypeParam = getSingleParam(providerTypeRouteParam);
+  const remoteParam = getSingleParam(remoteRouteParam);
+  const sortParam = getSingleParam(sortRouteParam);
+  const routeFilters = normalizeSearchFilters({
+    category: slug,
+    keyword: keywordParam,
+    city: cityParam || undefined,
+    provider_type: providerTypeParam,
+    remote: parseRemoteParam(remoteParam),
+    sort: parseSortParam(sortParam),
+    page: 1,
+  });
   const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
     redirectPath: `/category/${String(slug)}${subcategorySlug ? `?subcategorySlug=${subcategorySlug}` : ''}`,
   });
@@ -66,27 +122,18 @@ export default function CategoryScreen() {
   // Local filter states
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [keyword, setKeyword] = useState('');
+  const [keyword, setKeyword] = useState(routeFilters.keyword || '');
 
-  const [filters, setFilters] = useState<SearchFilters>({
-    category: slug,
-    keyword: undefined,
-    city: activeCity?.slug || undefined,
-    provider_type: undefined,
-    remote: false,
-    sort: 'rating',
-    page: 1,
-  });
+  const [filters, setFilters] = useState<SearchFilters>(routeFilters);
 
-  const [modalFilters, setModalFilters] = useState<SearchFilters>({
-    category: slug,
-    keyword: undefined,
-    city: activeCity?.slug || undefined,
-    provider_type: undefined,
-    remote: false,
-    sort: 'rating',
-    page: 1,
-  });
+  // Always-latest snapshot of filters so the keyword/city effects below can compute
+  // the next filter set OUTSIDE the setState updater (updaters must stay pure — see
+  // https://react.dev/reference/react/useState) without re-subscribing to `filters`
+  // in their dependency arrays (which would defeat the keyword debounce).
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  const [modalFilters, setModalFilters] = useState<SearchFilters>(routeFilters);
 
   const { data: cities } = useCities();
   const { data: providerTypes } = useProviderTypes();
@@ -115,96 +162,92 @@ export default function CategoryScreen() {
   const cityId = (cities ?? []).find((c) => c.slug === filters.city)?.id ?? null;
   const subcategoryId = (categoryData?.category?.subcategories ?? []).find((s) => s.slug === activeSub)?.id ?? null;
 
-  const providerParams = {
+  const providerParams = normalizeSearchFilters({
     category: slug,
     category_id: categoryId || undefined,
-    service: activeSub || undefined,
+    subcategory: activeSub || undefined,
     subcategory_id: subcategoryId || undefined,
     keyword: filters.keyword || undefined,
     city: filters.city || undefined,
     city_id: cityId || undefined,
     provider_type: filters.provider_type || undefined,
-    remote: filters.remote ? 1 : undefined,
+    remote: filters.remote,
     sort: filters.sort || undefined,
     page,
-  };
-
-  const hasActiveFilters = !!(
-    filters.keyword ||
-    (filters.city && filters.city !== activeCity?.slug) ||
-    filters.provider_type ||
-    filters.remote ||
-    filters.sort !== 'rating'
-  );
-
-  const shouldUseSearch = !!activeSub || hasActiveFilters;
+  });
 
   const {
     data: searchData,
     isLoading: isProvidersLoading,
     isFetching: isProvidersFetching,
     isError: isSearchError,
+    error: searchError,
     refetch: refetchProviders,
   } = useQuery({
     queryKey: ['category-providers', slug, activeSub ?? null, filters, page, categoryId, cityId, subcategoryId],
-    queryFn: async () => {
-      const params = Object.fromEntries(
-        Object.entries(providerParams).filter(([k, v]) => {
-          // Keep remote=1, but exclude empty state (means "show all, not just remote")
-          if (k === 'remote') return v === 1;
-          // Exclude undefined, empty strings, and 0
-          return v !== undefined && v !== '' && v !== 0;
-        }),
-      );
+    queryFn: async ({ signal }) => {
+      const params = {
+        ...toSearchRequestParams(providerParams),
+      };
       if (__DEV__) {
-        console.log('[CategoryScreen] Query params:', { providerParams, finalParams: params, shouldUseSearch });
+        console.log('[CategoryScreen] GET search', ENDPOINTS.search, params);
       }
-      if (!shouldUseSearch) {
-        // "الكل" (All) tab is active and no active search filters -> Fetch from the category details endpoint directly.
-        const res = await api.get<ApiResponse<CategoryDetailData>>(ENDPOINTS.category(slug), { params });
-        if (__DEV__) {
-          console.log('[CategoryScreen] GET category', ENDPOINTS.category(slug), params, '→ total', res.data?.data?.pagination?.total, 'items', res.data?.data?.providers?.length);
-        }
-        return {
-          data: res.data.data.providers ?? [],
-          pagination: res.data.data.pagination,
-        };
-      } else {
-        // Specific subcategory tab or active filters -> Fetch from search endpoint.
-        const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.search, { params });
-        if (__DEV__) {
-          console.log('[CategoryScreen] GET search', ENDPOINTS.search, params, '→ total', res.data?.pagination?.total, 'items', res.data?.data?.length);
-        }
-        return res.data;
-      }
+      const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.search, { params, signal });
+      return res.data;
     },
     enabled: !!slug,
   });
 
-  const prevSlugRef = useRef(slug);
-  const prevSubcatSlugsRef = useRef(subcategorySlug);
-
-  if (prevSlugRef.current !== slug || prevSubcatSlugsRef.current !== subcategorySlug) {
-    prevSlugRef.current = slug;
-    prevSubcatSlugsRef.current = subcategorySlug;
+  useEffect(() => {
+    // Don't clear allProviders here. The accumulation effect below is the SINGLE writer:
+    // it REPLACES the list whenever page === 1 (and the query key changed → searchData
+    // changed). Clearing here separately created a desync where Clear All landing on a
+    // cached query emptied the list but never refilled it → every provider vanished.
     setPage(1);
-    setAllProviders([]);
-  }
+    setShowFilters(false);
+    setCityDropdownOpen(false);
+  }, [slug, subcategorySlug]);
+
+  useEffect(() => {
+    const nextFilters = normalizeSearchFilters({
+      category: slug,
+      keyword: keywordParam,
+      city: cityParam || undefined,
+      provider_type: providerTypeParam,
+      remote: parseRemoteParam(remoteParam),
+      sort: parseSortParam(sortParam),
+      page: 1,
+    });
+    setFilters(nextFilters);
+    setModalFilters(nextFilters);
+    setKeyword(nextFilters.keyword || '');
+    setPage(1);
+    // NOTE: activeCity?.slug is intentionally NOT a dependency here — this effect
+    // only reacts to URL params (cityParam etc.). Global-city changes are owned by
+    // the dedicated effect below, which sets the city and updates the URL (the URL
+    // change then re-runs this effect via cityParam). Listing activeCity here caused
+    // a redundant, stale-city reset on every global-city change.
+    // https://react.dev/learn/removing-effect-dependencies
+  }, [cityParam, keywordParam, providerTypeParam, remoteParam, slug, sortParam]);
 
 
 
   useEffect(() => {
     if (!searchData) return;
     const freshRaw = searchData.data ?? [];
-    const fresh = filters.remote ? freshRaw.filter((provider) => getOffersRemoteWork(provider)) : freshRaw;
 
     setAllProviders((prev) =>
-      page === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
+      page === 1 ? freshRaw : mergeUniqueProviders(prev, freshRaw),
     );
-  }, [searchData, page, filters.remote]);
+  }, [searchData, page]);
 
   const category = categoryData?.category;
   const subcategories = category?.subcategories ?? [];
+
+  usePrefetchImages(
+    allProviders.slice(0, 8).map((provider) => getProviderLogo(provider.logo_url, provider.id)),
+    { cachePolicy: 'memory-disk', limit: 8 },
+  );
 
   // Count + "has more" come from the SAME query that fills the list.
   const hasMore = searchData?.pagination
@@ -240,23 +283,23 @@ export default function CategoryScreen() {
 
   const handleApplyFilters = useCallback(() => {
     try {
-      const newFilters = {
+      const newFilters = normalizeSearchFilters({
         category: slug,
-        keyword: modalFilters.keyword ?? undefined,
+        keyword: modalFilters.keyword,
         city: modalFilters.city ?? undefined,
         provider_type: modalFilters.provider_type ?? undefined,
         remote: modalFilters.remote === true,
         sort: modalFilters.sort ?? 'rating',
         page: 1,
-      };
+      });
       if (__DEV__) {
         console.log('[CategoryScreen] Applying filters:', newFilters);
       }
       setFilters(newFilters);
       setPage(1);
-      setAllProviders([]);
-      setKeyword(modalFilters.keyword || '');
+      setKeyword(newFilters.keyword || '');
       setShowFilters(false);
+      router.setParams(toCategoryRouteParams(newFilters));
     } catch (err) {
       if (__DEV__) {
         console.error('[CategoryScreen] handleApplyFilters error:', err);
@@ -266,27 +309,27 @@ export default function CategoryScreen() {
 
   const handleResetFilters = useCallback(() => {
     try {
-      const defaults = {
+      const defaults = normalizeSearchFilters({
         category: slug,
         keyword: undefined,
-        city: activeCity?.slug || undefined,
+        city: undefined,
         provider_type: undefined,
         remote: false,
         sort: 'rating' as const,
         page: 1,
-      };
+      });
       setModalFilters(defaults);
       setFilters(defaults);
       setPage(1);
-      setAllProviders([]);
       setKeyword('');
       setShowFilters(false);
+      router.setParams(toCategoryRouteParams(defaults, ''));
     } catch (err) {
       if (__DEV__) {
         console.error('[CategoryScreen] handleResetFilters error:', err);
       }
     }
-  }, [activeCity?.slug, slug]);
+  }, [activeSubcategorySlugs.length, slug]);
 
   // Debounced search text binding
   useEffect(() => {
@@ -295,13 +338,14 @@ export default function CategoryScreen() {
       return;
     }
     const t = setTimeout(() => {
-      setFilters((f) => ({
-        ...f,
-        keyword: keyword ? keyword.trim() : undefined,
+      const nextFilters = normalizeSearchFilters({
+        ...filtersRef.current,
+        keyword,
         page: 1,
-      }));
+      });
+      setFilters(nextFilters);
+      router.setParams(toCategoryRouteParams(nextFilters));
       setPage(1);
-      setAllProviders([]);
     }, 400);
     return () => clearTimeout(t);
   }, [keyword]);
@@ -312,17 +356,20 @@ export default function CategoryScreen() {
       isCityInitial.current = false;
       return;
     }
-    setFilters((f) => ({
-      ...f,
+    const nextFilters = normalizeSearchFilters({
+      ...filtersRef.current,
       city: activeCity?.slug || undefined,
       page: 1,
-    }));
+    });
+    setFilters(nextFilters);
+    router.setParams(toCategoryRouteParams(nextFilters));
     setPage(1);
-    setAllProviders([]);
   }, [activeCity?.slug]);
 
   const activeFilterCount = [
-    filters.city && filters.city !== activeCity?.slug ? filters.city : null,
+    filters.city,
+    filters.keyword,
+    activeSub,
     filters.provider_type,
     filters.remote ? 'remote' : null,
     filters.sort !== 'rating' ? filters.sort : null,
@@ -347,6 +394,9 @@ export default function CategoryScreen() {
   // Single-select: tap a subcategory to filter to it; tap "الكل" or the active
   // pill again to clear back to the whole category.
   const handleSelectSubcategory = useCallback((subSlug: string | null) => {
+    if (!subSlug && activeSubcategorySlugs.length === 0) {
+      return;
+    }
     const next = !subSlug || activeSubcategorySlugs[0] === subSlug ? '' : subSlug;
     router.setParams({ subcategorySlug: next });
   }, [activeSubcategorySlugs]);
@@ -360,7 +410,7 @@ export default function CategoryScreen() {
   };
 
   if (isLoading && page === 1) return <LoadingSpinner />;
-  if (isError && allProviders.length === 0) return <ErrorView onRetry={handleRefetch} />;
+  if (isError && allProviders.length === 0) return <ErrorView error={categoryError ?? searchError} onRetry={handleRefetch} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -406,12 +456,16 @@ export default function CategoryScreen() {
                 icon="desktop-outline"
                 title="لا توجد خدمات متاحة عن بُعد"
                 message="لا توجد حالياً خدمات متاحة عن بُعد ضمن هذا القسم"
+                actionLabel="مسح التصفيات"
+                onAction={handleResetFilters}
               />
             ) : (
               <EmptyState
               icon="briefcase-outline"
               title="لا توجد نتائج"
-              message="لا توجد خدمات في هذا القسم الآن"
+              message={activeFilterCount > 0 ? 'لا توجد خدمات تطابق التصفيات الحالية. جرّب مسح التصفيات أو اختر قسماً آخر.' : 'لا توجد خدمات في هذا القسم الآن. جرّب تصفح تخصصات أخرى.'}
+              actionLabel={activeFilterCount > 0 ? 'مسح التصفيات' : 'تصفح التخصصات'}
+              onAction={activeFilterCount > 0 ? handleResetFilters : () => router.push('/categories')}
               />
             )
           ) : null
@@ -428,17 +482,33 @@ export default function CategoryScreen() {
                     marginHorizontal: 16,
                     marginBottom: 16,
                     marginTop: 8,
-                    alignItems: 'center',
+                    alignItems: 'flex-end',
                     borderRadius: 16,
                     borderWidth: 1.5,
                     borderColor: colors.primary,
                     paddingVertical: 12,
+                    paddingHorizontal: 16,
                     backgroundColor: pressed ? colors.primarySoft : 'transparent',
                     transform: [{ scale: pressed ? 0.97 : 1 }],
                   })}
                 >
-                  <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>عرض المزيد</Text>
+                  <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+                    <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>عرض المزيد</Text>
+                    <Ionicons name="chevron-down" size={16} color={colors.primary} />
+                  </View>
                 </Pressable>
+              ) : allProviders.length > 0 ? (
+                <Text
+                  style={{
+                    paddingVertical: 16,
+                    textAlign: 'center',
+                    fontSize: 12,
+                    fontFamily: 'Cairo-SemiBold',
+                    color: colors.textMuted,
+                  }}
+                >
+                  وصلت إلى نهاية النتائج
+                </Text>
               ) : null}
             </>
           )
@@ -768,22 +838,6 @@ export default function CategoryScreen() {
       </Modal>
     </View>
   );
-}
-
-// Helper to resolve icons for subcategories
-function getSubcategoryIcon(slug: string, name: string): keyof typeof Ionicons.glyphMap {
-  const s = (slug + ' ' + name).toLowerCase();
-  if (s.includes('graphic') || s.includes('جرافيك')) return 'color-palette-outline';
-  if (s.includes('web') || s.includes('مواقع') || s.includes('موقع')) return 'desktop-outline';
-  if (s.includes('ui') || s.includes('ux') || s.includes('واجهات') || s.includes('واجهة')) return 'grid-outline';
-  if (s.includes('video') || s.includes('فيديو') || s.includes('موشن')) return 'play-circle-outline';
-  if (s.includes('identity') || s.includes('هوية') || s.includes('شعار')) return 'id-card-outline';
-  if (s.includes('photo') || s.includes('تصوير') || s.includes('فوتو')) return 'camera-outline';
-  if (s.includes('paint') || s.includes('دهان') || s.includes('طلاء')) return 'brush-outline';
-  if (s.includes('clean') || s.includes('تنظيف')) return 'water-outline';
-  if (s.includes('electric') || s.includes('كهرباء') || s.includes('كهربائي')) return 'flash-outline';
-  if (s.includes('plumb') || s.includes('سباكة') || s.includes('سباك')) return 'construct-outline';
-  return 'briefcase-outline';
 }
 
 function formatCategoryHeroTitle(name: string | null | undefined): string {

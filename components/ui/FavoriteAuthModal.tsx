@@ -141,7 +141,7 @@ export function FavoriteAuthModal({
                 style={{
                   fontSize: 15,
                   fontFamily: 'Cairo-Bold',
-                  color: '#0F172A',
+                  color: colors.textOnPrimary,
                 }}
               >
                 تسجيل الدخول

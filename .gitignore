@@ -18,6 +18,11 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# EAS / store credentials — contain secrets, never commit (referenced by eas.json)
+credentials.json
+google-service-account.json
+google-service-account*.json
+
 # Metro
 .metro-health-check*
 

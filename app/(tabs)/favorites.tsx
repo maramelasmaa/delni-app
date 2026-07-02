@@ -9,8 +9,10 @@ import { useAuthStore } from '../../src/store/auth';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider } from '../../src/types';
+import { getProviderLogo } from '../../src/utils/imageFallback';
 
 /** Shared empty/CTA card so the not-signed-in and empty states stay identical. */
 function EmptyCard({
@@ -105,6 +107,11 @@ export default function FavoritesScreen() {
 
   const providers: Provider[] = data?.data ?? [];
 
+  usePrefetchImages(
+    providers.slice(0, 8).map((provider) => getProviderLogo(provider.logo_url, provider.id)),
+    { cachePolicy: 'memory-disk', limit: 8 },
+  );
+
   const handleUnfavorite = useCallback(
     (slug: string) => {
       handleFavoritePress(() => {
@@ -114,6 +121,15 @@ export default function FavoritesScreen() {
     [handleFavoritePress, toggleFavorite],
   );
 
+  const renderProviderItem = useCallback(
+    ({ item: p }: { item: Provider }) => (
+      <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
+        <ProviderRowCard provider={p} onFavoritePress={(slug) => handleUnfavorite(slug)} />
+      </View>
+    ),
+    [handleUnfavorite],
+  );
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <FlatList
@@ -121,6 +137,10 @@ export default function FavoritesScreen() {
         keyExtractor={(p) => `fav-${p.id}`}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 8, paddingBottom: 28, gap: 12 }}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={9}
+        removeClippedSubviews
         ListHeaderComponent={
           <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 }}>
             <View style={{ flexDirection: 'row-reverse', alignItems: 'center' }}>
@@ -202,14 +222,7 @@ export default function FavoritesScreen() {
             />
           );
         }}
-        renderItem={({ item: p }) => (
-          <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
-            <ProviderRowCard
-              provider={p}
-              onFavoritePress={(slug) => handleUnfavorite(slug)}
-            />
-          </View>
-        )}
+        renderItem={renderProviderItem}
       />
 
       {/* Favorite Auth Modal */}

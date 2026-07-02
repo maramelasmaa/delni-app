@@ -17,13 +17,16 @@ import { BannerCarousel } from '../../components/home/BannerCarousel';
 import { CitySheet } from '../../components/city/CitySheet';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
 import { FavoriteAuthModal } from '../../components/ui/FavoriteAuthModal';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useHome, useToggleFavorite } from '../../src/hooks/useApi';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 import { useCityStore } from '../../src/store/city';
 import { getCategoryIcon } from '../../src/utils/categoryStyle';
+import { getProviderLogo } from '../../src/utils/imageFallback';
 import { rtlRow } from '../../src/utils/rtl';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Category } from '../../src/types';
@@ -32,7 +35,7 @@ export default function HomeScreen() {
   const [citySheetVisible, setCitySheetVisible] = useState(false);
   const { colors, isDark } = useTheme();
   const activeCity = useCityStore((s) => s.activeCity);
-  const { data, isLoading, isError, refetch, isRefetching } = useHome(activeCity?.slug);
+  const { data, isLoading, isError, error, refetch, isRefetching } = useHome(activeCity?.slug);
   const toggleFavorite = useToggleFavorite();
   const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
     redirectPath: '/(tabs)/',
@@ -54,13 +57,57 @@ export default function HomeScreen() {
     }, slug);
   }, [handleFavoritePress, toggleFavorite]);
 
-  if (isLoading) return <LoadingSpinner />;
-  if (isError || !data) return <ErrorView onRetry={handleRetry} />;
-
-  const banners = data.banners ?? [];
-  const featured = data.featured_providers ?? [];
-  const categories = data.categories ?? [];
+  const banners = data?.banners ?? [];
+  const featured = data?.featured_providers ?? [];
+  const categories = data?.categories ?? [];
   const refreshing = isRefetching;
+  const isHomeEmpty = banners.length === 0 && categories.length === 0 && featured.length === 0;
+
+  usePrefetchImages(banners.map((banner) => banner.image_url), { cachePolicy: 'memory-disk', limit: 6 });
+  usePrefetchImages(
+    featured.map((provider) => getProviderLogo(provider.logo_url, provider.id)),
+    { cachePolicy: 'memory-disk', limit: 8 },
+  );
+
+  const renderHomeCategoryItem = useCallback(
+    ({ item }: { item: Category | { id: string; isViewAll: true } }) =>
+      'isViewAll' in item && item.isViewAll ? (
+        <Pressable
+          onPress={() => router.push('/categories')}
+          style={({ pressed }) => [
+            styles.categoryCard,
+            {
+              borderColor: colors.goldBorder,
+              opacity: pressed ? 0.8 : 1,
+              transform: [{ scale: pressed ? 0.97 : 1 }],
+            },
+          ]}
+        >
+          <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: colors.goldBorder, borderRadius: 12, padding: 8 }]}>
+            <View style={styles.categoryIconBox}>
+              <Ionicons name="grid-outline" size={24} color={colors.gold} />
+            </View>
+
+            <Text numberOfLines={3} style={[styles.categoryTitle, { color: colors.textPrimary }]}>
+              عرض الكل
+            </Text>
+          </View>
+        </Pressable>
+      ) : (
+        <HomeCategoryCard key={item.id} category={item as Category} colors={colors} />
+      ),
+    [colors.gold, colors.goldBorder, colors.textPrimary],
+  );
+
+  const renderFeaturedProviderItem = useCallback(
+    ({ item }: { item: import('../../src/types').Provider }) => (
+      <ProviderRowCard provider={item} onFavoritePress={handleFavorite} />
+    ),
+    [handleFavorite],
+  );
+
+  if (isLoading) return <LoadingSpinner />;
+  if (isError || !data) return <ErrorView error={error} onRetry={handleRetry} />;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -150,33 +197,7 @@ export default function HomeScreen() {
                 paddingHorizontal: 20,
                 paddingVertical: 4,
               }}
-              renderItem={({ item }) =>
-                'isViewAll' in item && item.isViewAll ? (
-                  <Pressable
-                    onPress={() => router.push('/categories')}
-                    style={({ pressed }) => [
-                      styles.categoryCard,
-                      {
-                        borderColor: colors.goldBorder,
-                        opacity: pressed ? 0.8 : 1,
-                        transform: [{ scale: pressed ? 0.97 : 1 }],
-                      },
-                    ]}
-                  >
-                    <View style={[styles.categoryCenterStack, { borderWidth: 1, borderColor: colors.goldBorder, borderRadius: 12, padding: 8 }]}>
-                      <View style={styles.categoryIconBox}>
-                        <Ionicons name="grid-outline" size={24} color={colors.gold} />
-                      </View>
-
-                      <Text numberOfLines={3} style={[styles.categoryTitle, { color: colors.textPrimary }]}>
-                        عرض الكل
-                      </Text>
-                    </View>
-                  </Pressable>
-                ) : (
-                  <HomeCategoryCard key={item.id} category={item as Category} colors={colors} />
-                )
-              }
+              renderItem={renderHomeCategoryItem}
               keyExtractor={(item) => item.id.toString()}
             />
           </View>
@@ -199,11 +220,25 @@ export default function HomeScreen() {
               scrollEnabled={false}
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ gap: 16 }}
-              renderItem={({ item }) => <ProviderRowCard provider={item} onFavoritePress={handleFavorite} />}
+              initialNumToRender={6}
+              maxToRenderPerBatch={6}
+              windowSize={7}
+              removeClippedSubviews
+              renderItem={renderFeaturedProviderItem}
               keyExtractor={(item) => item.id.toString()}
             />
           </View>
         )}
+
+        {isHomeEmpty ? (
+          <EmptyState
+            icon="search-outline"
+            title="لا توجد نتائج لعرضها"
+            message={activeCity ? `لا توجد خدمات متاحة في ${activeCity.name} حالياً. جرّب مدينة أخرى أو امسح اختيار المدينة.` : 'لا توجد خدمات متاحة حالياً. جرّب تحديث الصفحة أو تصفح التخصصات.'}
+            actionLabel="تصفح التخصصات"
+            onAction={() => router.push('/categories')}
+          />
+        ) : null}
 
       </ScrollView>
 

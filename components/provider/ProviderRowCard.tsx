@@ -47,7 +47,7 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
               />
             </View>
 
-            {provider.is_featured ? (
+            {provider.is_featured && rank === undefined ? (
               <View style={styles.featuredBadge}>
                 <Ionicons name="sparkles" size={10} color="#0F172A" />
                 <Text style={styles.featuredText}>مميز</Text>
@@ -164,8 +164,8 @@ function makeStyles(colors: ThemeColors) {
     },
     rankBadge: {
       position: 'absolute',
-      bottom: -6,
-      left: -6,
+      top: -6,
+      right: -6,
       minWidth: 22,
       height: 22,
       borderRadius: 11,

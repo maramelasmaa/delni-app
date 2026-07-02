@@ -11,7 +11,7 @@ export default function SubcategoryScreen() {
   const { slug, categorySlug } = useLocalSearchParams<{ slug: string; categorySlug?: string }>();
 
   // Fetch only if categorySlug is not provided in params
-  const { data, isLoading, isError, refetch } = useSubcategory(slug, 1, {
+  const { data, isLoading, isError, error, refetch } = useSubcategory(slug, 1, {
     enabled: !categorySlug,
   });
 
@@ -33,7 +33,7 @@ export default function SubcategoryScreen() {
   }, [categorySlug, slug, data]);
 
   if (isError && !categorySlug) {
-    return <ErrorView onRetry={refetch} />;
+    return <ErrorView error={error} onRetry={refetch} />;
   }
 
   return (

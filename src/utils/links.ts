@@ -1,4 +1,5 @@
-import { Alert, Linking } from 'react-native';
+import { Linking } from 'react-native';
+import { showNativeAlert } from './themedAlert';
 
 /**
  * Link normalization + safe opening for backend-supplied URLs.
@@ -94,7 +95,7 @@ export async function openExternalUrl(
     if (!/^https?:/i.test(url)) {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
-        Alert.alert('تعذّر فتح الرابط', message);
+        showNativeAlert('تعذّر فتح الرابط', message);
         return false;
       }
     }
@@ -102,7 +103,7 @@ export async function openExternalUrl(
     await Linking.openURL(url);
     return true;
   } catch {
-    Alert.alert('تعذّر فتح الرابط', message);
+    showNativeAlert('تعذّر فتح الرابط', message);
     return false;
   }
 }

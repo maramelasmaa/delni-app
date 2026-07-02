@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProviderRowCard } from '../../components/provider/ProviderRowCard';
@@ -11,30 +11,24 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useTopRated, useCategories, useToggleFavorite } from '../../src/hooks/useApi';
 import { useFavoriteWithAuth } from '../../src/hooks/useFavoriteWithAuth';
+import { usePrefetchImages } from '../../src/hooks/useImagePrefetch';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useCityStore } from '../../src/store/city';
 import type { ThemeColors } from '../../src/theme/tokens';
 import type { Provider } from '../../src/types';
+import { getProviderLogo } from '../../src/utils/imageFallback';
 import { formatArabicReviewCount } from '../../src/utils/numberFormatter';
 import { rtlRow } from '../../src/utils/rtl';
-
-function getSingleParam(value?: string | string[]) {
-  return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
-}
+import { getSingleParam, mergeUniqueProviders } from '../../src/utils/searchFilters';
 
 export default function TopRatedScreen() {
   const { colors } = useTheme();
   const params = useLocalSearchParams<{ category?: string }>();
-  const categoryParam = getSingleParam(params.category);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(
-    categoryParam ? [categoryParam] : [],
-  );
+  const categoryParam = getSingleParam(params.category).split(',').filter(Boolean)[0] ?? '';
+  const [selectedCategory, setSelectedCategory] = useState(categoryParam);
   const [page, setPage] = useState(1);
   const [allProviders, setAllProviders] = useState<Provider[]>([]);
   const activeCity = useCityStore((s) => s.activeCity);
-  const prevCityRef = useRef(activeCity?.slug);
-  const categoriesKey = selectedCategories.join(',');
-  const prevCategoryKeyRef = useRef(categoriesKey);
 
   const toggleFavorite = useToggleFavorite();
   const { showAuthAlert, handleFavoritePress, handleConfirmLogin, handleDismiss } = useFavoriteWithAuth({
@@ -43,26 +37,29 @@ export default function TopRatedScreen() {
 
 
 
-  const { data, isLoading, isError, isFetching, refetch } = useTopRated({
-    category: categoriesKey || undefined,
+  const { data, isLoading, isError, error, isFetching, refetch } = useTopRated({
+    category: selectedCategory || undefined,
     city: activeCity?.slug || undefined,
     page,
   });
   const { data: categories } = useCategories();
 
-  // Reset when category or city filter changes
-  if (prevCategoryKeyRef.current !== categoriesKey || prevCityRef.current !== activeCity?.slug) {
-    prevCategoryKeyRef.current = categoriesKey;
-    prevCityRef.current = activeCity?.slug;
+  // Keep local selection aligned with the route, including back/forward navigation.
+  useEffect(() => {
+    setSelectedCategory(categoryParam);
+  }, [categoryParam]);
+
+  // Reset pagination and accumulated rows whenever the effective query changes.
+  useEffect(() => {
     setPage(1);
     setAllProviders([]);
-  }
+  }, [selectedCategory, activeCity?.slug]);
 
   useEffect(() => {
     const fresh = data?.data;
     if (!fresh?.length) return;
     setAllProviders((prev) =>
-      page === 1 ? fresh : [...prev, ...fresh.filter((p) => !prev.some((x) => x.id === p.id))],
+      page === 1 ? fresh : mergeUniqueProviders(prev, fresh),
     );
   }, [data?.data, page]);
 
@@ -79,15 +76,10 @@ export default function TopRatedScreen() {
   );
 
   const handleCategoryToggle = useCallback((slug: string) => {
-    setSelectedCategories((prev) => {
-      if (slug === '') return [];
-      const next = prev.includes(slug)
-        ? prev.filter((s) => s !== slug)
-        : [...prev, slug];
-      router.setParams({ category: next.join(',') || undefined });
-      return next;
-    });
-  }, []);
+    const next = slug === '' || selectedCategory === slug ? '' : slug;
+    setSelectedCategory(next);
+    router.setParams({ category: next || undefined });
+  }, [selectedCategory]);
 
   const pagination = data?.pagination;
   const hasMore = pagination ? pagination.current_page < pagination.last_page : false;
@@ -98,9 +90,72 @@ export default function TopRatedScreen() {
 
   const podium = allProviders.slice(0, 3);
   const rest = allProviders.slice(3);
+  const categoryFilterData = useMemo(
+    () => [{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])],
+    [categories],
+  );
+
+  usePrefetchImages(
+    allProviders.slice(0, 8).map((provider) => getProviderLogo(provider.logo_url, provider.id)),
+    { cachePolicy: 'memory-disk', limit: 8 },
+  );
+
+  const renderCategoryPill = useCallback(
+    ({ item: cat }: { item: { id: number; name: string; slug: string } }) => {
+      const isActive = cat.slug === ''
+        ? !selectedCategory
+        : selectedCategory === cat.slug;
+      return (
+        <Pressable
+          onPress={() => handleCategoryToggle(cat.slug)}
+          style={({ pressed }) => ({
+            transform: [{ scale: pressed ? 0.96 : 1 }],
+          })}
+        >
+          <View
+            style={{
+              paddingHorizontal: 16,
+              paddingVertical: 8,
+              borderRadius: 20,
+              backgroundColor: isActive ? '#1E40AF' : colors.surface,
+              borderWidth: 1,
+              borderColor: isActive ? '#1E40AF' : colors.border,
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: colors.shadow,
+              shadowOffset: { width: 0, height: 1 },
+              shadowOpacity: 0.02,
+              shadowRadius: 3,
+              elevation: 1,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: isActive ? 'Cairo-Bold' : 'Cairo-SemiBold',
+                color: isActive ? '#FFFFFF' : colors.textSecondary,
+              }}
+            >
+              {cat.name}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    },
+    [colors.border, colors.shadow, colors.surface, colors.textSecondary, handleCategoryToggle, selectedCategory],
+  );
+
+  const renderProviderItem = useCallback(
+    ({ item: p, index }: { item: Provider; index: number }) => (
+      <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
+        <ProviderRowCard provider={p} rank={index + 4} onFavoritePress={handleFavorite} />
+      </View>
+    ),
+    [handleFavorite],
+  );
 
   if (isLoading && page === 1) return <LoadingSpinner />;
-  if (isError) return <ErrorView onRetry={refetch} />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -129,7 +184,7 @@ export default function TopRatedScreen() {
               horizontal
               inverted
               showsHorizontalScrollIndicator={false}
-              data={[{ id: 0, name: 'الكل', slug: '' }, ...(categories ?? [])]}
+              data={categoryFilterData}
               keyExtractor={(cat) => `tr-cat-${cat.id}`}
               contentContainerStyle={{
                 paddingHorizontal: 20,
@@ -137,47 +192,7 @@ export default function TopRatedScreen() {
                 paddingBottom: 12,
                 gap: 8,
               }}
-              renderItem={({ item: cat }) => {
-                const isActive = cat.slug === ''
-                  ? selectedCategories.length === 0
-                  : selectedCategories.includes(cat.slug);
-                return (
-                  <Pressable
-                    onPress={() => handleCategoryToggle(cat.slug)}
-                    style={({ pressed }) => ({
-                      transform: [{ scale: pressed ? 0.96 : 1 }],
-                    })}
-                  >
-                    <View
-                      style={{
-                        paddingHorizontal: 16,
-                        paddingVertical: 8,
-                        borderRadius: 20,
-                        backgroundColor: isActive ? '#1E40AF' : colors.surface,
-                        borderWidth: 1,
-                        borderColor: isActive ? '#1E40AF' : colors.border,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        shadowColor: colors.shadow,
-                        shadowOffset: { width: 0, height: 1 },
-                        shadowOpacity: 0.02,
-                        shadowRadius: 3,
-                        elevation: 1,
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontFamily: isActive ? 'Cairo-Bold' : 'Cairo-SemiBold',
-                          color: isActive ? '#FFFFFF' : colors.textSecondary,
-                        }}
-                      >
-                        {cat.name}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              }}
+              renderItem={renderCategoryPill}
             />
 
             {/* Podium */}
@@ -200,14 +215,20 @@ export default function TopRatedScreen() {
             ) : null}
           </>
         }
-        renderItem={({ item: p, index }) => (
-          <View style={{ marginHorizontal: 16, marginVertical: 0 }}>
-            <ProviderRowCard provider={p} rank={index + 4} onFavoritePress={handleFavorite} />
-          </View>
-        )}
+        initialNumToRender={8}
+        maxToRenderPerBatch={8}
+        windowSize={9}
+        removeClippedSubviews
+        renderItem={renderProviderItem}
         ListEmptyComponent={
           podium.length === 0 ? (
-            <EmptyState icon="star-outline" title="لا توجد خدمات بعد" />
+            <EmptyState
+              icon="star-outline"
+              title="لا توجد خدمات بعد"
+              message={selectedCategory || activeCity ? 'لا توجد خدمات عالية التقييم تطابق هذا الاختيار حالياً. جرّب مسح التصنيف أو تغيير المدينة.' : 'لا توجد خدمات عالية التقييم لعرضها حالياً. تصفح التخصصات لاكتشاف مزودين آخرين.'}
+              actionLabel={selectedCategory ? 'مسح التصنيف' : 'تصفح التخصصات'}
+              onAction={selectedCategory ? () => handleCategoryToggle('') : () => router.push('/categories')}
+            />
           ) : null
         }
         ListFooterComponent={
@@ -219,11 +240,12 @@ export default function TopRatedScreen() {
                 marginHorizontal: 16,
                 marginBottom: 16,
                 marginTop: 8,
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 borderRadius: 16,
                 borderWidth: 1.5,
                 borderColor: colors.primary,
                 paddingVertical: 12,
+                paddingHorizontal: 16,
                 backgroundColor: pressed ? colors.primarySoft : 'transparent',
                 transform: [{ scale: pressed ? 0.97 : 1 }],
               })}
@@ -231,9 +253,24 @@ export default function TopRatedScreen() {
               {isFetching ? (
                 <ActivityIndicator size="small" color={colors.primary} />
               ) : (
-                <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>تحميل المزيد</Text>
+                <View style={{ ...rtlRow(), alignItems: 'center', gap: 6 }}>
+                  <Text style={{ fontFamily: 'Cairo-Bold', color: colors.primary, fontSize: 14 }}>تحميل المزيد</Text>
+                  <Ionicons name="chevron-down" size={16} color={colors.primary} />
+                </View>
               )}
             </Pressable>
+          ) : allProviders.length > 0 ? (
+            <Text
+              style={{
+                paddingVertical: 16,
+                textAlign: 'center',
+                fontSize: 12,
+                fontFamily: 'Cairo-SemiBold',
+                color: colors.textMuted,
+              }}
+            >
+              وصلت إلى نهاية النتائج
+            </Text>
           ) : null
         }
       />

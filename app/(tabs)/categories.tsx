@@ -16,7 +16,7 @@ import type { Category } from '../../src/types';
 
 export default function CategoriesScreen() {
   const { colors } = useTheme();
-  const { data: categories, isLoading, isError, refetch } = useCategories();
+  const { data: categories, isLoading, isError, error, refetch } = useCategories();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
 
@@ -35,8 +35,24 @@ export default function CategoriesScreen() {
     });
   }, []);
 
+  const renderCategoryItem = useCallback(
+    ({ item: cat }: { item: Category }) => (
+      <CategoryRow cat={cat} onPress={handlePress} colors={colors} />
+    ),
+    [colors, handlePress],
+  );
+
+  const getCategoryItemLayout = useCallback(
+    (_: ArrayLike<Category> | null | undefined, index: number) => ({
+      length: 12 + 82,
+      offset: (12 + 82) * index,
+      index,
+    }),
+    [],
+  );
+
   if (isLoading) return <LoadingSpinner />;
-  if (isError) return <ErrorView onRetry={refetch} />;
+  if (isError) return <ErrorView error={error} onRetry={refetch} />;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -123,7 +139,13 @@ export default function CategoriesScreen() {
 
       {/* Standalone card list with spacing */}
       {filtered.length === 0 ? (
-        <EmptyState icon="grid-outline" title="لا توجد تخصصات مطابقة" />
+        <EmptyState
+          icon="grid-outline"
+          title={search.trim() ? 'لا توجد تخصصات مطابقة' : 'لا توجد تخصصات متاحة'}
+          message={search.trim() ? 'جرّب كلمة أبسط أو امسح البحث لعرض كل التخصصات.' : 'تعذر عرض أي تخصصات حالياً. حاول التحديث أو ارجع لاحقاً.'}
+          actionLabel={search.trim() ? 'مسح البحث' : 'إعادة المحاولة'}
+          onAction={search.trim() ? () => setSearch('') : () => refetch()}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -131,13 +153,12 @@ export default function CategoriesScreen() {
           contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32, paddingTop: 8 }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={<View style={{ height: 0 }} />}
-          renderItem={({ item: cat }) => (
-            <CategoryRow
-              cat={cat}
-              onPress={handlePress}
-              colors={colors}
-            />
-          )}
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={9}
+          removeClippedSubviews
+          getItemLayout={getCategoryItemLayout}
+          renderItem={renderCategoryItem}
         />
       )}
     </SafeAreaView>

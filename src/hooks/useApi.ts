@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ENDPOINTS } from '../constants/api';
 import { useAuthStore } from '../store/auth';
+import { toSearchRequestParams } from '../utils/searchFilters';
 import type {
   ApiResponse,
   Category,
@@ -16,6 +17,7 @@ import type {
   SubcategoryDetailData,
   ProviderType,
 } from '../types';
+import { showNativeAlert } from '../utils/themedAlert';
 
 function requirePagination<T>(response: ApiResponse<T>, endpoint: string) {
   if (!response.pagination) {
@@ -28,9 +30,10 @@ function requirePagination<T>(response: ApiResponse<T>, endpoint: string) {
 export function useHome(city?: string) {
   return useQuery({
     queryKey: ['home', city ?? null],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<HomeData>>(ENDPOINTS.home, {
         params: city ? { city } : undefined,
+        signal,
       });
       return res.data.data;
     },
@@ -40,8 +43,8 @@ export function useHome(city?: string) {
 export function useCities() {
   return useQuery({
     queryKey: ['cities'],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<City[]>>(ENDPOINTS.cities);
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<City[]>>(ENDPOINTS.cities, { signal });
       return res.data.data;
     },
     staleTime: 60 * 60 * 1000,
@@ -51,8 +54,8 @@ export function useCities() {
 export function useProviderTypes() {
   return useQuery({
     queryKey: ['provider-types'],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<ProviderType[]>>(ENDPOINTS.providerTypes);
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<ProviderType[]>>(ENDPOINTS.providerTypes, { signal });
       return res.data.data;
     },
     staleTime: 60 * 60 * 1000,
@@ -62,8 +65,8 @@ export function useProviderTypes() {
 export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<Category[]>>(ENDPOINTS.categories);
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<Category[]>>(ENDPOINTS.categories, { signal });
       return res.data.data;
     },
     staleTime: 60 * 60 * 1000,
@@ -73,10 +76,10 @@ export function useCategories() {
 export function useCategory(slug: string, page = 1, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['category', slug, page],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<CategoryDetailData>>(
         ENDPOINTS.category(slug),
-        { params: { page } },
+        { params: { page }, signal },
       );
       return res.data.data;
     },
@@ -87,10 +90,10 @@ export function useCategory(slug: string, page = 1, options?: { enabled?: boolea
 export function useSubcategory(slug: string, page = 1, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['subcategory', slug, page],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<SubcategoryDetailData>>(
         ENDPOINTS.subcategory(slug),
-        { params: { page } },
+        { params: { page }, signal },
       );
       return res.data.data;
     },
@@ -101,10 +104,10 @@ export function useSubcategory(slug: string, page = 1, options?: { enabled?: boo
 export function useSearchSuggestions(q: string) {
   return useQuery({
     queryKey: ['search-suggestions', q],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<{ suggestions: string[] }>>(
         ENDPOINTS.searchSuggestions,
-        { params: { q } },
+        { params: { q }, signal },
       );
       return res.data.data.suggestions ?? [];
     },
@@ -116,13 +119,9 @@ export function useSearchSuggestions(q: string) {
 export function useSearch(filters: SearchFilters) {
   return useQuery({
     queryKey: ['search', filters],
-    queryFn: async () => {
-      const params = Object.fromEntries(
-        Object.entries(filters)
-          .filter(([, v]) => v !== undefined && v !== '' && v !== false && v !== 0)
-          .map(([key, value]) => [key, key === 'remote' && value === true ? 1 : value]),
-      );
-      const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.search, { params });
+    queryFn: async ({ signal }) => {
+      const params = toSearchRequestParams(filters);
+      const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.search, { params, signal });
       return {
         data: res.data.data,
         pagination: requirePagination(res.data, ENDPOINTS.search),
@@ -135,8 +134,8 @@ export function useSearch(filters: SearchFilters) {
 export function useTopRated(params?: { city?: string; category?: string; page?: number }) {
   return useQuery({
     queryKey: ['top-rated', params],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.providers.topRated, { params });
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.providers.topRated, { params, signal });
       return {
         data: res.data.data,
         pagination: requirePagination(res.data, ENDPOINTS.providers.topRated),
@@ -148,21 +147,25 @@ export function useTopRated(params?: { city?: string; category?: string; page?: 
 export function useProvider(slug: string) {
   return useQuery({
     queryKey: ['provider', slug],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<Provider>>(ENDPOINTS.providers.show(slug));
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<Provider>>(ENDPOINTS.providers.show(slug), { signal });
       return res.data.data;
     },
     enabled: !!slug,
-    staleTime: 0, // Always fetch fresh — ensures new fields like offers_remote_work are picked up
+    // Was staleTime: 0, which refetched the (formerly unbounded) detail payload on every
+    // mount/focus. Favorite/review mutations already invalidate ['provider', slug] via
+    // onSettled, so fresh fields still propagate without refetching on every visit.
+    staleTime: 60 * 1000,
   });
 }
 
 export function useProviderReviews(slug: string, page = 1) {
   return useQuery({
     queryKey: ['provider-reviews', slug, page],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<Review[]>>(ENDPOINTS.providers.reviews(slug), {
         params: { page },
+        signal,
       });
       return {
         data: res.data.data,
@@ -178,9 +181,10 @@ export function useFavorites(page = 1) {
 
   return useQuery({
     queryKey: ['favorites', page],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const res = await api.get<ApiResponse<Provider[]>>(ENDPOINTS.favorites.index, {
         params: { page },
+        signal,
       });
       return {
         data: res.data.data,
@@ -194,8 +198,8 @@ export function useFavorites(page = 1) {
 export function useContact() {
   return useQuery({
     queryKey: ['contact'],
-    queryFn: async () => {
-      const res = await api.get<ApiResponse<ContactInfo>>(ENDPOINTS.contact);
+    queryFn: async ({ signal }) => {
+      const res = await api.get<ApiResponse<ContactInfo>>(ENDPOINTS.contact, { signal });
       return res.data.data;
     },
     staleTime: 60 * 60 * 1000,
@@ -358,16 +362,22 @@ export function useToggleFavorite() {
       if (context?.previousProvider) {
         qc.setQueryData(['provider', context.previousProvider.slug], context.previousProvider);
       }
+      showNativeAlert(
+        'تعذر تحديث المفضلة',
+        'لم نتمكن من حفظ هذا التغيير. تحقق من اتصالك وحاول مرة أخرى.',
+      );
     },
     onSettled: async (_data, _error, { slug }) => {
+      // The optimistic onMutate patches already updated home/search/top-rated/
+      // category/subcategory caches in place. Only refetch the two queries whose
+      // server state actually changed — invalidating all 7 families refetched the
+      // expensive /home (and every other list) on every heart tap. invalidateQueries
+      // refetches every *active* match and overrides staleTime, so the broad version
+      // produced a burst of up to 7 network requests per tap. The remaining lists
+      // self-correct on their next natural staleTime.
       await Promise.all([
         qc.invalidateQueries({ queryKey: ['favorites'] }),
         qc.invalidateQueries({ queryKey: ['provider', slug] }),
-        qc.invalidateQueries({ queryKey: ['home'] }),
-        qc.invalidateQueries({ queryKey: ['search'] }),
-        qc.invalidateQueries({ queryKey: ['top-rated'] }),
-        qc.invalidateQueries({ queryKey: ['category'] }),
-        qc.invalidateQueries({ queryKey: ['subcategory'] }),
       ]);
     },
   });
