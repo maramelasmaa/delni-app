@@ -49,15 +49,17 @@ export default function TopRatedScreen() {
     setSelectedCategory(categoryParam);
   }, [categoryParam]);
 
-  // Reset pagination and accumulated rows whenever the effective query changes.
+  // Reset pagination whenever the effective query changes. We deliberately do NOT
+  // clear allProviders here: clearing blanks the list when the next query is served
+  // from cache (the refill effect's data dep doesn't change, so it never refills).
+  // The page-1 replace below swaps the rows once fresh data arrives instead.
   useEffect(() => {
     setPage(1);
-    setAllProviders([]);
   }, [selectedCategory, activeCity?.slug]);
 
   useEffect(() => {
     const fresh = data?.data;
-    if (!fresh?.length) return;
+    if (!fresh) return;
     setAllProviders((prev) =>
       page === 1 ? fresh : mergeUniqueProviders(prev, fresh),
     );

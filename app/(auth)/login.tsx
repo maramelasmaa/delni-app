@@ -88,23 +88,32 @@ export default function LoginScreen() {
           loading={login.isPending}
           onPress={handleLogin}
           colors={colors}
+          variant="primary"
+          icon="person-outline"
         />
         <AuthButton
-          title="تصفح كضيف"
-          onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
+          title="إنشاء حساب جديد"
+          onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined }))}
           colors={colors}
+          variant="secondary"
+          icon="person-add-outline"
         />
       </View>
 
-      <Text style={{ marginTop: 18, textAlign: 'center', fontSize: 14, color: colors.textSecondary, fontFamily: 'Cairo-Regular', writingDirection: 'rtl' }}>
-        ليس لديك حساب؟{' '}
-        <Text
-          style={{ fontFamily: 'Cairo-Bold', color: colors.primary }}
-          onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined }))}
-        >
-          أنشئ حسابًا
-        </Text>
-      </Text>
+      {/* Divider */}
+      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 6 }}>
+        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+        <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-SemiBold' }}>أو</Text>
+        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+      </View>
+
+      <AuthButton
+        title="المتابعة كضيف"
+        onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
+        colors={colors}
+        variant="ghost"
+        icon="compass-outline"
+      />
     </AuthScreen>
   );
 }

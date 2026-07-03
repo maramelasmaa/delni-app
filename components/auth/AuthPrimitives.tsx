@@ -163,6 +163,8 @@ export function AuthButton({
   disabled,
   colors,
   style,
+  variant = 'primary',
+  icon,
 }: {
   title: string;
   loadingTitle?: string;
@@ -171,10 +173,36 @@ export function AuthButton({
   disabled?: boolean;
   colors: ThemeColors;
   style?: StyleProp<ViewStyle>;
+  /** primary = filled CTA, secondary = outlined, ghost = quiet text button */
+  variant?: 'primary' | 'secondary' | 'ghost';
+  icon?: keyof typeof Ionicons.glyphMap;
 }) {
+  const { isDark } = useTheme();
   const isDisabled = disabled || loading;
-  const backgroundColor = isDisabled ? colors.borderStrong : colors.primary;
-  const foregroundColor = isDisabled ? colors.textMuted : colors.textOnPrimary;
+
+  // Visual weight per variant: all clearly FILLED with a defining border, ranked by
+  // color. Fills are chosen to read as solid against the #F6F8FF page (the old
+  // primarySoft/surfaceAlt tints were too close to the background and looked empty).
+  const palette = {
+    primary: {
+      backgroundColor: isDisabled ? colors.borderStrong : colors.primary,
+      foregroundColor: isDisabled ? colors.textMuted : colors.textOnPrimary,
+      borderColor: isDisabled ? colors.borderStrong : colors.primary,
+      elevated: !isDisabled,
+    },
+    secondary: {
+      backgroundColor: isDisabled ? colors.surfaceAlt : isDark ? 'rgba(96,165,250,0.22)' : '#DBEAFE',
+      foregroundColor: isDisabled ? colors.textMuted : colors.primary,
+      borderColor: isDisabled ? colors.border : colors.primary,
+      elevated: false,
+    },
+    ghost: {
+      backgroundColor: isDisabled ? colors.surfaceAlt : isDark ? colors.surfaceAlt : '#E2E8F0',
+      foregroundColor: isDisabled ? colors.textMuted : colors.textSecondary,
+      borderColor: colors.borderStrong,
+      elevated: false,
+    },
+  }[variant];
 
   return (
     <Pressable
@@ -188,7 +216,9 @@ export function AuthButton({
           width: '100%',
           height: 48,
           borderRadius: 14,
-          backgroundColor,
+          backgroundColor: palette.backgroundColor,
+          borderColor: palette.borderColor,
+          borderWidth: 1.5,
           flexDirection: 'row-reverse',
           alignItems: 'center',
           justifyContent: 'center',
@@ -196,9 +226,9 @@ export function AuthButton({
           paddingHorizontal: 16,
           shadowColor: colors.primary,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: isDisabled ? 0 : 0.1,
+          shadowOpacity: palette.elevated ? 0.1 : 0,
           shadowRadius: 6,
-          elevation: isDisabled ? 0 : 2,
+          elevation: palette.elevated ? 2 : 0,
           opacity: isDisabled ? 0.76 : pressed ? 0.86 : 1,
           transform: [
             { scale: pressed && !isDisabled ? 0.985 : 1 },
@@ -208,7 +238,9 @@ export function AuthButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator size="small" color={foregroundColor} />
+        <ActivityIndicator size="small" color={palette.foregroundColor} />
+      ) : icon ? (
+        <Ionicons name={icon} size={18} color={palette.foregroundColor} />
       ) : null}
 
       <Text
@@ -219,7 +251,7 @@ export function AuthButton({
           fontSize: 13.5,
           lineHeight: 21,
           fontFamily: 'Cairo-Bold',
-          color: foregroundColor,
+          color: palette.foregroundColor,
           textAlign: 'center',
           writingDirection: 'rtl',
           includeFontPadding: false,

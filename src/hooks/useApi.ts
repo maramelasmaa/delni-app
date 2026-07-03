@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import api from '../lib/api';
 import { ENDPOINTS } from '../constants/api';
 import { useAuthStore } from '../store/auth';
@@ -84,6 +84,7 @@ export function useCategory(slug: string, page = 1, options?: { enabled?: boolea
       return res.data.data;
     },
     enabled: options?.enabled !== undefined ? options.enabled && !!slug : !!slug,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -98,6 +99,7 @@ export function useSubcategory(slug: string, page = 1, options?: { enabled?: boo
       return res.data.data;
     },
     enabled: options?.enabled !== undefined ? options.enabled && !!slug : !!slug,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -113,6 +115,9 @@ export function useSearchSuggestions(q: string) {
     },
     enabled: q.length >= 2,
     staleTime: 30 * 1000,
+    // Keep the previous term's suggestions on screen while the next term loads,
+    // so the dropdown doesn't blank out on every keystroke (search-as-you-type).
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -128,6 +133,9 @@ export function useSearch(filters: SearchFilters) {
       } satisfies PaginatedData<Provider>;
     },
     enabled: true,
+    // Keep prior results (and pagination) visible during filter/page transitions
+    // so the list and result-count header don't flash empty.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -141,6 +149,7 @@ export function useTopRated(params?: { city?: string; category?: string; page?: 
         pagination: requirePagination(res.data, ENDPOINTS.providers.topRated),
       } satisfies PaginatedData<Provider>;
     },
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -173,6 +182,7 @@ export function useProviderReviews(slug: string, page = 1) {
       } satisfies PaginatedData<Review>;
     },
     enabled: !!slug,
+    placeholderData: keepPreviousData,
   });
 }
 

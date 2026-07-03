@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/auth';
 import type { Review } from '../types';
 import { mapProviderProfile } from '../utils/providerMappers';
 import { mergeUniqueById } from '../utils/searchFilters';
+import { openExternalUrl } from '../utils/links';
 
 export function useProviderDetail(slug: string) {
   // Data fetching
@@ -57,13 +58,13 @@ export function useProviderDetail(slug: string) {
 
   const handleWhatsApp = useCallback(() => {
     if (provider?.whatsapp_url) {
-      // openExternalUrl call would go here
+      openExternalUrl(provider.whatsapp_url, { errorMessage: 'تعذر فتح واتساب، تأكد من تثبيت التطبيق.' });
     }
   }, [provider?.whatsapp_url]);
 
   const handlePhone = useCallback(() => {
     if (provider?.phone) {
-      // openExternalUrl call would go here
+      openExternalUrl(`tel:${provider.phone}`, { errorMessage: 'تعذر إجراء الاتصال.' });
     }
   }, [provider?.phone]);
 

@@ -868,12 +868,11 @@ export default function ProviderScreen() {
 
   useEffect(() => {
     setReviewPage(1);
-    setAllReviews([]);
   }, [slug]);
 
   useEffect(() => {
     const fresh = reviewsData?.data;
-    if (!fresh?.length) return;
+    if (!fresh) return;
     setAllReviews((prev) =>
       reviewPage === 1 ? fresh : mergeUniqueById(prev, fresh)
     );
@@ -1400,7 +1399,7 @@ export default function ProviderScreen() {
       <Modal visible={galleryItem !== null} transparent animationType="fade" onRequestClose={() => setGalleryItem(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)' }}>
           <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-            <View style={{ position: 'absolute', top: insets.top + 16, left: 16, zIndex: 99 }}>
+            <View style={{ position: 'absolute', top: insets.top + 16, right: 16, zIndex: 99 }}>
               <Pressable onPress={() => setGalleryItem(null)} style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.15)' }}>
                 <Ionicons name="close" size={24} color="#FFFFFF" />
               </Pressable>

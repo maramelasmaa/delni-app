@@ -93,7 +93,6 @@ export function AuthBootstrap() {
         name="subcategory/[slug]"
         options={{ headerShown: false }}
       />
-      <Stack.Screen name="search" options={{ headerShown: false }} />
       <Stack.Screen
         name="account"
         options={{ headerShown: true, headerTitle: 'المعلومات الشخصية', headerBackTitle: ' ' }}

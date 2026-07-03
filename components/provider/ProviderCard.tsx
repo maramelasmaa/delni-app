@@ -439,7 +439,7 @@ export default function ProviderScreen() {
       <Modal visible={galleryItem !== null} transparent animationType="fade" onRequestClose={() => setGalleryItem(null)}>
         <View style={{ flex: 1, backgroundColor: colors.overlayHeavy }}>
           <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
-            <View style={{ position: 'absolute', top: insets.top + 16, left: 16, zIndex: 99 }}>
+            <View style={{ position: 'absolute', top: insets.top + 16, right: 16, zIndex: 99 }}>
               <Pressable onPress={() => setGalleryItem(null)} style={{ height: 40, width: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: colors.overlayMedium }}>
                 <Ionicons name="close" size={24} color={colors.textOnPrimary} />
               </Pressable>

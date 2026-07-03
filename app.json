@@ -10,7 +10,7 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.delni.app",
+      "bundleIdentifier": "com.delniapp.mobile",
       "config": {
         "usesNonExemptEncryption": false
       },
@@ -65,7 +65,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.delni.app"
+      "package": "com.delniapp.mobile"
     },
     "web": {
       "bundler": "metro",

@@ -99,6 +99,20 @@ export default function TermsScreen() {
           </Text>
         </TermsCard>
 
+        <TermsCard icon="shield-checkmark" title="سياسة عدم التسامح مع المحتوى المسيء" colors={colors}>
+          <Text style={[body, { marginBottom: 12 }]}>
+            تطبّق منصة دلني سياسة عدم تسامح مطلق (Zero Tolerance) تجاه أي محتوى مسيء أو غير لائق، وتجاه أي سلوك تعسفي أو مضايقة من المستخدمين.
+          </Text>
+          <View style={{ gap: 8 }}>
+            {[
+              'يتم فلترة التعليقات المسيئة تلقائياً ومنع نشرها.',
+              'يمكن لأي مستخدم الإبلاغ عن أي تقييم مسيء عبر زر "إبلاغ".',
+              'تتم مراجعة البلاغات وإزالة المحتوى المخالف خلال 24 ساعة كحد أقصى.',
+              'يتم تعليق أو حظر حسابات المستخدمين المسيئين أو المتكررين في المخالفة.',
+            ].map((item, idx) => <Bullet key={idx} text={item} colors={colors} />)}
+          </View>
+        </TermsCard>
+
         <TermsCard icon="hammer" title="إدارة الحسابات والمحتوى" colors={colors}>
           <Text style={body}>
             تحتفظ دلني بحق تعديل أو تعليق أو حذف الحسابات أو المحتوى المخالف لهذه الشروط أو للقوانين النافذة، دون الإخلال بحقوقها القانونية الأخرى.
@@ -117,7 +131,7 @@ export default function TermsScreen() {
           </Text>
         </TermsCard>
 
-        <Text style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: colors.textDisabled, fontFamily: 'Cairo-Regular' }}>آخر تحديث: يونيو 2026</Text>
+        <Text style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: colors.textDisabled, fontFamily: 'Cairo-Regular' }}>آخر تحديث: يوليو 2026</Text>
       </ScrollView>
     </SafeAreaView>
   );

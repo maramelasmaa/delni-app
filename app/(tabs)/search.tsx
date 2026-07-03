@@ -93,6 +93,7 @@ export default function SearchTabScreen() {
   const [keyword, setKeyword] = useState(keywordParam);
   const [debouncedQ, setDebouncedQ] = useState(keywordParam);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestTop, setSuggestTop] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
   const [cityDropdownOpen, setCityDropdownOpen] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>(routeFilters);
@@ -157,11 +158,7 @@ export default function SearchTabScreen() {
   }, [keyword]);
 
   const { data, isLoading, isFetching, isError, error, refetch } = useSearch(filters);
-  const {
-    data: suggestions,
-    isFetching: isFetchingSuggestions,
-    isError: isSuggestionsError,
-  } = useSearchSuggestions(debouncedQ.trim());
+  const { data: suggestions } = useSearchSuggestions(debouncedQ.trim());
   const { data: cities } = useCities();
   const { data: categories } = useCategories();
   const { data: providerTypes } = useProviderTypes();
@@ -389,7 +386,10 @@ export default function SearchTabScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       {/* Header */}
-      <View style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
+      <View
+        onLayout={(e) => setSuggestTop(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}
+        style={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12, zIndex: 30 }}
+      >
         <Text style={{ textAlign: 'right', fontSize: 28, fontFamily: 'Cairo-Black', color: colors.textPrimary }}>
           البحث
         </Text>
@@ -514,50 +514,13 @@ export default function SearchTabScreen() {
         </View>
       </View>
 
-      {/* Autocomplete suggestions */}
-      {showSuggestions && debouncedQ.trim().length >= 2 && isFetchingSuggestions ? (
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 8,
-            borderRadius: 16,
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            ...rtlRow(),
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={{ flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
-            جاري تحميل الاقتراحات...
-          </Text>
-        </View>
-      ) : showSuggestions && debouncedQ.trim().length >= 2 && isSuggestionsError ? (
-        <View
-          style={{
-            marginHorizontal: 16,
-            marginBottom: 8,
-            borderRadius: 16,
-            backgroundColor: colors.surface,
-            borderWidth: 1,
-            borderColor: colors.border,
-            paddingHorizontal: 16,
-            paddingVertical: 12,
-            ...rtlRow(),
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <Ionicons name="alert-circle-outline" size={16} color={colors.gold} />
-          <Text style={{ flex: 1, textAlign: 'right', fontSize: 13, fontFamily: 'Cairo-SemiBold', color: colors.textSecondary }}>
-            تعذر تحميل الاقتراحات. يمكنك متابعة البحث مباشرة.
-          </Text>
-        </View>
-      ) : showSuggestions && suggestions && suggestions.length > 0 ? (
+      {/* Autocomplete suggestions — absolute overlay anchored under the search bar, so it
+          floats over the results instead of pushing them (no layout jump while typing). */}
+      <View
+        pointerEvents="box-none"
+        style={{ position: 'absolute', top: suggestTop, left: 4, right: 4, zIndex: 50 }}
+      >
+      {showSuggestions && suggestions && suggestions.length > 0 ? (
         <View
           style={{
             marginHorizontal: 16,
@@ -608,6 +571,7 @@ export default function SearchTabScreen() {
           ))}
         </View>
       ) : null}
+      </View>
 
       {/* Results */}
       {isError && !isFetching ? (
