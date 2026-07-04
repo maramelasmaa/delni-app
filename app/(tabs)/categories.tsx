@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../components/ui/CategoryIcon';
@@ -19,6 +19,7 @@ export default function CategoriesScreen() {
   const { data: categories, isLoading, isError, error, refetch } = useCategories();
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const searchInputRef = useRef<TextInput>(null);
 
   const filtered = useMemo(
     () =>
@@ -33,6 +34,10 @@ export default function CategoriesScreen() {
       pathname: '/category/[slug]',
       params: { slug },
     });
+  }, []);
+
+  const focusSearchInput = useCallback(() => {
+    searchInputRef.current?.focus();
   }, []);
 
   const renderCategoryItem = useCallback(
@@ -77,6 +82,7 @@ export default function CategoriesScreen() {
 
       {/* Search bar */}
       <View
+        onTouchEnd={focusSearchInput}
         style={{
           marginHorizontal: 16,
           marginTop: 14,
@@ -91,17 +97,20 @@ export default function CategoriesScreen() {
           borderColor: searchFocused ? colors.primary : colors.border,
           shadowColor: searchFocused ? colors.primary : colors.shadow,
           shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: searchFocused ? 0.1 : 0.04,
+          shadowOpacity: 0,
           shadowRadius: 8,
-          elevation: searchFocused ? 3 : 1,
+          elevation: 0,
         }}
       >
         <Ionicons name="search-outline" size={18} color={searchFocused ? colors.primary : colors.textMuted} />
         <TextInput
+          ref={searchInputRef}
           value={search}
           onChangeText={setSearch}
           onFocus={() => setSearchFocused(true)}
           onBlur={() => setSearchFocused(false)}
+          editable
+          showSoftInputOnFocus
           placeholder="ابحث عن تخصص..."
           placeholderTextColor={colors.textMuted}
           textAlign="right"
@@ -202,9 +211,9 @@ const CategoryRow = memo(function CategoryRow({
           // Premium shadow
           shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.04,
+          shadowOpacity: 0,
           shadowRadius: 10,
-          elevation: 2,
+          elevation: 0,
         }}
       >
         {/* Left side: Chevron */}

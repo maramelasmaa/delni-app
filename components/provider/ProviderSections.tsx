@@ -60,9 +60,9 @@ export function AboutSection({ about, colors }: AboutSectionProps) {
           borderColor: colors.border,
           shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.02,
+          shadowOpacity: 0,
           shadowRadius: 8,
-          elevation: 1,
+          elevation: 0,
         }}
       >
         <Text
@@ -133,9 +133,9 @@ export function ServicesSection({ services, colors }: ServicesSectionProps) {
               paddingVertical: 12,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
+              shadowOpacity: 0,
               shadowRadius: 4,
-              elevation: 1,
+              elevation: 0,
             }}
           >
             <View
@@ -219,9 +219,9 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
                 overflow: 'hidden',
                 shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.03,
+                shadowOpacity: 0,
                 shadowRadius: 8,
-                elevation: 2,
+                elevation: 0,
               }}
             >
               {project.images?.[0] && (
@@ -342,9 +342,9 @@ export function CredentialsSection({ credentials, colors }: CredentialsSectionPr
               borderRightColor: colors.gold,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
+              shadowOpacity: 0,
               shadowRadius: 4,
-              elevation: 1,
+              elevation: 0,
             }}
           >
             <Text
@@ -396,7 +396,19 @@ export function CredentialsSection({ credentials, colors }: CredentialsSectionPr
   );
 }
 
-export function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colors: ThemeColors; onReport: (reviewId: number) => void; isLast?: boolean }) {
+export function ReviewCard({
+  review,
+  colors,
+  onReport,
+  onBlock,
+  isLast,
+}: {
+  review: Review;
+  colors: ThemeColors;
+  onReport: (reviewId: number) => void;
+  onBlock: (review: Review) => void;
+  isLast?: boolean;
+}) {
   const { isDark } = useTheme();
   const avatarTheme = getAvatarTheme(review.user_name, isDark);
   const initial = (review.user_name || 'U').trim().charAt(0).toUpperCase();
@@ -446,6 +458,18 @@ export function ReviewCard({ review, colors, onReport, isLast }: { review: Revie
             >
               <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
             </Pressable>
+            <Pressable
+              onPress={() => onBlock(review)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="حظر المستخدم"
+              style={({ pressed }) => ({
+                padding: 4,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Ionicons name="ban-outline" size={16} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
         <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 6 }}>
@@ -484,6 +508,7 @@ export function ReviewsSection({
   onWriteReviewPress,
   onUnauthenticatedWriteReview,
   onReportReview,
+  onBlockReviewUser,
   isFetching,
   hasMore,
   onLoadMore,
@@ -500,6 +525,7 @@ export function ReviewsSection({
   onWriteReviewPress: () => void;
   onUnauthenticatedWriteReview: () => void;
   onReportReview: (reviewId: number) => void;
+  onBlockReviewUser: (review: Review) => void;
   isFetching: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
@@ -665,6 +691,7 @@ export function ReviewsSection({
             review={review}
             colors={colors}
             onReport={onReportReview}
+            onBlock={onBlockReviewUser}
             isLast={index === displayedReviews.length - 1}
           />
         ))

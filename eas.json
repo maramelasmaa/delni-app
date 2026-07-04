@@ -30,7 +30,10 @@
       "ios": {
         "appleId": "maramelasma@icloud.com",
         "ascAppId": "6787101195",
-        "appleTeamId": "8D8993L93N"
+        "appleTeamId": "8D8993L93N",
+        "ascApiKeyPath": "./credentials/AuthKey_3W86XZHXS3.p8",
+        "ascApiKeyId": "3W86XZHXS3",
+        "ascApiKeyIssuerId": "179ff63d-d061-4400-adb7-af848bcb7211"
       }
     }
   }

@@ -13,7 +13,7 @@ import { useProviderDetail } from '../../src/hooks/useProviderDetail';
 import { useReviewModal } from '../../src/hooks/useReviewModal';
 import { useReportModal } from '../../src/hooks/useReportModal';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { PortfolioItem } from '../../src/types';
+import type { PortfolioItem, Review } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { getAvatarTheme } from '../../src/utils/providerMappers';
 import { getProviderTypeIcon, getProviderTypeLabel } from '../../src/utils/providerTypes';
@@ -120,6 +120,31 @@ export default function ProviderScreen() {
   const insets = useSafeAreaInsets();
   const [galleryItem, setGalleryItem] = useState<PortfolioItem | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [blockedReviewUserIds, setBlockedReviewUserIds] = useState<number[]>([]);
+
+  const visibleReviews = detail.allReviews.filter((review) => !blockedReviewUserIds.includes(review.user_id));
+
+  const handleBlockReviewUser = useCallback((review: Review) => {
+    if (review.user_id === detail.user?.id) {
+      showRTLAlert('لا يمكن حظر نفسك', 'هذا التقييم تابع لحسابك الحالي.', [{ text: 'حسناً', style: 'default' }]);
+      return;
+    }
+
+    showRTLAlert(
+      'حظر المستخدم',
+      `سيتم إخفاء تقييمات ${review.user_name} من هذا الجهاز. هل تريد المتابعة؟`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حظر',
+          style: 'destructive',
+          onPress: () => setBlockedReviewUserIds((current) => (
+            current.includes(review.user_id) ? current : [...current, review.user_id]
+          )),
+        },
+      ],
+    );
+  }, [detail.user?.id, showRTLAlert]);
 
   const handleWriteReviewPress = useCallback(() => {
     if (!detail.provider?.can_review) {
@@ -223,20 +248,24 @@ export default function ProviderScreen() {
               style={{
                 width: AVATAR_SIZE,
                 height: AVATAR_SIZE,
-                borderRadius: 24,
+                borderRadius: AVATAR_SIZE / 2,
                 borderWidth: 4,
                 borderColor: colors.surface,
                 backgroundColor: colors.surface,
                 shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.15,
+                shadowOpacity: 0,
                 shadowRadius: 12,
-                elevation: 8,
+                elevation: 0,
                 overflow: 'hidden',
               }}
             >
               {profile.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                <Image
+                  source={{ uri: profile.avatarUrl }}
+                  style={{ width: '100%', height: '100%', borderRadius: AVATAR_SIZE / 2 }}
+                  contentFit="contain"
+                />
               ) : (
                 <View style={{ flex: 1, backgroundColor: getAvatarTheme(profile.name, isDark).bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 32, color: getAvatarTheme(profile.name, isDark).text }}>
@@ -263,9 +292,9 @@ export default function ProviderScreen() {
             borderColor: colors.border,
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0,
             shadowRadius: 16,
-            elevation: 4,
+            elevation: 0,
           }}
         >
           {/* Name & Type Header - Centered */}
@@ -342,9 +371,9 @@ export default function ProviderScreen() {
                     gap: 8,
                     shadowColor: colors.whatsapp,
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
+                    shadowOpacity: 0,
                     shadowRadius: 6,
-                    elevation: 2,
+                    elevation: 0,
                   }}
                 >
                   <Ionicons name="logo-whatsapp" size={22} color={colors.textOnPrimary} />
@@ -366,9 +395,9 @@ export default function ProviderScreen() {
                     gap: 8,
                     shadowColor: colors.primary,
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
+                    shadowOpacity: 0,
                     shadowRadius: 6,
-                    elevation: 2,
+                    elevation: 0,
                   }}
                 >
                   <Ionicons name="call" size={20} color={colors.textOnPrimary} />
@@ -415,7 +444,7 @@ export default function ProviderScreen() {
           <CredentialsSection credentials={profile.credentials} colors={colors} />
           <View style={{ marginTop: 4 }}>
             <ReviewsSection
-              reviews={detail.allReviews}
+              reviews={visibleReviews}
               rating={profile.rating}
               reviewsCount={profile.reviewsCount}
               colors={colors}
@@ -427,6 +456,7 @@ export default function ProviderScreen() {
               onWriteReviewPress={handleWriteReviewPress}
               onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
               onReportReview={handleReportReview}
+              onBlockReviewUser={handleBlockReviewUser}
               isFetching={detail.isFetchingReviews}
               hasMore={detail.hasMoreReviews}
               onLoadMore={() => detail.setReviewPage((p) => p + 1)}
@@ -568,7 +598,7 @@ export default function ProviderScreen() {
             ) : null}
           </ScrollView>
           <Pressable onPress={reviewModal.handleReviewSubmit} disabled={!reviewModal.reviewRating || reviewModal.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewModal.reviewRating ? colors.primary : colors.surfaceAlt }}>
-            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewModal.reviewRating ? colors.textOnPrimary : colors.textMuted }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewModal.reviewRating ? '#FFFFFF' : colors.textSecondary }}>
               {reviewModal.isPending ? 'جاري الإرسال...' : reviewModal.reviewRating ? 'إرسال التقييم' : 'اختر التقييم أولاً'}
             </Text>
           </Pressable>

@@ -1,4 +1,4 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useCallback } from 'react';
@@ -179,10 +179,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     
     shadowColor: '#000',
-    shadowOpacity: 0.22,
+    shadowOpacity: 0,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 6 },
-    elevation: 4,
+    elevation: 0,
 
     ...(Platform.OS === 'ios' && {
       borderCurve: 'continuous',

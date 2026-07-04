@@ -41,15 +41,15 @@ const ProviderRowCard = memo(function ProviderRowCard({ provider, rank, onFavori
                 logoUrl={provider.logo_url}
                 name={provider.name}
                 id={provider.id}
-                size={76}
-                radius={18}
+                size={70}
+                radius={35}
                 recyclingKey={`row-${provider.id}`}
               />
             </View>
 
             {provider.is_featured && rank === undefined ? (
               <View style={styles.featuredBadge}>
-                <Ionicons name="sparkles" size={10} color="#0F172A" />
+                <Ionicons name="sparkles" size={10} color="#123A6F" />
                 <Text style={styles.featuredText}>مميز</Text>
               </View>
             ) : null}
@@ -113,9 +113,9 @@ function makeStyles(colors: ThemeColors) {
       overflow: 'visible',
       shadowColor: colors.shadow,
       shadowOffset: { width: 0, height: 6 },
-      shadowOpacity: 0.05,
+      shadowOpacity: 0,
       shadowRadius: 12,
-      elevation: 2,
+      elevation: 0,
     },
     cardInner: {
       backgroundColor: colors.surface,
@@ -138,7 +138,7 @@ function makeStyles(colors: ThemeColors) {
     thumb: {
       width: 70,
       height: 70,
-      borderRadius: 18,
+      borderRadius: 35,
       overflow: 'hidden',
       borderWidth: 1,
       borderColor: colors.border,
@@ -160,7 +160,7 @@ function makeStyles(colors: ThemeColors) {
     featuredText: {
       fontSize: 10,
       fontFamily: 'Cairo-Bold',
-      color: '#0F172A',
+      color: '#123A6F',
     },
     rankBadge: {
       position: 'absolute',

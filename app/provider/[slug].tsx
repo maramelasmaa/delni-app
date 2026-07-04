@@ -188,9 +188,9 @@ function AboutSection({ about, colors }: AboutSectionProps) {
           borderColor: colors.border,
           shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.02,
+          shadowOpacity: 0,
           shadowRadius: 8,
-          elevation: 1,
+          elevation: 0,
         }}
       >
         <Text
@@ -261,9 +261,9 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
               paddingVertical: 12,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
+              shadowOpacity: 0,
               shadowRadius: 4,
-              elevation: 1,
+              elevation: 0,
             }}
           >
             <View
@@ -356,9 +356,9 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                 overflow: 'hidden',
                 shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.03,
+                shadowOpacity: 0,
                 shadowRadius: 8,
-                elevation: 2,
+                elevation: 0,
               }}
             >
               {project.images?.[0] && (
@@ -480,9 +480,9 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
               borderRightColor: colors.gold,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.02,
+              shadowOpacity: 0,
               shadowRadius: 4,
-              elevation: 1,
+              elevation: 0,
             }}
           >
             <Text
@@ -534,7 +534,19 @@ function CredentialsSection({ credentials, colors }: CredentialsSectionProps) {
   );
 }
 
-function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colors: ThemeColors; onReport: (reviewId: number) => void; isLast?: boolean }) {
+function ReviewCard({
+  review,
+  colors,
+  onReport,
+  onBlock,
+  isLast,
+}: {
+  review: Review;
+  colors: ThemeColors;
+  onReport: (reviewId: number) => void;
+  onBlock: (review: Review) => void;
+  isLast?: boolean;
+}) {
   const { isDark } = useTheme();
   const avatarTheme = getAvatarTheme(review.user_name, isDark);
   const initial = (review.user_name || 'U').trim().charAt(0).toUpperCase();
@@ -584,6 +596,18 @@ function ReviewCard({ review, colors, onReport, isLast }: { review: Review; colo
             >
               <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
             </Pressable>
+            <Pressable
+              onPress={() => onBlock(review)}
+              hitSlop={12}
+              accessibilityRole="button"
+              accessibilityLabel="حظر المستخدم"
+              style={({ pressed }) => ({
+                padding: 4,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Ionicons name="ban-outline" size={16} color={colors.textMuted} />
+            </Pressable>
           </View>
         </View>
         <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 4 }}>
@@ -622,6 +646,7 @@ function ReviewsSection({
   onWriteReviewPress,
   onUnauthenticatedWriteReview,
   onReportReview,
+  onBlockReviewUser,
   isFetching,
   hasMore,
   onLoadMore,
@@ -638,6 +663,7 @@ function ReviewsSection({
   onWriteReviewPress: () => void;
   onUnauthenticatedWriteReview: () => void;
   onReportReview: (reviewId: number) => void;
+  onBlockReviewUser: (review: Review) => void;
   isFetching: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
@@ -803,6 +829,7 @@ function ReviewsSection({
             review={review}
             colors={colors}
             onReport={onReportReview}
+            onBlock={onBlockReviewUser}
             isLast={index === displayedReviews.length - 1}
           />
         ))
@@ -864,6 +891,7 @@ export default function ProviderScreen() {
   const { data: provider, isLoading, isError, error, refetch } = useProvider(slug);
   const [reviewPage, setReviewPage] = useState(1);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [blockedReviewUserIds, setBlockedReviewUserIds] = useState<number[]>([]);
   const { data: reviewsData, isFetching: isFetchingReviews } = useProviderReviews(slug, reviewPage);
 
   useEffect(() => {
@@ -886,6 +914,28 @@ export default function ProviderScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
+
+  const handleBlockReviewUser = useCallback((review: Review) => {
+    if (review.user_id === user?.id) {
+      showRTLAlert('لا يمكن حظر نفسك', 'هذا التقييم تابع لحسابك الحالي.', [{ text: 'حسناً', style: 'default' }]);
+      return;
+    }
+
+    showRTLAlert(
+      'حظر المستخدم',
+      `سيتم إخفاء تقييمات ${review.user_name} من هذا الجهاز. هل تريد المتابعة؟`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حظر',
+          style: 'destructive',
+          onPress: () => setBlockedReviewUserIds((current) => (
+            current.includes(review.user_id) ? current : [...current, review.user_id]
+          )),
+        },
+      ],
+    );
+  }, [showRTLAlert, user?.id]);
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReviewIdState, setReportReviewIdState] = useState<number | null>(null);
@@ -1066,6 +1116,7 @@ export default function ProviderScreen() {
   if (isError || !provider) return <ErrorView error={error} onRetry={refetch} />;
 
   const profile = mapProviderProfile(provider);
+  const visibleReviews = allReviews.filter((review) => !blockedReviewUserIds.includes(review.user_id));
   const HERO_HEIGHT = 250;
   const AVATAR_SIZE = 140;
 
@@ -1160,20 +1211,24 @@ export default function ProviderScreen() {
               style={{
                 width: AVATAR_SIZE,
                 height: AVATAR_SIZE,
-                borderRadius: 24,
+                borderRadius: AVATAR_SIZE / 2,
                 borderWidth: 4,
                 borderColor: colors.surface,
                 backgroundColor: colors.surface,
                 shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 8 },
-                shadowOpacity: 0.15,
+                shadowOpacity: 0,
                 shadowRadius: 12,
-                elevation: 8,
+                elevation: 0,
                 overflow: 'hidden',
               }}
             >
               {profile.avatarUrl ? (
-                <Image source={{ uri: profile.avatarUrl }} style={{ width: '100%', height: '100%' }} contentFit="contain" />
+                <Image
+                  source={{ uri: profile.avatarUrl }}
+                  style={{ width: '100%', height: '100%', borderRadius: AVATAR_SIZE / 2 }}
+                  contentFit="contain"
+                />
               ) : (
                 <View style={{ flex: 1, backgroundColor: getAvatarTheme(profile.name, isDark).bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Text style={{ fontFamily: 'Cairo-Bold', fontSize: 32, color: getAvatarTheme(profile.name, isDark).text }}>
@@ -1200,9 +1255,9 @@ export default function ProviderScreen() {
             borderColor: colors.border,
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 10 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0,
             shadowRadius: 16,
-            elevation: 4,
+            elevation: 0,
           }}
         >
           {/* Name & Info - Centered */}
@@ -1300,9 +1355,9 @@ export default function ProviderScreen() {
                     gap: 8,
                     shadowColor: '#25D366',
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
+                    shadowOpacity: 0,
                     shadowRadius: 6,
-                    elevation: 2,
+                    elevation: 0,
                   }}
                 >
                   <Ionicons name="logo-whatsapp" size={22} color="#FFFFFF" />
@@ -1324,9 +1379,9 @@ export default function ProviderScreen() {
                     gap: 8,
                     shadowColor: colors.primary,
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.1,
+                    shadowOpacity: 0,
                     shadowRadius: 6,
-                    elevation: 2,
+                    elevation: 0,
                   }}
                 >
                   <Ionicons name="call" size={20} color={colors.textOnPrimary} />
@@ -1376,7 +1431,7 @@ export default function ProviderScreen() {
         {/* ═══ REVIEWS SECTION (Pasted Old Design) ═══ */}
         <View style={{ paddingHorizontal: 16, paddingBottom: 28, marginTop: 0 }}>
           <ReviewsSection
-            reviews={allReviews}
+            reviews={visibleReviews}
             rating={profile.rating}
             reviewsCount={profile.reviewsCount}
             colors={colors}
@@ -1388,6 +1443,7 @@ export default function ProviderScreen() {
             onWriteReviewPress={handleWriteReviewPress}
             onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
             onReportReview={handleReportReview}
+            onBlockReviewUser={handleBlockReviewUser}
             isFetching={isFetchingReviews}
             hasMore={hasMoreReviews}
             onLoadMore={() => setReviewPage((p) => p + 1)}
@@ -1528,7 +1584,7 @@ export default function ProviderScreen() {
             ) : null}
           </ScrollView>
           <Pressable onPress={handleReviewSubmit} disabled={!reviewRating || submitReview.isPending} style={{ marginHorizontal: 16, marginBottom: 16, alignItems: 'center', borderRadius: 16, paddingVertical: 16, backgroundColor: reviewRating ? colors.primary : colors.surfaceAlt }}>
-            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewRating ? colors.textOnPrimary : colors.textMuted }}>
+            <Text style={{ fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : reviewRating ? '#FFFFFF' : colors.textSecondary }}>
               {submitReview.isPending ? 'جاري الإرسال...' : reviewRating ? 'إرسال التقييم' : 'اختر التقييم أولاً'}
             </Text>
           </Pressable>

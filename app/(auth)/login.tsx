@@ -1,15 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
-import { AuthButton, AuthLink, AuthNotice, AuthScreen, AuthTextField } from '../../components/auth/AuthPrimitives';
-import { PasswordInput } from '../../components/ui/PasswordInput';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { PremiumButton, PremiumField, usePremiumAuthColors } from '../../components/auth/premiumAuth';
 import { useLogin } from '../../src/hooks/useAuth';
-import { useTheme } from '../../src/hooks/useTheme';
 import { parseApiError } from '../../src/lib/error-parser';
 import { isValidEmail, normalizeEmail } from '../../src/utils/authValidation';
 
 export default function LoginScreen() {
-  const { colors } = useTheme();
+  const C = usePremiumAuthColors();
   const { redirectTo, email: emailParam, reset } = useLocalSearchParams<{ redirectTo?: string; email?: string; reset?: string }>();
   const [email, setEmail] = useState(() => normalizeEmail(Array.isArray(emailParam) ? (emailParam[0] ?? '') : (emailParam ?? '')));
   const [password, setPassword] = useState('');
@@ -20,15 +19,8 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setErrors({});
     const normalizedEmail = normalizeEmail(email);
-
-    if (!isValidEmail(normalizedEmail)) {
-      setErrors({ email: 'أدخل بريدًا إلكترونيًا صحيحًا' });
-      return;
-    }
-    if (!password) {
-      setErrors({ password: 'أدخل كلمة المرور' });
-      return;
-    }
+    if (!isValidEmail(normalizedEmail)) return setErrors({ email: 'أدخل بريدًا إلكترونيًا صحيحًا' });
+    if (!password) return setErrors({ password: 'أدخل كلمة المرور' });
 
     try {
       await login.mutateAsync({ email: normalizedEmail, password, redirectTo });
@@ -39,81 +31,122 @@ export default function LoginScreen() {
   };
 
   return (
-    <AuthScreen title="تسجيل الدخول" subtitle="أدخل بيانات حسابك للمتابعة">
-      {reset === '1' ? (
-        <AuthNotice type="success">تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.</AuthNotice>
-      ) : null}
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingBottom: 44, justifyContent: 'center' }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={{ alignItems: 'center', marginTop: 28, marginBottom: 44 }}>
+              <View style={{ flexDirection: 'row-reverse', alignItems: 'flex-start' }}>
+                <Text style={{ fontSize: 48, fontFamily: 'Cairo-Black', color: C.text }}>دلني</Text>
+                <Text style={{ fontSize: 48, fontFamily: 'Cairo-Black', color: C.orange }}>.</Text>
+              </View>
+              <Text style={{ marginTop: 20, fontSize: 22, fontFamily: 'Cairo-Bold', color: C.text, textAlign: 'center' }}>تسجيل الدخول</Text>
+            </View>
 
-      {errors.general ? <AuthNotice>{errors.general}</AuthNotice> : null}
+            {reset === '1' ? (
+              <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: C.noticeBlueBg, borderWidth: 1, borderColor: C.noticeBlueBorder, paddingVertical: 12, paddingHorizontal: 14 }}>
+                <Text style={{ textAlign: 'center', color: C.blue, fontFamily: 'Cairo-SemiBold', fontSize: 13.5, writingDirection: 'rtl' }}>تم تحديث كلمة المرور. يمكنك تسجيل الدخول الآن.</Text>
+              </View>
+            ) : null}
 
-      <AuthTextField
-        value={email}
-        onChangeText={setEmail}
-        label="البريد الإلكتروني"
-        error={errors.email}
-        placeholder="أدخل بريدك الإلكتروني"
-        keyboardType="email-address"
-        inputMode="email"
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoComplete="email"
-        textContentType="emailAddress"
-        returnKeyType="next"
-        onSubmitEditing={() => passwordRef.current?.focus()}
-      />
+            {errors.general ? (
+              <View style={{ marginBottom: 16, borderRadius: 14, backgroundColor: C.errorBg, borderWidth: 1, borderColor: C.errorBorder, paddingVertical: 12, paddingHorizontal: 14 }}>
+                <Text style={{ textAlign: 'center', color: C.error, fontFamily: 'Cairo-SemiBold', fontSize: 13.5, writingDirection: 'rtl' }}>{errors.general}</Text>
+              </View>
+            ) : null}
 
-      <PasswordInput
-        ref={passwordRef}
-        value={password}
-        onChangeText={setPassword}
-        label="كلمة المرور"
-        error={errors.password}
-        placeholder="أدخل كلمة المرور"
-        placeholderTextColor={colors.textMuted}
-        autoComplete="current-password"
-        textContentType="password"
-        returnKeyType="done"
-        onSubmitEditing={handleLogin}
-        containerStyle={{ marginBottom: 8 }}
-      />
+            <PremiumField
+              label="البريد الإلكتروني"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="أدخل بريدك الإلكتروني"
+              icon="mail-outline"
+              error={errors.email}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+            />
 
-      <AuthLink align="right" onPress={() => requestAnimationFrame(() => router.push('/(auth)/forgot-password'))}>
-        نسيت كلمة المرور؟
-      </AuthLink>
+            <PremiumField
+              label="كلمة المرور"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="أدخل كلمة المرور"
+              icon="lock-closed-outline"
+              error={errors.password}
+              password
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="done"
+              inputRef={passwordRef}
+              onSubmitEditing={handleLogin}
+            />
 
-      <View style={{ width: '100%', gap: 12, marginTop: 18 }}>
-        <AuthButton
-          title="تسجيل الدخول"
-          loadingTitle="جاري تسجيل الدخول..."
-          loading={login.isPending}
-          onPress={handleLogin}
-          colors={colors}
-          variant="primary"
-          icon="person-outline"
-        />
-        <AuthButton
-          title="إنشاء حساب جديد"
-          onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined }))}
-          colors={colors}
-          variant="secondary"
-          icon="person-add-outline"
-        />
-      </View>
+            <Pressable
+              onPress={() => requestAnimationFrame(() => router.push('/(auth)/forgot-password'))}
+              hitSlop={6}
+              style={{ alignSelf: 'flex-end', paddingVertical: 6, marginBottom: 8 }}
+            >
+              <Text style={{ color: C.blue, fontFamily: 'Cairo-SemiBold', fontSize: 13 }}>نسيت كلمة المرور؟</Text>
+            </Pressable>
 
-      {/* Divider */}
-      <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 6 }}>
-        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-        <Text style={{ fontSize: 12, color: colors.textMuted, fontFamily: 'Cairo-SemiBold' }}>أو</Text>
-        <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
-      </View>
+            {/* Primary CTA */}
+            <View style={{ marginTop: 8 }}>
+              <PremiumButton
+                title="تسجيل الدخول"
+                loadingTitle="جاري تسجيل الدخول..."
+                loading={login.isPending}
+                onPress={handleLogin}
+              />
+            </View>
 
-      <AuthButton
-        title="المتابعة كضيف"
-        onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
-        colors={colors}
-        variant="ghost"
-        icon="compass-outline"
-      />
-    </AuthScreen>
+            <View style={{ marginTop: 24, gap: 12 }}>
+              <Pressable
+                onPress={() => requestAnimationFrame(() => router.push({ pathname: '/(auth)/register', params: redirectTo ? { redirectTo } : undefined }))}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  minHeight: 48,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: C.outlineMuted,
+                  backgroundColor: C.iconBg,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 16,
+                  opacity: pressed ? 0.82 : 1,
+                })}
+              >
+                <Text style={{ textAlign: 'center', color: C.text2, fontFamily: 'Cairo-SemiBold', fontSize: 14.5, writingDirection: 'rtl' }}>
+                  ليس لديك حساب؟ <Text style={{ color: C.blue, fontFamily: 'Cairo-Black' }}>أنشئ حسابًا</Text>
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => requestAnimationFrame(() => router.replace('/(tabs)/'))}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  minHeight: 48,
+                  borderRadius: 16,
+                  alignSelf: 'center',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  paddingHorizontal: 16,
+                  opacity: pressed ? 0.78 : 1,
+                })}
+              >
+                <Text style={{ color: C.text, fontFamily: 'Cairo-Black', fontSize: 15.5, textAlign: 'center', writingDirection: 'rtl' }}>المتابعة كضيف</Text>
+              </Pressable>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </View>
   );
 }

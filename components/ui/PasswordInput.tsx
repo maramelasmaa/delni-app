@@ -49,6 +49,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             borderColor: error ? colors.error : colors.border,
             height: 48,
             justifyContent: 'center',
+            direction: 'ltr',
           }}
         >
           <TextInput
@@ -56,6 +57,8 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
             value={value}
             secureTextEntry={isSecure}
             textAlign="right"
+            placeholderTextColor={colors.textMuted}
+            cursorColor={colors.primary}
             selectionColor={colors.primary}
             style={[
               {
@@ -63,6 +66,7 @@ export const PasswordInput = forwardRef<TextInput, PasswordInputProps>(
                 height: '100%',
                 color: colors.textPrimary,
                 fontFamily: 'Cairo-Regular',
+                direction: 'rtl',
                 writingDirection: 'rtl',
                 textAlign: 'right',
                 paddingLeft: 48,

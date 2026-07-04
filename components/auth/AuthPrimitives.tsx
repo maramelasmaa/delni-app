@@ -98,6 +98,7 @@ export const AuthTextField = forwardRef<TextInput, TextInputProps & {
         ref={ref}
         placeholderTextColor={colors.textMuted}
         textAlign="right"
+        cursorColor={colors.primary}
         selectionColor={colors.primary}
         style={[
           {
@@ -177,29 +178,31 @@ export function AuthButton({
   variant?: 'primary' | 'secondary' | 'ghost';
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
-  const { isDark } = useTheme();
   const isDisabled = disabled || loading;
 
-  // Visual weight per variant: all clearly FILLED with a defining border, ranked by
-  // color. Fills are chosen to read as solid against the #F6F8FF page (the old
-  // primarySoft/surfaceAlt tints were too close to the background and looked empty).
+  // Three real tiers so the actions read as buttons, not tappable text:
+  //   primary   → solid brand fill that pops (the main action, elevated)
+  //   secondary → raised white/outlined button, lifted off the page with a shadow
+  //   ghost     → quiet tonal button (lowest emphasis, flat)
   const palette = {
     primary: {
+      // Same fill as the provider "call" button (colors.primary): baby blue in dark
+      // mode (#60A5FA), brand blue in light (#1E40AF). Keeps auth consistent with the app.
       backgroundColor: isDisabled ? colors.borderStrong : colors.primary,
       foregroundColor: isDisabled ? colors.textMuted : colors.textOnPrimary,
       borderColor: isDisabled ? colors.borderStrong : colors.primary,
       elevated: !isDisabled,
     },
     secondary: {
-      backgroundColor: isDisabled ? colors.surfaceAlt : isDark ? 'rgba(96,165,250,0.22)' : '#DBEAFE',
-      foregroundColor: isDisabled ? colors.textMuted : colors.primary,
+      backgroundColor: colors.surface,
+      foregroundColor: isDisabled ? colors.textDisabled : colors.primary,
       borderColor: isDisabled ? colors.border : colors.primary,
-      elevated: false,
+      elevated: !isDisabled,
     },
     ghost: {
-      backgroundColor: isDisabled ? colors.surfaceAlt : isDark ? colors.surfaceAlt : '#E2E8F0',
-      foregroundColor: isDisabled ? colors.textMuted : colors.textSecondary,
-      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceAlt,
+      foregroundColor: isDisabled ? colors.textDisabled : colors.textSecondary,
+      borderColor: colors.border,
       elevated: false,
     },
   }[variant];
@@ -215,23 +218,25 @@ export function AuthButton({
           alignSelf: 'stretch',
           width: '100%',
           height: 48,
-          borderRadius: 14,
+          borderRadius: 12,
           backgroundColor: palette.backgroundColor,
           borderColor: palette.borderColor,
           borderWidth: 1.5,
+          // RTL: icon leads (sits on the right), text follows to its left.
           flexDirection: 'row-reverse',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
           paddingHorizontal: 16,
-          shadowColor: colors.primary,
+          // Matches the provider call/WhatsApp buttons' soft lift.
+          shadowColor: variant === 'primary' ? colors.primary : colors.shadow,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: palette.elevated ? 0.1 : 0,
+          shadowOpacity: 0,
           shadowRadius: 6,
-          elevation: palette.elevated ? 2 : 0,
-          opacity: isDisabled ? 0.76 : pressed ? 0.86 : 1,
+          elevation: 0,
+          opacity: loading ? 0.9 : isDisabled ? 0.76 : pressed ? 0.92 : 1,
           transform: [
-            { scale: pressed && !isDisabled ? 0.985 : 1 },
+            { scale: pressed && !isDisabled ? 0.97 : 1 },
           ],
         },
         style,
@@ -240,7 +245,7 @@ export function AuthButton({
       {loading ? (
         <ActivityIndicator size="small" color={palette.foregroundColor} />
       ) : icon ? (
-        <Ionicons name={icon} size={18} color={palette.foregroundColor} />
+        <Ionicons name={icon} size={19} color={palette.foregroundColor} />
       ) : null}
 
       <Text
@@ -248,8 +253,8 @@ export function AuthButton({
         adjustsFontSizeToFit
         minimumFontScale={0.78}
         style={{
-          fontSize: 13.5,
-          lineHeight: 21,
+          fontSize: 15,
+          lineHeight: 22,
           fontFamily: 'Cairo-Bold',
           color: palette.foregroundColor,
           textAlign: 'center',
@@ -279,7 +284,15 @@ export function AuthLink({
       accessibilityRole="button"
       style={({ pressed }) => ({
         alignSelf: align === 'right' ? 'flex-end' : 'center',
+        minHeight: 40,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: colors.primary,
+        backgroundColor: colors.surface,
+        paddingHorizontal: 14,
         paddingVertical: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
         opacity: pressed ? 0.75 : 1,
       })}
     >

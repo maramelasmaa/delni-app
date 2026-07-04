@@ -39,10 +39,10 @@ function EmptyCard({
         marginTop: 8,
         borderWidth: 1,
         borderColor: colors.border,
-        elevation: 2,
+        elevation: 0,
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
+        shadowOpacity: 0,
         shadowRadius: 12,
       }}
     >

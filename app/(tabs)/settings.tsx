@@ -23,7 +23,7 @@ interface MenuItemProps {
 }
 
 const getIconStyles = (color: string, colors: ThemeColors) => {
-  const isDark = colors.bg === '#0B1120';
+  const isDark = colors.bg === '#071A33';
 
   if (color === colors.primary) {
     return {
@@ -92,7 +92,6 @@ function MenuItem({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
-            shadowColor: colors.shadow,
           },
         ]}
       >
@@ -176,11 +175,6 @@ function ThemeToggle({ colors }: { colors: ThemeColors }) {
                 backgroundColor: active ? colors.primarySoft : colors.surfaceAlt,
                 borderWidth: 1.5,
                 borderColor: active ? colors.primary : colors.border,
-                shadowColor: active ? colors.primary : 'transparent',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: active ? 0.15 : 0,
-                shadowRadius: 4,
-                elevation: active ? 3 : 0,
               }}
             >
               <Ionicons
@@ -251,7 +245,6 @@ function ProfileRow({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
-          shadowColor: colors.shadow,
         },
       ]}
     >
@@ -307,7 +300,7 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useLogout();
-  const isDark = colors.bg === '#0B1120';
+  const isDark = colors.bg === '#071A33';
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -472,7 +465,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Cairo-Bold',
     textAlign: 'right',
-    color: '#94A3B8',
+    color: '#6F86A8',
   },
   themeToggleRow: {
     flexDirection: 'row',
@@ -505,10 +498,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 22,
     borderWidth: 1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
   },
   menuIconBox: {
     width: 52,
@@ -558,11 +547,6 @@ function makeStyles(colors: ThemeColors) {
       borderRadius: 22,
       borderWidth: 1,
       borderColor: colors.border,
-      shadowColor: colors.shadow,
-      shadowOffset: { width: 0, height: 5 },
-      shadowOpacity: 0.06,
-      shadowRadius: 12,
-      elevation: 2,
       overflow: 'hidden',
     },
     themeCard: {

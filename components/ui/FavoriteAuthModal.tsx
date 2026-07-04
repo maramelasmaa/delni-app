@@ -45,9 +45,9 @@ export function FavoriteAuthModal({
             alignItems: 'center',
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 12 },
-            shadowOpacity: 0.18,
+            shadowOpacity: 0,
             shadowRadius: 24,
-            elevation: 12,
+            elevation: 0,
           }}
         >
           {/* Icon */}

@@ -1,4 +1,4 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { memo, useCallback, useState } from 'react';
@@ -89,7 +89,7 @@ export default function HomeScreen() {
             </View>
 
             <Text numberOfLines={3} style={[styles.categoryTitle, { color: colors.textPrimary }]}>
-              عرض الكل
+              كل الفئات
             </Text>
           </View>
         </Pressable>
@@ -123,7 +123,7 @@ export default function HomeScreen() {
         }
         contentContainerStyle={{ paddingBottom: 48 }}
       >
-        {/* ─── Header ─── */}
+        {/* --- Header --- */}
         <View
           style={{
             paddingTop: Math.max(insets.top, 12),
@@ -168,22 +168,22 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ─── Banners ─── */}
+        {/* --- Banners --- */}
         {banners.length > 0 && (
           <View style={{ marginTop: 8 }}>
             <BannerCarousel banners={banners} />
           </View>
         )}
 
-        {/* ─── Categories ─── */}
+        {/* --- Categories --- */}
         {categories.length > 0 && (
           <View style={{ marginTop: 32, marginBottom: 8 }}>
             <View style={{ alignItems: 'flex-end', marginBottom: 16, paddingHorizontal: 20 }}>
               <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4, textAlign: 'right', writingDirection: 'rtl' }}>
-                اكتشف حسب المجال
+                تصفح حسب الخدمة
               </Text>
               <Text style={{ fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
-                التخصصات الرئيسية
+                الفئات الرئيسية
               </Text>
             </View>
 
@@ -203,15 +203,15 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* ─── Featured ─── */}
+        {/* --- Featured --- */}
         {featured.length > 0 && (
           <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
             <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
               <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4, textAlign: 'right', writingDirection: 'rtl' }}>
-                الخدمات المميزة
+                مقدمو الخدمات
               </Text>
               <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
-                {activeCity ? `مقدمي الخدمات في ${activeCity.name}` : 'مقدمي الخدمات'}
+                {activeCity ? `مقدمو الخدمات المميزون في ${activeCity.name}` : 'مقدمو الخدمات المميزون'}
               </Text>
             </View>
 
@@ -233,9 +233,9 @@ export default function HomeScreen() {
         {isHomeEmpty ? (
           <EmptyState
             icon="search-outline"
-            title="لا توجد نتائج لعرضها"
-            message={activeCity ? `لا توجد خدمات متاحة في ${activeCity.name} حالياً. جرّب مدينة أخرى أو امسح اختيار المدينة.` : 'لا توجد خدمات متاحة حالياً. جرّب تحديث الصفحة أو تصفح التخصصات.'}
-            actionLabel="تصفح التخصصات"
+            title="لا توجد خدمات حالياً"
+            message={activeCity ? `لا توجد خدمات متاحة في ${activeCity.name} حالياً. جرب تغيير المدينة أو تصفح الفئات.` : 'لا توجد خدمات متاحة حالياً. جرب تصفح الفئات أو تغيير المدينة.'}
+            actionLabel="تصفح الفئات"
             onAction={() => router.push('/categories')}
           />
         ) : null}
@@ -256,7 +256,7 @@ export default function HomeScreen() {
   );
 }
 
-// ─── Home Category Card ───
+// --- Home Category Card ---
 // Clean premium category card:
 // - no service counter
 // - one bordered card per category
@@ -324,9 +324,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0,
     shadowRadius: 3,
-    elevation: 1,
+    elevation: 0,
   },
   cityPillText: {
     flexShrink: 1,
@@ -350,10 +350,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(234,179,8,0.06)',
 
     shadowColor: '#000',
-    shadowOpacity: 0.05,
+    shadowOpacity: 0,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    elevation: 0,
 
     ...(Platform.OS === 'ios' && {
       borderCurve: 'continuous',

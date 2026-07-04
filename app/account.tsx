@@ -37,6 +37,11 @@ function GroupCard({ children, colors }: { children: React.ReactNode; colors: Th
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
+        shadowColor: colors.shadow,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0,
+        shadowRadius: 12,
+        elevation: 0,
       }}
     >
       {children}

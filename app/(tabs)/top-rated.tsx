@@ -126,9 +126,9 @@ export default function TopRatedScreen() {
               justifyContent: 'center',
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 1 },
-              shadowOpacity: 0.02,
+              shadowOpacity: 0,
               shadowRadius: 3,
-              elevation: 1,
+              elevation: 0,
             }}
           >
             <Text
@@ -289,7 +289,7 @@ export default function TopRatedScreen() {
 }
 
 function RibbonBadge({ position }: { position: number }) {
-  const badgeColors = ['#D4A017', '#94A3B8', '#CD7F32'];
+  const badgeColors = ['#E1AD01', '#6F86A8', '#B77945'];
   const rank = position + 1;
   const color = badgeColors[position];
 
@@ -331,18 +331,18 @@ function RibbonBadge({ position }: { position: number }) {
           backgroundColor: color,
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#000000',
+          shadowColor: '#123A6F',
           shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.2,
+          shadowOpacity: 0,
           shadowRadius: 1.41,
-          elevation: 2,
+          elevation: 0,
         }}
       >
         <Text
           style={{
             fontSize: 11,
             fontWeight: 'bold',
-            color: '#0F172A',
+            color: '#123A6F',
             textAlign: 'center',
             includeFontPadding: false,
           }}
@@ -355,9 +355,9 @@ function RibbonBadge({ position }: { position: number }) {
 }
 
 function PedestalBase({ position, height }: { position: number; height: number }) {
-  const bgColors = ['#FDF8EA', '#F1F5F9', '#FAF3E3'];
-  const borderColors = ['#EAD49E', '#E2E8F0', '#EAD0B8'];
-  const starColors = ['#D4A017', '#94A3B8', '#CD7F32'];
+  const bgColors = ['#FFFBEB', '#EEF3FA', '#FAF3E3'];
+  const borderColors = ['#FDE68A', '#C9D6E8', '#EAD0B8'];
+  const starColors = ['#E1AD01', '#6F86A8', '#B77945'];
 
   const color = starColors[position];
   const bgColor = bgColors[position];
@@ -415,10 +415,10 @@ function PodiumSection({ providers, colors }: { providers: Provider[]; colors: T
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: colors.border,
-        elevation: 2,
+        elevation: 0,
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.06,
+        shadowOpacity: 0,
         shadowRadius: 16,
       }}
     >
@@ -466,7 +466,7 @@ function PodiumSection({ providers, colors }: { providers: Provider[]; colors: T
 function PodiumEntry({ provider, position, height, colors }: { provider: Provider; position: number; height: number; colors: ThemeColors }) {
   const isGold = position === 0;
   const avatarSize = isGold ? 74 : position === 1 ? 64 : 58;
-  const badgeBorderColor = isGold ? '#D4A017' : position === 1 ? '#94A3B8' : '#CD7F32';
+  const badgeBorderColor = isGold ? '#E1AD01' : position === 1 ? '#6F86A8' : '#B77945';
 
   return (
     <Pressable

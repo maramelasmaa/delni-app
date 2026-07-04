@@ -60,22 +60,22 @@ export const lightColors: ThemeColors = {
   surfaceAlt: '#F1F5F9',
   surfaceElevated: '#FFFFFF',
 
-  textPrimary: '#0F172A',
-  textSecondary: '#475569',
-  textMuted: '#94A3B8',
-  textDisabled: '#CBD5E1',
+  textPrimary: '#123A6F',
+  textSecondary: '#3B5F8F',
+  textMuted: '#6F86A8',
+  textDisabled: '#AFC0D5',
   textOnPrimary: '#FFFFFF',
 
   border: '#E8EEF8',
-  borderStrong: '#CBD5E1',
+  borderStrong: '#AFC0D5',
 
-  primary: '#1E40AF',
-  primarySoft: 'rgba(30, 64, 175, 0.10)',
+  primary: '#123A6F',
+  primarySoft: 'rgba(18, 58, 111, 0.10)',
 
   gold: '#E1AD01',
   goldSoft: '#FFFBEB',
   goldBorder: '#FDE68A',
-  goldText: '#92400E',
+  goldText: '#123A6F',
   goldActive: '#FEF3C7',
 
   success: '#10B981',
@@ -86,33 +86,33 @@ export const lightColors: ThemeColors = {
   facebook: '#1877F2',
   instagram: '#E1306C',
   linkedin: '#0A66C2',
-  github: '#F1F5F9',
+  github: '#EEF3FA',
   star: '#E1AD01',
 
   overlayLight: 'rgba(0,0,0,0.3)',
   overlayMedium: 'rgba(0,0,0,0.5)',
   overlayHeavy: 'rgba(0,0,0,0.7)',
   overlay: 'rgba(0,0,0,0.45)',
-  shadow: '#0F172A',
+  shadow: '#123A6F',
 };
 
 export const darkColors: ThemeColors = {
-  bg: '#0B1120', // deep navy, not black
-  surface: '#131C2E', // +1 elevation
-  surfaceAlt: '#1B2740', // insets
-  surfaceElevated: '#16203A', // sheets / tab bar
+  bg: '#071A33', // brand navy, not black
+  surface: '#0E2A4D', // +1 elevation
+  surfaceAlt: '#123A6F', // insets
+  surfaceElevated: '#0B2444', // sheets / tab bar
 
   textPrimary: '#F1F5F9',
-  textSecondary: '#A8B4C8',
-  textMuted: '#7C8AA5',
-  textDisabled: '#4B5A75',
+  textSecondary: '#C5D2E6',
+  textMuted: '#8FA6C5',
+  textDisabled: '#60789A',
   textOnPrimary: '#FFFFFF',
 
-  border: '#243149',
-  borderStrong: '#33425E',
+  border: 'rgba(245, 203, 58, 0.18)',
+  borderStrong: 'rgba(245, 203, 58, 0.34)',
 
-  primary: '#60A5FA', // brighter blue reads on dark
-  primarySoft: 'rgba(96, 165, 250, 0.16)',
+  primary: '#F5CB3A', // mustard leads on dark navy
+  primarySoft: 'rgba(245, 203, 58, 0.16)',
 
   gold: '#F0BE2C', // brighter mustard
   goldSoft: 'rgba(225, 173, 1, 0.14)',
@@ -135,19 +135,19 @@ export const darkColors: ThemeColors = {
   overlayMedium: 'rgba(0,0,0,0.5)',
   overlayHeavy: 'rgba(0,0,0,0.7)',
   overlay: 'rgba(0,0,0,0.55)',
-  shadow: '#000000',
+  shadow: 'transparent',
 };
 
 /** Legacy flat export kept for any code still importing `colors`. Points at light. */
 export const colors = {
   primary: lightColors.primary,
-  primaryLight: '#EFF6FF',
+  primaryLight: '#EEF3FA',
   primaryMuted: lightColors.primarySoft,
   navy: lightColors.textPrimary,
   surface: lightColors.surface,
   white: '#FFFFFF',
   border: '#E2E8F0',
-  textSecondary: '#64748B',
+  textSecondary: lightColors.textSecondary,
   textMuted: lightColors.textMuted,
   success: lightColors.success,
   warning: '#D4A017',

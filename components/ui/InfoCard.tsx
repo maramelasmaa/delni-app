@@ -24,9 +24,9 @@ export function InfoCard({ icon, title, children, colors }: InfoCardProps) {
         borderColor: colors.border,
         shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.04,
+        shadowOpacity: 0,
         shadowRadius: 6,
-        elevation: 1,
+        elevation: 0,
       }}
     >
       <View style={{ ...rtlRow(), alignItems: 'center', marginBottom: 14 }}>

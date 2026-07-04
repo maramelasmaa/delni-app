@@ -947,9 +947,9 @@ function CategoryHeader({
             transform: [{ scale: pressed ? 0.95 : 1 }],
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.03,
+            shadowOpacity: 0,
             shadowRadius: 5,
-            elevation: 1,
+            elevation: 0,
           })}
         >
           <Ionicons name="arrow-forward" size={20} color={colors.textPrimary} />
@@ -971,9 +971,9 @@ function CategoryHeader({
           borderColor: colors.border,
           shadowColor: colors.shadow,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.04,
+          shadowOpacity: 0,
           shadowRadius: 12,
-          elevation: 2,
+          elevation: 0,
         }}
       >
         {/* Left/Middle: Title Info */}
@@ -1046,10 +1046,10 @@ function CategoryHeader({
             height: 48,
             borderWidth: 1.5,
             borderColor: colors.borderStrong,
-            elevation: 2,
+            elevation: 0,
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
+            shadowOpacity: 0,
             shadowRadius: 8,
             gap: 8,
           }}
@@ -1103,7 +1103,7 @@ function CategoryHeader({
                 backgroundColor: colors.gold,
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
+                <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#123A6F', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
               </View>
             ) : null}
           </Pressable>
@@ -1147,16 +1147,16 @@ function CategoryHeader({
                       justifyContent: 'center',
                       shadowColor: colors.shadow,
                       shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.02,
+                      shadowOpacity: 0,
                       shadowRadius: 3,
-                      elevation: 1,
+                      elevation: 0,
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 13,
                         fontFamily: isActive ? 'Cairo-Bold' : 'Cairo-SemiBold',
-                        color: isActive ? '#000000' : colors.textSecondary,
+                        color: isActive ? '#123A6F' : colors.textSecondary,
                         textAlign: 'center',
                       }}
                     >

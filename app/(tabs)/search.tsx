@@ -414,10 +414,10 @@ export default function SearchTabScreen() {
               height: 48,
               borderWidth: 1.5,
               borderColor: colors.borderStrong,
-              elevation: 2,
+              elevation: 0,
               shadowColor: colors.shadow,
               shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.05,
+              shadowOpacity: 0,
               shadowRadius: 8,
               gap: 8,
             }}
@@ -506,7 +506,7 @@ export default function SearchTabScreen() {
                   backgroundColor: colors.gold,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#0F172A', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
+                  <Text style={{ fontSize: 8, fontFamily: 'Cairo-Black', color: '#123A6F', lineHeight: 14, textAlign: 'center', includeFontPadding: false }}>{activeFilterCount}</Text>
                 </View>
               ) : null}
             </Pressable>
@@ -530,10 +530,10 @@ export default function SearchTabScreen() {
             borderWidth: 1,
             borderColor: colors.border,
             overflow: 'hidden',
-            elevation: 6,
+            elevation: 0,
             shadowColor: colors.shadow,
             shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.1,
+            shadowOpacity: 0,
             shadowRadius: 12,
           }}
         >

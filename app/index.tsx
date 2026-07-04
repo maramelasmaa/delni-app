@@ -2,10 +2,8 @@ import React, { useEffect, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useNavigation } from 'expo-router';
-import { useTheme } from '../src/hooks/useTheme';
 
 export default function SplashScreen() {
-  const { isDark } = useTheme();
   const navigation = useNavigation();
   const titleOpacity = React.useRef(new Animated.Value(0)).current;
   const taglineOpacity = React.useRef(new Animated.Value(0)).current;
@@ -54,7 +52,7 @@ export default function SplashScreen() {
 
   return (
     <LinearGradient
-      colors={isDark ? ['#0B1120', '#1B2740', '#0F172A'] : ['#3B82F6', '#60A5FA', '#93C5FD']}
+      colors={['#071A33', '#0E2A4D', '#123A6F']}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
