@@ -77,7 +77,7 @@ CONTENT MODERATION (Guideline 1.2):
 
 No in-app purchases. Any provider promotion arrangements happen outside
 the app and are not part of the iOS experience.
-Contact: support@delni.ly
+Contact: maramelasmaa@gmail.com / +218 91 664 0261
 ```
 
 ---
