@@ -1,8 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
+import { ProviderModeSwitch } from '../../components/provider/ProviderModeSwitch';
 import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
@@ -347,6 +349,23 @@ export default function SettingsScreen() {
           />
         )}
 
+
+
+        {isAuthenticated && user?.is_admin ? (
+          <SectionBlock title={String.fromCharCode(0x0627, 0x0644, 0x0625, 0x062F, 0x0627, 0x0631, 0x0629)}>
+            <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
+              <AdminModeSwitch mode="public" />
+            </View>
+          </SectionBlock>
+        ) : null}
+
+        {isAuthenticated && user?.is_provider ? (
+          <SectionBlock title={String.fromCharCode(0x0645, 0x0642, 0x062F, 0x0645, 0x0020, 0x0627, 0x0644, 0x062E, 0x062F, 0x0645, 0x0629)}>
+            <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
+              <ProviderModeSwitch mode="public" />
+            </View>
+          </SectionBlock>
+        ) : null}
         <SectionBlock title="المظهر">
           <View style={[themedStyles.card, themedStyles.themeCard]}>
             <ThemeToggle colors={colors} />
@@ -552,3 +571,5 @@ function makeStyles(colors: ThemeColors) {
     },
   });
 }
+
+

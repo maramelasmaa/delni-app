@@ -1,4 +1,4 @@
-import { SplashScreen, Stack } from 'expo-router';
+﻿import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useMe } from '../../hooks/useAuth';
@@ -79,6 +79,8 @@ export function AuthBootstrap() {
       </Stack.Protected>
 
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(provider)" options={{ headerShown: false }} />
+      <Stack.Screen name="(admin)" options={{ headerShown: false }} />
       <Stack.Screen
         name="provider/[slug]"
         options={{ headerShown: false }}
@@ -119,3 +121,4 @@ export function AuthBootstrap() {
     </Stack>
   );
 }
+

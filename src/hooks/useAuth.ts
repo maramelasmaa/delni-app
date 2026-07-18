@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+﻿import { useMutation, useQuery } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import api from '../lib/api';
 import { queryClient } from '../lib/queryClient';
@@ -7,13 +7,16 @@ import type { ApiResponse, AuthCredentials, RegisterData, User } from '../types'
 import { ENDPOINTS } from '../constants/api';
 import { showNativeAlert } from '../utils/themedAlert';
 
-function resolveRedirectTarget(redirectTo?: string) {
+function resolveRedirectTarget(redirectTo?: string, user?: User) {
   // Must be an in-app absolute path. Reject protocol-relative ("//host") and
   // scheme-like values so a crafted redirectTo can never point off-app.
   const isSafeInAppPath =
     !!redirectTo && redirectTo.startsWith('/') && !redirectTo.startsWith('//');
 
-  return isSafeInAppPath ? redirectTo : '/(tabs)/';
+  if (isSafeInAppPath) return redirectTo;
+
+  if (user?.is_admin) return '/(admin)/';
+  return user?.is_provider ? '/(provider)/' : '/(tabs)/';
 }
 
 export function useLogin() {
@@ -30,7 +33,7 @@ export function useLogin() {
       await setAuth(user, token);
       queryClient.clear();
       requestAnimationFrame(() => {
-        router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+        router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
       });
     },
   });
@@ -50,7 +53,7 @@ export function useRegister() {
       await setAuth(user, token);
       queryClient.clear();
       requestAnimationFrame(() => {
-        router.replace(resolveRedirectTarget(variables.redirectTo) as never);
+        router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
       });
     },
   });
@@ -158,3 +161,4 @@ export function useDeleteAccount() {
     },
   });
 }
+

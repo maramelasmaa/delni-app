@@ -1,4 +1,4 @@
-const DEV_API_BASE_URL = 'https://delni.ly/api/v1';
+﻿const DEV_API_BASE_URL = 'https://delni.ly/api/v1';
 const PROD_API_BASE_URL = 'https://delni.ly/api/v1';
 
 // Expo inlines EXPO_PUBLIC_* variables at bundle time. Keep a safe production
@@ -36,9 +36,16 @@ export const ENDPOINTS = {
     resetPassword: '/auth/reset-password',
     deleteAccount: '/auth/account',
   },
+  provider: {
+    dashboard: '/provider/dashboard',
+  },
+  admin: {
+    dashboard: '/admin/dashboard',
+  },
   favorites: {
     index: '/favorites',
     store: (slug: string) => `/favorites/${slug}`,
     destroy: (slug: string) => `/favorites/${slug}`,
   },
 };
+

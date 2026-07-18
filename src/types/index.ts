@@ -1,4 +1,4 @@
-export interface Banner {
+﻿export interface Banner {
   id: number;
   title: string | null;
   subtitle: string | null;
@@ -12,6 +12,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string | null;
+  is_admin: boolean;
   is_provider: boolean;
   created_at?: string;
 }
@@ -112,6 +113,46 @@ export interface Provider {
   can_review?: boolean;
   review_status_message?: string | null;
   service_area_note?: string | null;
+  has_venue_calendar?: boolean;
+  booked_dates?: string[];
+  latest_user_review?: Review | null;
+}
+
+export interface ProviderDashboardStats {
+  rating_average: number;
+  reviews_count: number;
+  approved_reviews_count: number;
+  portfolio_items_count: number;
+  credentials_count: number;
+  completion_percentage: number;
+  is_complete: boolean;
+  is_discoverable: boolean;
+}
+
+export interface ProviderDashboardData {
+  profile: Provider;
+  stats: ProviderDashboardStats;
+  recent_reviews: Review[];
+}
+
+export interface AdminDashboardStats {
+  users_count: number;
+  providers_count: number;
+  profiles_count: number;
+  visible_profiles_count: number;
+  complete_profiles_count: number;
+  reviews_count: number;
+  pending_reviews_count: number;
+  approved_reviews_count: number;
+  flagged_reviews_count: number;
+  categories_count: number;
+  cities_count: number;
+}
+
+export interface AdminDashboardData {
+  stats: AdminDashboardStats;
+  recent_providers: Provider[];
+  recent_reviews: Review[];
 }
 
 export interface HomeStats {
@@ -197,3 +238,4 @@ export interface SubcategoryDetailData {
   related_subcategories: Subcategory[];
   pagination: PaginationMeta;
 }
+
