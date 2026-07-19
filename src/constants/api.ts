@@ -38,9 +38,28 @@ export const ENDPOINTS = {
   },
   provider: {
     dashboard: '/provider/dashboard',
+    profile: '/provider/profile',
+    reviews: '/provider/reviews',
+    portfolio: '/provider/portfolio',
+    portfolioItem: (id: number) => `/provider/portfolio/${id}`,
+    credentials: '/provider/credentials',
+    credential: (id: number) => `/provider/credentials/${id}`,
   },
   admin: {
     dashboard: '/admin/dashboard',
+    broadcast: '/admin/notifications/broadcast',
+    users: '/admin/users',
+    suspendUser: (id: number) => `/admin/users/${id}/suspend`,
+    reinstateUser: (id: number) => `/admin/users/${id}/reinstate`,
+    providers: '/admin/providers',
+    reviews: '/admin/reviews',
+    moderateReview: (id: number) => `/admin/reviews/${id}/moderate`,
+    reviewFlagDecision: (id: number) => `/admin/reviews/${id}/flag-decision`,
+    deleteReview: (id: number) => `/admin/reviews/${id}`,
+  },
+  notifications: {
+    registerDevice: '/notifications/devices',
+    unregisterDevice: '/notifications/devices',
   },
   favorites: {
     index: '/favorites',

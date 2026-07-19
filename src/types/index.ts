@@ -49,6 +49,12 @@ export interface Subcategory {
   category?: Category;
 }
 
+export interface PortfolioImageItem {
+  id: number;
+  url: string;
+  alt?: string | null;
+}
+
 export interface PortfolioItem {
   id: number;
   title: string;
@@ -56,6 +62,9 @@ export interface PortfolioItem {
   description?: string;
   link?: string;
   images: string[];
+  // Owner-only fields (present when the provider fetches their own portfolio)
+  is_active?: boolean;
+  image_items?: PortfolioImageItem[];
 }
 
 export interface ProviderCredential {
@@ -65,6 +74,7 @@ export interface ProviderCredential {
   verification_url?: string;
   issue_date?: string;
   notes?: string;
+  created_at?: string;
 }
 
 export interface Review {
@@ -75,6 +85,10 @@ export interface Review {
   user_id: number;
   user_avatar?: string | null;
   status?: string;
+  flagged_reason?: string | null;
+  flag_response?: 'pending' | 'accepted' | 'rejected' | null;
+  moderation_note?: string | null;
+  can_flag?: boolean;
   created_at: string;
 }
 
@@ -110,6 +124,7 @@ export interface Provider {
     map_url?: string | null;
   };
   offers_remote_work?: boolean;
+  travels_to_cities?: boolean;
   can_review?: boolean;
   review_status_message?: string | null;
   service_area_note?: string | null;
@@ -123,10 +138,12 @@ export interface ProviderDashboardStats {
   reviews_count: number;
   approved_reviews_count: number;
   portfolio_items_count: number;
+  portfolio_images_count: number;
   credentials_count: number;
   completion_percentage: number;
   is_complete: boolean;
   is_discoverable: boolean;
+  provider_access_ends_at: string | null;
 }
 
 export interface ProviderDashboardData {
@@ -154,7 +171,6 @@ export interface AdminDashboardData {
   recent_providers: Provider[];
   recent_reviews: Review[];
 }
-
 export interface HomeStats {
   visible_providers_count: number;
   categories_count: number;
@@ -224,6 +240,69 @@ export interface ContactInfo {
 export interface PaginatedData<T> {
   data: T[];
   pagination: PaginationMeta;
+}
+
+export interface AdminUser {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string | null;
+  is_admin: boolean;
+  is_provider: boolean;
+  is_active: boolean;
+  is_suspended: boolean;
+  security_flagged: boolean;
+  suspension_reason?: string | null;
+  suspended_at?: string | null;
+  profile_slug?: string | null;
+  business_name?: string | null;
+  created_at?: string;
+}
+
+export interface AdminReview {
+  id: number;
+  rating: number;
+  comment?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  user_name: string;
+  provider_name?: string | null;
+  provider_slug?: string | null;
+  is_flagged: boolean;
+  flagged_reason?: string | null;
+  flagged_at?: string | null;
+  flag_pending: boolean;
+  moderation_note?: string | null;
+  moderated_at?: string | null;
+  created_at: string;
+}
+
+export interface ProviderProfileUpdateInput {
+  business_name?: string;
+  provider_type?: string;
+  category_id?: number;
+  subcategory_ids?: number[];
+  city_id?: number;
+  bio?: string;
+  phone?: string;
+  whatsapp?: string;
+  experience_years?: number;
+  offers_remote_work?: boolean;
+  travels_to_cities?: boolean;
+  website?: string;
+  instagram_handle?: string;
+  facebook_slug?: string;
+  linkedin_slug?: string;
+  github_username?: string;
+  map_url?: string;
+  service_area_note?: string;
+}
+
+export interface CredentialInput {
+  title: string;
+  issuer: string;
+  issue_date: string;
+  verification_url?: string;
+  notes?: string;
 }
 
 export interface CategoryDetailData {

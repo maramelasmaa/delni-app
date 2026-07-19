@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ProviderModeSwitch } from '../../components/provider/ProviderModeSwitch';
+import { AppModeSegmentedControl } from '../../components/provider/AppModeSegmentedControl';
 import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
@@ -70,7 +70,7 @@ export default function ProviderSettingsScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>وضع التطبيق</Text>
         <View style={styles.switchWrap}>
-          <ProviderModeSwitch mode="provider" />
+          <AppModeSegmentedControl />
         </View>
 
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب مقدم الخدمة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />

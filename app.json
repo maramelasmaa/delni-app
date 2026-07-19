@@ -73,6 +73,13 @@
     },
     "plugins": [
       "expo-router",
+      "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يحتاج التطبيق للوصول إلى صورك لرفع شعار نشاطك وصور أعمالك."
+        }
+      ],
       "expo-secure-store",
       "expo-localization",
       [

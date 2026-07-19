@@ -6,6 +6,11 @@ import { useAuthStore } from '../store/auth';
 import type { ApiResponse, AuthCredentials, RegisterData, User } from '../types';
 import { ENDPOINTS } from '../constants/api';
 import { showNativeAlert } from '../utils/themedAlert';
+import {
+  getRegisteredPushToken,
+  requestPushNotificationsDuringOnboarding,
+} from './usePushNotifications';
+import { unregisterDevice } from '../services/notifications';
 
 function resolveRedirectTarget(redirectTo?: string, user?: User) {
   // Must be an in-app absolute path. Reject protocol-relative ("//host") and
@@ -35,6 +40,9 @@ export function useLogin() {
       requestAnimationFrame(() => {
         router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
       });
+      if (user.is_provider) {
+        await requestPushNotificationsDuringOnboarding().catch(() => {});
+      }
     },
   });
 }
@@ -55,6 +63,7 @@ export function useRegister() {
       requestAnimationFrame(() => {
         router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
       });
+      await requestPushNotificationsDuringOnboarding().catch(() => {});
     },
   });
 }
@@ -63,6 +72,11 @@ export function useLogout() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   return useMutation({
     mutationFn: async () => {
+      // Stop pushes to this device before the token is revoked. Best effort.
+      const pushToken = getRegisteredPushToken();
+      if (pushToken) {
+        await unregisterDevice(pushToken).catch(() => {});
+      }
       await api.post(ENDPOINTS.auth.logout);
     },
     onSettled: async () => {

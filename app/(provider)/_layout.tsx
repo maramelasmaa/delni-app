@@ -4,6 +4,8 @@ import { Platform } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
+const TAB_ICON_SIZE = 22;
+
 export default function ProviderTabsLayout() {
   const { colors } = useTheme();
   const user = useAuthStore((s) => s.user);
@@ -24,7 +26,7 @@ export default function ProviderTabsLayout() {
           backgroundColor: colors.surfaceElevated,
           borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 88 : 68,
+          height: Platform.OS === 'ios' ? 88 : 70,
           paddingBottom: Platform.OS === 'ios' ? 26 : 10,
           paddingTop: 8,
           elevation: 0,
@@ -33,12 +35,25 @@ export default function ProviderTabsLayout() {
           shadowOpacity: 0,
           shadowRadius: 12,
         },
-        tabBarLabelStyle: { fontSize: 10, fontFamily: 'Cairo-Bold' },
+        tabBarItemStyle: {
+          minHeight: 52,
+          paddingHorizontal: 2,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          lineHeight: 14,
+          fontFamily: 'Cairo-Bold',
+          writingDirection: 'rtl',
+        },
       }}
     >
-      <Tabs.Screen name="settings" options={{ title: 'الإعدادات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'ملفي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={23} color={color} /> }} />
-      <Tabs.Screen name="index" options={{ title: 'لوحتي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: 'الإعدادات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="reviews" options={{ title: 'التقييمات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'star' : 'star-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="portfolio" options={{ title: 'أعمالي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'images' : 'images-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="profile" options={{ title: 'بياناتي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'business' : 'business-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'لوحتي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'grid' : 'grid-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="profile-edit" options={{ href: null }} />
+      <Tabs.Screen name="credentials" options={{ href: null }} />
     </Tabs>
   );
 }

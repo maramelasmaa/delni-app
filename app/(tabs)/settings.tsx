@@ -1,15 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useMemo, type ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
-import { ProviderModeSwitch } from '../../components/provider/ProviderModeSwitch';
+import { AppModeSegmentedControl } from '../../components/provider/AppModeSegmentedControl';
 import { useLogout } from '../../src/hooks/useAuth';
+import { registerCurrentDeviceForPushNotifications } from '../../src/hooks/usePushNotifications';
 import { useTheme } from '../../src/hooks/useTheme';
+import {
+  getNotificationPermissions,
+  notificationsAreAllowed,
+  requestNotificationPermissions,
+} from '../../src/lib/pushNotifications';
 import { useAuthStore } from '../../src/store/auth';
 import { useThemeStore, type ThemePreference } from '../../src/store/theme';
 import type { ThemeColors } from '../../src/theme/tokens';
+import { showNativeAlert } from '../../src/utils/themedAlert';
 
 interface MenuItemProps {
   icon: keyof typeof Ionicons.glyphMap;
@@ -23,7 +30,7 @@ interface MenuItemProps {
 }
 
 const getIconStyles = (color: string, colors: ThemeColors) => {
-  const isDark = colors.bg === '#071A33';
+  const isDark = colors.bg === '#0B1120';
 
   if (color === colors.primary) {
     return {
@@ -92,6 +99,7 @@ function MenuItem({
           {
             backgroundColor: colors.surface,
             borderColor: colors.border,
+            shadowColor: colors.shadow,
           },
         ]}
       >
@@ -175,6 +183,11 @@ function ThemeToggle({ colors }: { colors: ThemeColors }) {
                 backgroundColor: active ? colors.primarySoft : colors.surfaceAlt,
                 borderWidth: 1.5,
                 borderColor: active ? colors.primary : colors.border,
+                shadowColor: active ? colors.primary : 'transparent',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: active ? 0.15 : 0,
+                shadowRadius: 4,
+                elevation: active ? 3 : 0,
               }}
             >
               <Ionicons
@@ -245,6 +258,7 @@ function ProfileRow({
         {
           backgroundColor: colors.surface,
           borderColor: colors.border,
+          shadowColor: colors.shadow,
         },
       ]}
     >
@@ -300,7 +314,34 @@ export default function SettingsScreen() {
   const user = useAuthStore((s) => s.user);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const logout = useLogout();
-  const isDark = colors.bg === '#071A33';
+  const isDark = colors.bg === '#0B1120';
+
+  const handleNotificationsPress = async () => {
+    try {
+      let permissions = await getNotificationPermissions();
+      const wasAlreadyAllowed = notificationsAreAllowed(permissions);
+      const couldAskOnEntry = permissions.canAskAgain;
+
+      if (!wasAlreadyAllowed && permissions.canAskAgain) {
+        permissions = await requestNotificationPermissions();
+      }
+
+      if (notificationsAreAllowed(permissions)) {
+        await registerCurrentDeviceForPushNotifications().catch(() => null);
+
+        if (wasAlreadyAllowed) {
+          await Linking.openSettings();
+        }
+        return;
+      }
+
+      if (!couldAskOnEntry) {
+        await Linking.openSettings();
+      }
+    } catch {
+      showNativeAlert('تعذر فتح الإشعارات', 'حاول مرة أخرى أو افتح إعدادات الهاتف.');
+    }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -355,7 +396,7 @@ export default function SettingsScreen() {
         {isAuthenticated && user?.is_provider ? (
           <SectionBlock title={String.fromCharCode(0x0645, 0x0642, 0x062F, 0x0645, 0x0020, 0x0627, 0x0644, 0x062E, 0x062F, 0x0645, 0x0629)}>
             <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
-              <ProviderModeSwitch mode="public" />
+              <AppModeSegmentedControl />
             </View>
           </SectionBlock>
         ) : null}
@@ -366,6 +407,16 @@ export default function SettingsScreen() {
         </SectionBlock>
 
         <SectionBlock title="التطبيق">
+          {isAuthenticated ? (
+            <MenuItem
+              icon="notifications"
+              iconColor={colors.gold}
+              label="الإشعارات"
+              subtitle="السماح بإشعارات دلني من إعدادات الهاتف"
+              onPress={handleNotificationsPress}
+              colors={colors}
+            />
+          ) : null}
           <MenuItem
             icon="information-circle"
             iconColor={colors.primary}
@@ -465,7 +516,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Cairo-Bold',
     textAlign: 'right',
-    color: '#6F86A8',
+    color: '#94A3B8',
   },
   themeToggleRow: {
     flexDirection: 'row',
@@ -498,6 +549,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 22,
     borderWidth: 1,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
   },
   menuIconBox: {
     width: 52,
@@ -547,6 +602,11 @@ function makeStyles(colors: ThemeColors) {
       borderRadius: 22,
       borderWidth: 1,
       borderColor: colors.border,
+      shadowColor: colors.shadow,
+      shadowOffset: { width: 0, height: 5 },
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      elevation: 2,
       overflow: 'hidden',
     },
     themeCard: {

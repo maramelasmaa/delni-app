@@ -208,10 +208,10 @@ export default function HomeScreen() {
           <View style={{ marginTop: 32, paddingHorizontal: 20 }}>
             <View style={{ alignItems: 'flex-end', marginBottom: 16 }}>
               <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.gold, marginBottom: 4, textAlign: 'right', writingDirection: 'rtl' }}>
-                مقدمو الخدمات
+                مقدمي الخدمات
               </Text>
               <Text style={{ fontSize: 20, fontFamily: 'Cairo-Black', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}>
-                {activeCity ? `مقدمو الخدمات المميزون في ${activeCity.name}` : 'مقدمو الخدمات المميزون'}
+                {activeCity ? `مقدمي الخدمات المميزون في ${activeCity.name}` : 'مقدمي الخدمات المميزون'}
               </Text>
             </View>
 
@@ -339,11 +339,11 @@ const styles = StyleSheet.create({
 
   categoryCard: {
     width: 104,
-    height: 120,
+    height: 140,
     borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 10,
     backgroundColor: 'rgba(234,179,8,0.12)',
 
     ...(Platform.OS === 'ios' && {

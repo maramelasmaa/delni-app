@@ -58,7 +58,6 @@ export default function SplashScreen() {
       style={styles.container}
     >
       <View style={styles.content}>
-        {/* Main Title */}
         <Animated.View style={[{ opacity: titleOpacity }]}>
           <View style={{ flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
             <Text style={styles.title}>دلني</Text>
@@ -66,12 +65,10 @@ export default function SplashScreen() {
           </View>
         </Animated.View>
 
-        {/* Tagline */}
         <Animated.View style={[{ opacity: taglineOpacity }]}>
           <Text style={styles.tagline}>ابحث عن الخدمات بسهولة</Text>
         </Animated.View>
 
-        {/* Loading Dots - Elegant Fade Animation */}
         <View style={styles.dotsContainer}>
           {[0, 1, 2].map((index) => {
             const dotAnim = React.useRef(new Animated.Value(0.4)).current;

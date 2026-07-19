@@ -24,8 +24,7 @@ Target: first Apple Developer account submission for `delni-app`.
   - JSON response includes live home data, categories, providers, and stats.
 
 ## App Store rejection risks found
-
-### Blocker: EAS iOS submit config still has a placeholder
+## Blocker: EAS iOS submit config still has a placeholder
 
 Evidence: `eas.json` still contains:
 

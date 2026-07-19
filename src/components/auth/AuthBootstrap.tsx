@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useMe } from '../../hooks/useAuth';
 import { useAuthStore } from '../../store/auth';
 import { useTheme } from '../../hooks/useTheme';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore duplicate calls during fast refresh.
@@ -17,37 +18,34 @@ export function AuthBootstrap() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const finishBootstrap = useAuthStore((s) => s.finishBootstrap);
 
+  usePushNotifications();
+
   const meQuery = useMe({
     enabled: !isStoreLoading && !!token,
   });
 
   useEffect(() => {
-    if (!isStoreLoading && !token) {
-      finishBootstrap();
-    }
-  }, [finishBootstrap, isStoreLoading, token]);
+    if (isStoreLoading) return;
+    if (hasHydrated) return;
 
-  useEffect(() => {
-    if (!token || isStoreLoading || hasHydrated) {
+    // No token: proceed immediately
+    if (!token) {
+      finishBootstrap();
       return;
     }
 
-    if (meQuery.isError) {
+    // Has token: proceed immediately without waiting for /me to complete.
+    // Validate user in background; if 401, clear auth.
+    finishBootstrap();
+
+    // Async: validate the token in background. If it fails, clear auth.
+    if (meQuery.isError && !meQuery.isLoading) {
       const status = (meQuery.error as { response?: { status?: number } } | null)?.response?.status;
-
       if (status === 401) {
-        clearAuth().finally(() => finishBootstrap());
-        return;
+        clearAuth().catch(() => {});
       }
-
-      finishBootstrap();
-      return;
     }
-
-    if (meQuery.isSuccess) {
-      finishBootstrap();
-    }
-  }, [clearAuth, finishBootstrap, hasHydrated, isStoreLoading, meQuery.error, meQuery.isError, meQuery.isSuccess, token]);
+  }, [isStoreLoading, hasHydrated, token, clearAuth, meQuery.isError, meQuery.isLoading, meQuery.error]);
 
   useEffect(() => {
     if (hasHydrated) {
@@ -96,6 +94,10 @@ export function AuthBootstrap() {
       <Stack.Screen
         name="account"
         options={{ headerShown: true, headerTitle: 'المعلومات الشخصية', headerBackTitle: ' ' }}
+      />
+      <Stack.Screen
+        name="admin-broadcast"
+        options={{ headerShown: true, headerTitle: 'إرسال إشعار عام', headerBackTitle: ' ' }}
       />
       <Stack.Screen
         name="about"
