@@ -10,32 +10,13 @@ import { ErrorView } from '../../components/ui/ErrorView';
 import { useProviderDashboard } from '../../src/hooks/useProviderDashboard';
 import { useTheme } from '../../src/hooks/useTheme';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { Review } from '../../src/types';
 import { getProviderLogo } from '../../src/utils/imageFallback';
-
-const REVIEW_PREVIEW_LIMIT = 3;
 
 type ProviderManageRoute = '/(provider)/profile-edit' | '/(provider)/portfolio' | '/(provider)/credentials' | '/(provider)/reviews';
 
 function formatRating(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
   return value.toFixed(1);
-}
-
-function formatReviewDate(dateString: string | null | undefined) {
-  if (!dateString) return '';
-  const date = new Date(dateString);
-  if (Number.isNaN(date.getTime())) return '';
-
-  try {
-    return new Intl.DateTimeFormat('ar-EG', {
-      day: 'numeric',
-      month: 'short',
-      numberingSystem: 'latn',
-    }).format(date);
-  } catch {
-    return '';
-  }
 }
 
 function formatAccessRemaining(accessEndsAt: string | null | undefined) {
@@ -49,39 +30,6 @@ function formatAccessRemaining(accessEndsAt: string | null | undefined) {
   if (days === 2) return 'يومان';
   if (days >= 3 && days <= 10) return `${days} أيام`;
   return `${days} يومًا`;
-}
-
-function ReviewStatusPill({ status, colors }: { status?: string; colors: ThemeColors }) {
-  if (!status || status === 'approved') return null;
-
-  const label = status === 'pending' ? 'قيد المراجعة' : status === 'rejected' ? 'مرفوض' : status;
-
-  return (
-    <View style={[styles.reviewStatus, { backgroundColor: colors.surfaceAlt }]}>
-      <Text numberOfLines={1} style={[styles.reviewStatusText, { color: colors.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
-function RecentReviewRow({ review, colors }: { review: Review; colors: ThemeColors }) {
-  const date = formatReviewDate(review.created_at);
-
-  return (
-    <View style={[styles.reviewRow, { borderColor: colors.border }]}>
-      <View style={[styles.ratingPill, { backgroundColor: colors.goldSoft }]}>
-        <Ionicons name="star" size={14} color={colors.star} />
-        <Text style={[styles.ratingText, { color: colors.textPrimary }]}>{review.rating}</Text>
-      </View>
-      <View style={styles.reviewContent}>
-        <View style={styles.reviewTopLine}>
-          {date ? <Text numberOfLines={1} style={[styles.reviewDate, { color: colors.textMuted }]}>{date}</Text> : null}
-          <ReviewStatusPill status={review.status} colors={colors} />
-        </View>
-        <Text numberOfLines={1} style={[styles.reviewName, { color: colors.textPrimary }]}>{review.user_name || 'عميل دلني'}</Text>
-        <Text numberOfLines={2} style={[styles.reviewComment, { color: colors.textMuted }]}>{review.comment || 'لم يكتب العميل تعليقًا.'}</Text>
-      </View>
-    </View>
-  );
 }
 
 function ManageRow({
@@ -153,7 +101,6 @@ export default function ProviderDashboardScreen() {
 
   const { profile, stats } = data;
   const logo = getProviderLogo(profile.logo_url, profile.id);
-  const recentReviews = data.recent_reviews.slice(0, REVIEW_PREVIEW_LIMIT);
   const showVisibilityNotice = stats.is_complete && !stats.is_discoverable;
 
   return (
@@ -188,18 +135,17 @@ export default function ProviderDashboardScreen() {
           </Pressable>
         </View>
 
-        <ProfileCompletionCard
-          percentage={stats.completion_percentage}
-          isComplete={stats.is_complete}
-          onCompletePress={() => router.push('/(provider)/profile-edit' as never)}
-        />
-
         <View style={styles.sectionHeader}>
           <View style={styles.sectionHeading}>
             <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نظرة عامة</Text>
           </View>
         </View>
+        <ProfileCompletionCard
+          percentage={stats.completion_percentage}
+          isComplete={stats.is_complete}
+          onCompletePress={() => router.push('/(provider)/profile-edit' as never)}
+        />
         <View style={styles.statsGrid}>
           <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
           <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
@@ -239,30 +185,6 @@ export default function ProviderDashboardScreen() {
           </View>
         ) : null}
 
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionHeading}>
-            <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>أحدث التقييمات</Text>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="عرض كل التقييمات"
-            onPress={() => router.push('/(provider)/reviews' as never)}
-            hitSlop={8}
-            style={({ pressed }) => [styles.sectionAction, { opacity: pressed ? 0.72 : 1 }]}
-          >
-            <Text style={[styles.sectionActionText, { color: colors.primary }]}>عرض الكل</Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.reviewsPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          {recentReviews.length > 0 ? recentReviews.map((review) => <RecentReviewRow key={review.id} review={review} colors={colors} />) : (
-            <View style={styles.emptyReviews}>
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>لا توجد تقييمات بعد</Text>
-              <Text style={[styles.emptyText, { color: colors.textMuted }]}>ستظهر أحدث تقييمات العملاء هنا.</Text>
-            </View>
-          )}
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -355,18 +277,8 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 2,
   },
-  sectionAction: {
-    minHeight: 34,
-    minWidth: 64,
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-  },
-  sectionActionText: {
-    fontSize: 12.5,
-    fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
-  },
   statsGrid: {
+    marginTop: 10,
     paddingHorizontal: 20,
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
@@ -463,92 +375,6 @@ const styles = StyleSheet.create({
   noticeActionText: {
     fontSize: 12,
     fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
-  },
-  reviewsPanel: {
-    marginHorizontal: 20,
-    borderRadius: 18,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  reviewRow: {
-    padding: 14,
-    borderBottomWidth: 1,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 12,
-  },
-  ratingPill: {
-    minWidth: 48,
-    minHeight: 32,
-    borderRadius: 999,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  ratingText: {
-    fontSize: 12.5,
-    fontFamily: 'Cairo-Bold',
-  },
-  reviewContent: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  reviewTopLine: {
-    minHeight: 20,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 8,
-  },
-  reviewDate: {
-    fontSize: 11,
-    fontFamily: 'Cairo-Regular',
-    textAlign: 'right',
-  },
-  reviewStatus: {
-    minHeight: 20,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  reviewStatusText: {
-    fontSize: 10.5,
-    fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
-  },
-  reviewName: {
-    marginTop: 2,
-    fontSize: 13.5,
-    fontFamily: 'Cairo-Bold',
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  reviewComment: {
-    marginTop: 1,
-    fontSize: 12,
-    lineHeight: 19,
-    fontFamily: 'Cairo-Regular',
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  emptyReviews: {
-    padding: 18,
-    alignItems: 'flex-end',
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontFamily: 'Cairo-Bold',
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  emptyText: {
-    marginTop: 2,
-    fontSize: 12,
-    lineHeight: 19,
-    fontFamily: 'Cairo-Regular',
-    textAlign: 'right',
     writingDirection: 'rtl',
   },
   skeletonLine: {
