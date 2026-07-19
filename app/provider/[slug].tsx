@@ -254,37 +254,42 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
         style={({ pressed }) => ({
           position: 'relative',
           justifyContent: 'center',
-          minHeight: 68,
-          paddingHorizontal: 14,
-          paddingVertical: 11,
-          borderRadius: 8,
+          minHeight: 58,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+          borderRadius: 14,
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
+          shadowColor: colors.shadow,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0,
+          shadowRadius: 4,
+          elevation: 0,
           opacity: pressed ? 0.78 : 1,
         })}
       >
         <View
           style={{
             position: 'absolute',
-            right: 14,
+            right: 12,
             top: '50%',
-            transform: [{ translateY: -20 }],
-            width: 40,
-            height: 40,
-            borderRadius: 8,
+            transform: [{ translateY: -16 }],
+            width: 32,
+            height: 32,
+            borderRadius: 16,
             backgroundColor: colors.primarySoft,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Ionicons name="location-outline" size={21} color={colors.primary} />
+          <Ionicons name="location-outline" size={16} color={colors.primary} />
         </View>
 
-        <View style={{ width: '100%', paddingRight: 64, paddingLeft: mapUrl ? 40 : 0, alignItems: 'flex-end' }}>
+        <View style={{ width: '100%', paddingRight: 54, paddingLeft: mapUrl ? 40 : 0, alignItems: 'flex-end' }}>
           <Text
             numberOfLines={1}
-            style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
+            style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
           >
             {cityName || 'موقع مقدم الخدمة'}
           </Text>
@@ -301,7 +306,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             name="chevron-back"
             size={18}
             color={colors.textMuted}
-            style={{ position: 'absolute', left: 14, top: '50%', transform: [{ translateY: -9 }] }}
+            style={{ position: 'absolute', left: 12, top: '50%', transform: [{ translateY: -9 }] }}
           />
         ) : null}
       </Pressable>
