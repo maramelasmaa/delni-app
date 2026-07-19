@@ -1,6 +1,7 @@
-﻿import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useSegments } from 'expo-router';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -12,11 +13,6 @@ type Props = {
   style?: StyleProp<ViewStyle>;
 };
 
-const MODE_OPTIONS: { mode: AppMode; label: string; target: '/(tabs)/' | '/(provider)/'; accessibilityLabel: string }[] = [
-  { mode: 'public', label: 'عام', target: '/(tabs)/', accessibilityLabel: 'الانتقال إلى التطبيق العام' },
-  { mode: 'provider', label: 'مقدم خدمة', target: '/(provider)/', accessibilityLabel: 'الانتقال إلى لوحة مقدم الخدمة' },
-];
-
 function useCurrentMode(explicitMode?: AppMode): AppMode {
   const segments = useSegments();
   return useMemo(() => {
@@ -27,121 +23,91 @@ function useCurrentMode(explicitMode?: AppMode): AppMode {
 
 export function AppModeSegmentedControl({ mode, compact = false, style }: Props) {
   const { colors } = useTheme();
-  const user = useAuthStore((s) => s.user);
+  const user = useAuthStore((state) => state.user);
   const activeMode = useCurrentMode(mode);
-  const [switchingTo, setSwitchingTo] = useState<AppMode | null>(null);
+  const [switching, setSwitching] = useState(false);
   const lockRef = useRef(false);
-  const canUseProviderMode = !!user?.is_provider;
+  const nextMode: AppMode = activeMode === 'provider' ? 'public' : 'provider';
+  const target = nextMode === 'provider' ? '/(provider)/' : '/(tabs)/';
+  const label = nextMode === 'provider' ? 'فتح لوحة مقدم الخدمة' : 'العودة إلى التطبيق العام';
 
-  const handleSelect = useCallback((nextMode: AppMode) => {
-    if (nextMode === activeMode || lockRef.current) return;
-    if (nextMode === 'provider' && !canUseProviderMode) return;
-
-    const option = MODE_OPTIONS.find((item) => item.mode === nextMode);
-    if (!option) return;
+  const handleSwitch = useCallback(() => {
+    if (lockRef.current || (nextMode === 'provider' && !user?.is_provider)) return;
 
     lockRef.current = true;
-    setSwitchingTo(nextMode);
+    setSwitching(true);
     requestAnimationFrame(() => {
-      router.replace(option.target as never);
+      router.replace(target as never);
       setTimeout(() => {
         lockRef.current = false;
-        setSwitchingTo(null);
+        setSwitching(false);
       }, 650);
     });
-  }, [activeMode, canUseProviderMode]);
+  }, [nextMode, target, user?.is_provider]);
+
+  if (!user?.is_provider) return null;
 
   return (
-    <View
-      accessibilityLabel="تبديل وضع التطبيق"
-      style={[
-        styles.container,
-        compact && styles.compactContainer,
-        { backgroundColor: colors.surfaceAlt, borderColor: colors.border },
+    <Pressable
+      onPress={handleSwitch}
+      disabled={switching}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint="يبدل بين التطبيق العام ولوحة مقدم الخدمة"
+      accessibilityState={{ busy: switching, disabled: switching }}
+      hitSlop={8}
+      style={({ pressed }) => [
+        styles.button,
+        compact && styles.compactButton,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.borderStrong,
+          opacity: switching ? 0.68 : pressed ? 0.8 : 1,
+          transform: [{ scale: pressed ? 0.94 : 1 }],
+        },
         style,
       ]}
     >
-      {MODE_OPTIONS.map((option) => {
-        const active = option.mode === activeMode;
-        const disabled = switchingTo !== null || (option.mode === 'provider' && !canUseProviderMode);
-        const loading = switchingTo === option.mode;
-
-        return (
-          <Pressable
-            key={option.mode}
-            onPress={() => handleSelect(option.mode)}
-            disabled={disabled || active}
-            accessibilityRole="button"
-            accessibilityLabel={option.accessibilityLabel}
-            accessibilityState={{ selected: active, disabled }}
-            hitSlop={6}
-            style={({ pressed }) => [
-              styles.segment,
-              compact && styles.compactSegment,
-              {
-                backgroundColor: active ? colors.primary : 'transparent',
-                opacity: disabled && !active ? 0.48 : pressed ? 0.82 : 1,
-                transform: [{ scale: pressed && !active ? 0.98 : 1 }],
-              },
-            ]}
-          >
-            {loading ? <ActivityIndicator size="small" color={active ? colors.textOnPrimary : colors.primary} /> : null}
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.82}
-              style={[
-                styles.label,
-                compact && styles.compactLabel,
-                { color: active ? colors.textOnPrimary : colors.textPrimary },
-              ]}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+      {switching ? (
+        <ActivityIndicator size="small" color={colors.primary} />
+      ) : (
+        <>
+          <Ionicons
+            name={nextMode === 'provider' ? 'briefcase-outline' : 'phone-portrait-outline'}
+            size={compact ? 20 : 23}
+            color={colors.primary}
+          />
+          <View pointerEvents="none" style={[styles.badge, { backgroundColor: colors.primary }]}>
+            <Ionicons name="swap-horizontal" size={10} color={colors.textOnPrimary} />
+          </View>
+        </>
+      )}
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    minHeight: 48,
-    borderRadius: 999,
+  button: {
+    width: 46,
+    height: 46,
+    borderRadius: 8,
     borderWidth: 1,
-    padding: 4,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 4,
-  },
-  compactContainer: {
-    minHeight: 42,
-    padding: 3,
-  },
-  segment: {
-    minHeight: 40,
-    minWidth: 96,
-    flex: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row-reverse',
-    gap: 6,
+    alignSelf: 'flex-end',
   },
-  compactSegment: {
-    minHeight: 34,
-    minWidth: 72,
-    paddingHorizontal: 10,
+  compactButton: {
+    width: 40,
+    height: 40,
   },
-  label: {
-    fontSize: 13,
-    fontFamily: 'Cairo-Bold',
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
-  compactLabel: {
-    fontSize: 12,
+  badge: {
+    position: 'absolute',
+    right: 3,
+    bottom: 3,
+    width: 17,
+    height: 17,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
