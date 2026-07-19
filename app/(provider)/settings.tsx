@@ -40,9 +40,12 @@ export default function ProviderSettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}>
         <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إعدادات مقدم الخدمة</Text>
-            <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+          <View style={styles.headerTopRow}>
+            <AppModeSegmentedControl mode="provider" />
+            <View style={styles.headerTitleRow}>
+              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إعدادات مقدم الخدمة</Text>
+              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+            </View>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>كل ما يخص حسابك وملفك داخل التطبيق</Text>
         </View>
@@ -68,11 +71,6 @@ export default function ProviderSettingsScreen() {
         <ProviderLink icon="ribbon-outline" label="الشهادات والخبرات" subtitle="اعتماداتك وخبراتك المهنية" route="/(provider)/credentials" color={colors.success} colors={colors} />
         <ProviderLink icon="chatbubbles-outline" label="التقييمات" subtitle="متابعة آراء العملاء" route="/(provider)/reviews" color={colors.primary} colors={colors} />
 
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>وضع التطبيق</Text>
-        <View style={styles.switchWrap}>
-          <AppModeSegmentedControl />
-        </View>
-
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب مقدم الخدمة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />
       </ScrollView>
     </SafeAreaView>
@@ -80,7 +78,8 @@ export default function ProviderSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12, alignItems: 'flex-end' },
+  header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
+  headerTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   headerTitle: { fontSize: 26, lineHeight: 36, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
   headerSubtitle: { marginTop: 4, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
@@ -95,5 +94,4 @@ const styles = StyleSheet.create({
   menuLabel: { fontSize: 16, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   menuSubtitle: { marginTop: 2, fontSize: 12, lineHeight: 18, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' },
   menuIcon: { width: 52, height: 52, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  switchWrap: { marginHorizontal: 16, marginBottom: 14 },
 });

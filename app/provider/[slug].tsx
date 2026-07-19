@@ -237,25 +237,15 @@ function AboutSection({ about, colors }: AboutSectionProps) {
 interface LocationSectionProps {
   cityName: string | null;
   mapUrl: string | null;
-  worksRemotely: boolean;
-  travelsToCities: boolean;
   serviceAreaNote: string | null;
   colors: ThemeColors;
 }
-function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, serviceAreaNote, colors }: LocationSectionProps) {
-  if (!cityName && !mapUrl && !worksRemotely && !travelsToCities && !serviceAreaNote) return null;
-
-  const coverageBadges: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; label: string }> = [];
-  if (travelsToCities) {
-    coverageBadges.push({ id: 'travel', icon: 'car-outline', label: 'يتنقل بين المدن' });
-  }
-  if (worksRemotely) {
-    coverageBadges.push({ id: 'remote', icon: 'desktop-outline', label: 'يعمل عن بعد' });
-  }
+function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: LocationSectionProps) {
+  if (!cityName && !mapUrl && !serviceAreaNote) return null;
 
   return (
     <View style={{ marginBottom: 16, width: '100%' }}>
-      <SectionHeader title="الموقع ونطاق الخدمة" colors={colors} />
+      <SectionHeader title="الموقع" colors={colors} />
       <View
         style={{
           borderRadius: 8,
@@ -368,53 +358,6 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
             </View>
             <Ionicons name="open-outline" size={19} color={colors.textOnPrimary} />
           </Pressable>
-        ) : null}
-
-        {coverageBadges.length > 0 ? (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              borderTopWidth: mapUrl ? 0 : 1,
-              borderTopColor: colors.border,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontFamily: 'Cairo-Bold',
-                color: colors.textMuted,
-                textAlign: 'right',
-                writingDirection: 'rtl',
-                marginBottom: 9,
-              }}
-            >
-              نطاق تقديم الخدمة
-            </Text>
-            <View style={{ ...rtlRow(), flexWrap: 'wrap', gap: 8 }}>
-              {coverageBadges.map((badge) => (
-                <View
-                  key={badge.id}
-                  style={{
-                    ...rtlRow(),
-                    alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: colors.surfaceAlt,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: 10,
-                    paddingVertical: 7,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Ionicons name={badge.icon} size={15} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.textPrimary, writingDirection: 'rtl' }}>
-                    {badge.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
         ) : null}
 
         {serviceAreaNote ? (
@@ -1369,6 +1312,14 @@ export default function ProviderScreen() {
       value: 'عمل عن بُعد',
     });
   }
+  if (profile.travelsToCities) {
+    specs.push({
+      id: 'travel',
+      icon: 'car-outline',
+      label: 'نطاق الخدمة',
+      value: 'يتنقل بين المدن',
+    });
+  }
   if (typeMeta) {
     specs.push({
       id: 'type',
@@ -1649,8 +1600,6 @@ export default function ProviderScreen() {
           <LocationSection
             cityName={profile.cityName}
             mapUrl={profile.mapUrl}
-            worksRemotely={profile.worksRemotely}
-            travelsToCities={profile.travelsToCities}
             serviceAreaNote={profile.serviceAreaNote}
             colors={colors}
           />

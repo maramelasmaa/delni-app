@@ -350,9 +350,15 @@ export default function SettingsScreen() {
         contentContainerStyle={themedStyles.scrollContent}
       >
         <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
-            <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+          <View style={styles.headerTopRow}>
+            <View style={styles.modeActions}>
+              {isAuthenticated && user?.is_admin ? <AdminModeSwitch mode="public" compact /> : null}
+              {isAuthenticated && user?.is_provider ? <AppModeSegmentedControl mode="public" compact /> : null}
+            </View>
+            <View style={styles.headerTitleRow}>
+              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
+              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+            </View>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             معلومات الحساب والتطبيق
@@ -382,24 +388,6 @@ export default function SettingsScreen() {
             onPress={() => router.push('/(auth)/login')}
           />
         )}
-
-
-
-        {isAuthenticated && user?.is_admin ? (
-          <SectionBlock title={String.fromCharCode(0x0627, 0x0644, 0x0625, 0x062F, 0x0627, 0x0631, 0x0629)}>
-            <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
-              <AdminModeSwitch mode="public" />
-            </View>
-          </SectionBlock>
-        ) : null}
-
-        {isAuthenticated && user?.is_provider ? (
-          <SectionBlock title={String.fromCharCode(0x0645, 0x0642, 0x062F, 0x0645, 0x0020, 0x0627, 0x0644, 0x062E, 0x062F, 0x0645, 0x0629)}>
-            <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
-              <AppModeSegmentedControl />
-            </View>
-          </SectionBlock>
-        ) : null}
         <SectionBlock title="المظهر">
           <View style={[themedStyles.card, themedStyles.themeCard]}>
             <ThemeToggle colors={colors} />
@@ -492,6 +480,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
+  },
+  headerTopRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  modeActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   headerTitleRow: {
     flexDirection: 'row-reverse',
