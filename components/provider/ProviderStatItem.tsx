@@ -16,8 +16,10 @@ export function ProviderStatItem({ icon, label, value }: Props) {
       <View style={[styles.iconBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
         <Ionicons name={icon} size={17} color={colors.primary} />
       </View>
-      <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}</Text>
-      <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
+      <View style={styles.textWrap}>
+        <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
+        <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}</Text>
+      </View>
     </View>
   );
 }
@@ -25,13 +27,18 @@ export function ProviderStatItem({ icon, label, value }: Props) {
 const styles = StyleSheet.create({
   item: {
     width: '48.5%',
-    minHeight: 96,
+    minHeight: 76,
     borderRadius: 16,
     borderWidth: 1,
     padding: 12,
-    alignItems: 'flex-end',
+    position: 'relative',
+    justifyContent: 'center',
   },
   iconBox: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -17 }],
     width: 34,
     height: 34,
     borderRadius: 12,
@@ -39,14 +46,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  textWrap: {
+    marginRight: 46,
+    alignItems: 'flex-end',
+  },
   value: {
-    marginTop: 8,
-    fontSize: 20,
+    marginTop: 1,
+    fontSize: 18,
+    lineHeight: 25,
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
+    writingDirection: 'rtl',
   },
   label: {
-    fontSize: 11.5,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: 'Cairo-SemiBold',
     textAlign: 'right',
     writingDirection: 'rtl',
