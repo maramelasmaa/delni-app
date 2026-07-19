@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppModeSegmentedControl } from '../../components/provider/AppModeSegmentedControl';
 import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import type { ThemeColors } from '../../src/theme/tokens';
@@ -38,12 +37,9 @@ export default function ProviderSettingsScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}>
         <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <AppModeSegmentedControl mode="provider" compact />
-            <View style={styles.headerTitleRow}>
-              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إعدادات مقدم الخدمة</Text>
-              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
-            </View>
+          <View style={styles.headerTitleRow}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إعدادات مقدم الخدمة</Text>
+            <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>كل ما يخص حسابك وملفك داخل التطبيق</Text>
         </View>
@@ -59,7 +55,6 @@ export default function ProviderSettingsScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  headerTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 1 },
   headerTitle: { fontSize: 26, lineHeight: 36, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
   headerSubtitle: { marginTop: 4, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },

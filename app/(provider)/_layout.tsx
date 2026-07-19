@@ -1,6 +1,6 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
-import { Redirect, Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Redirect, router, Tabs } from 'expo-router';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -49,6 +49,46 @@ export default function ProviderTabsLayout() {
     >
       <Tabs.Screen name="settings" options={{ title: 'الإعدادات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
       <Tabs.Screen name="reviews" options={{ title: 'التقييمات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'star' : 'star-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen
+        name="public"
+        options={{
+          title: '',
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={{
+                width: 86,
+                height: 56,
+                borderRadius: 28,
+                backgroundColor: colors.gold,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row-reverse',
+                gap: 4,
+                marginBottom: Platform.OS === 'ios' ? 18 : 16,
+                shadowColor: colors.shadow,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0,
+                shadowRadius: 10,
+                elevation: 0,
+                borderWidth: 3,
+                borderColor: focused ? colors.gold : colors.border,
+              }}
+            >
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' }}>مزود</Text>
+              <Ionicons name="swap-horizontal-outline" size={20} color="#FFFFFF" />
+              <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' }}>عام</Text>
+            </View>
+          ),
+          tabBarButton: ({ ref: _ref, ...props }) => (
+            <Pressable
+              {...props}
+              accessibilityRole="button"
+              accessibilityLabel="العودة إلى التطبيق العام"
+              onPress={() => router.replace('/(tabs)/' as never)}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen name="portfolio" options={{ href: null }} />
       <Tabs.Screen name="profile" options={{ title: 'ملفي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'create' : 'create-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
       <Tabs.Screen name="index" options={{ title: 'لوحة التحكم', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'grid' : 'grid-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
