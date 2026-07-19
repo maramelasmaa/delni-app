@@ -35,11 +35,11 @@ export default function AdminSettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}> 
         <View style={styles.header}> 
           <View style={styles.headerTopRow}>
-            <AdminModeSwitch mode="admin" />
             <View style={styles.headerTitleRow}> 
               <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
               <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
             </View>
+            <AdminModeSwitch mode="admin" />
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>لوحة الإدارة</Text>
         </View>
@@ -68,7 +68,7 @@ export default function AdminSettingsScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  headerTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  headerTopRow: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'flex-start', gap: 12 },
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
   headerSubtitle: { marginTop: 4, fontSize: 15, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useSegments } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -73,13 +73,10 @@ export function AppModeSegmentedControl({ mode, compact = false, style }: Props)
       ) : (
         <>
           <Ionicons
-            name={nextMode === 'provider' ? 'briefcase-outline' : 'phone-portrait-outline'}
+            name={nextMode === 'provider' ? 'grid-outline' : 'home-outline'}
             size={compact ? 20 : 23}
             color={colors.primary}
           />
-          <View pointerEvents="none" style={[styles.badge, { backgroundColor: colors.primary }]}>
-            <Ionicons name="swap-horizontal" size={10} color={colors.textOnPrimary} />
-          </View>
         </>
       )}
     </Pressable>
@@ -98,15 +95,5 @@ const styles = StyleSheet.create({
   compactButton: {
     width: 40,
     height: 40,
-  },
-  badge: {
-    position: 'absolute',
-    right: 3,
-    bottom: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

@@ -351,13 +351,13 @@ export default function SettingsScreen() {
       >
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
-            <View style={styles.modeActions}>
-              {isAuthenticated && user?.is_admin ? <AdminModeSwitch mode="public" compact /> : null}
-              {isAuthenticated && user?.is_provider ? <AppModeSegmentedControl mode="public" compact /> : null}
-            </View>
             <View style={styles.headerTitleRow}>
               <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
               <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+            </View>
+            <View style={styles.modeActions}>
+              {isAuthenticated && user?.is_provider ? <AppModeSegmentedControl mode="public" compact /> : null}
+              {isAuthenticated && user?.is_admin ? <AdminModeSwitch mode="public" compact /> : null}
             </View>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
@@ -483,9 +483,9 @@ const styles = StyleSheet.create({
   },
   headerTopRow: {
     width: '100%',
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     gap: 12,
   },
   modeActions: {

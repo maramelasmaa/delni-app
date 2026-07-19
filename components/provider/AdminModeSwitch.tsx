@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 
 type Props = { mode: 'public' | 'admin'; compact?: boolean };
@@ -30,16 +30,10 @@ export function AdminModeSwitch({ mode, compact = false }: Props) {
       ]}
     >
       <Ionicons
-        name={adminMode ? 'phone-portrait-outline' : 'shield-checkmark-outline'}
+        name={adminMode ? 'home-outline' : 'shield-checkmark-outline'}
         size={compact ? 20 : 23}
         color={adminMode ? colors.goldText : colors.primary}
       />
-      <View
-        pointerEvents="none"
-        style={[styles.badge, { backgroundColor: adminMode ? colors.goldText : colors.primary }]}
-      >
-        <Ionicons name="swap-horizontal" size={10} color={colors.textOnPrimary} />
-      </View>
     </Pressable>
   );
 }
@@ -56,15 +50,5 @@ const styles = StyleSheet.create({
   compactButton: {
     width: 40,
     height: 40,
-  },
-  badge: {
-    position: 'absolute',
-    right: 3,
-    bottom: 3,
-    width: 17,
-    height: 17,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
