@@ -17,8 +17,8 @@ export function ProviderStatItem({ icon, label, value }: Props) {
         <Ionicons name={icon} size={17} color={colors.primary} />
       </View>
       <View style={styles.textWrap}>
-        <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
         <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}</Text>
+        <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       </View>
     </View>
   );
@@ -27,7 +27,7 @@ export function ProviderStatItem({ icon, label, value }: Props) {
 const styles = StyleSheet.create({
   item: {
     width: '48.5%',
-    minHeight: 76,
+    minHeight: 82,
     borderRadius: 16,
     borderWidth: 1,
     padding: 12,
@@ -37,8 +37,7 @@ const styles = StyleSheet.create({
   iconBox: {
     position: 'absolute',
     right: 12,
-    top: '50%',
-    transform: [{ translateY: -17 }],
+    top: 12,
     width: 34,
     height: 34,
     borderRadius: 12,
@@ -51,9 +50,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   value: {
-    marginTop: 1,
     fontSize: 18,
-    lineHeight: 25,
+    lineHeight: 34,
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
     writingDirection: 'rtl',
