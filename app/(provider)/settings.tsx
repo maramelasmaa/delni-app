@@ -8,7 +8,7 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import type { ThemeColors } from '../../src/theme/tokens';
 
-type SettingsRoute = '/account' | '/(provider)/profile-edit' | '/(provider)/portfolio' | '/(provider)/credentials' | '/(provider)/reviews';
+type SettingsRoute = '/account';
 
 function MenuRow({ icon, label, subtitle, color, onPress, colors, danger = false }: { icon: keyof typeof Ionicons.glyphMap; label: string; subtitle: string; color: string; onPress: () => void; colors: ThemeColors; danger?: boolean }) {
   return (
@@ -62,14 +62,8 @@ export default function ProviderSettingsScreen() {
           </View>
         ) : null}
 
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>إدارة الحساب</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
         <ProviderLink icon="person-outline" label="المعلومات الشخصية" subtitle="تعديل الاسم والبريد وكلمة المرور" route="/account" color={colors.primary} colors={colors} />
-
-        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>إدارة الملف التجاري</Text>
-        <ProviderLink icon="create-outline" label="بيانات الملف" subtitle="الاسم والوصف ومعلومات التواصل" route="/(provider)/profile-edit" color={colors.primary} colors={colors} />
-        <ProviderLink icon="images-outline" label="الأعمال والمعرض" subtitle="صور المشاريع وروابط الأعمال" route="/(provider)/portfolio" color={colors.goldText} colors={colors} />
-        <ProviderLink icon="ribbon-outline" label="الشهادات والخبرات" subtitle="اعتماداتك وخبراتك المهنية" route="/(provider)/credentials" color={colors.success} colors={colors} />
-        <ProviderLink icon="chatbubbles-outline" label="التقييمات" subtitle="متابعة آراء العملاء" route="/(provider)/reviews" color={colors.primary} colors={colors} />
 
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب مقدم الخدمة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />
       </ScrollView>
