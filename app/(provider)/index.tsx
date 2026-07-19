@@ -15,6 +15,8 @@ import { getProviderLogo } from '../../src/utils/imageFallback';
 
 const REVIEW_PREVIEW_LIMIT = 3;
 
+type ProviderManageRoute = '/(provider)/profile-edit' | '/(provider)/portfolio' | '/(provider)/credentials' | '/(provider)/reviews';
+
 function formatRating(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
   return value.toFixed(1);
@@ -79,6 +81,42 @@ function RecentReviewRow({ review, colors }: { review: Review; colors: ThemeColo
         <Text numberOfLines={2} style={[styles.reviewComment, { color: colors.textMuted }]}>{review.comment || 'لم يكتب العميل تعليقًا.'}</Text>
       </View>
     </View>
+  );
+}
+
+function ManageRow({
+  icon,
+  title,
+  subtitle,
+  route,
+  isLast = false,
+  colors,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  subtitle: string;
+  route: ProviderManageRoute;
+  isLast?: boolean;
+  colors: ThemeColors;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={() => router.push(route as never)}
+      style={({ pressed }) => ({ opacity: pressed ? 0.76 : 1 })}
+    >
+      <View style={[styles.manageRow, { borderBottomColor: colors.border, borderBottomWidth: isLast ? 0 : 1 }]}>
+        <Ionicons name="chevron-back" size={17} color={colors.textMuted} style={styles.manageChevron} />
+        <View style={styles.manageText}>
+          <Text numberOfLines={1} style={[styles.manageTitle, { color: colors.textPrimary }]}>{title}</Text>
+          <Text numberOfLines={1} style={[styles.manageSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>
+        </View>
+        <View style={[styles.manageIcon, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+          <Ionicons name={icon} size={19} color={colors.primary} />
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
@@ -168,6 +206,19 @@ export default function ProviderDashboardScreen() {
           <ProviderStatItem label="أعمال المعرض" value={String(stats.portfolio_items_count)} icon="images" />
           <ProviderStatItem label="الشهادات والخبرات" value={String(stats.credentials_count)} icon="ribbon" />
           <ProviderStatItem label="المدة المتبقية" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeading}>
+            <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>إدارة الملف</Text>
+          </View>
+        </View>
+        <View style={[styles.manageCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <ManageRow icon="create-outline" title="تعديل بيانات الملف" subtitle="الاسم والوصف ومعلومات التواصل" route="/(provider)/profile-edit" colors={colors} />
+          <ManageRow icon="images-outline" title="الأعمال والمعرض" subtitle="إدارة الأعمال وصور المشاريع" route="/(provider)/portfolio" colors={colors} />
+          <ManageRow icon="ribbon-outline" title="الشهادات والخبرات" subtitle="إضافة الشهادات والاعتمادات" route="/(provider)/credentials" colors={colors} />
+          <ManageRow icon="chatbubbles-outline" title="التقييمات" subtitle="مراجعة تقييمات العملاء" route="/(provider)/reviews" isLast colors={colors} />
         </View>
 
         {showVisibilityNotice ? (
@@ -320,6 +371,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  manageCard: {
+    marginHorizontal: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  manageRow: {
+    minHeight: 68,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  manageText: {
+    marginRight: 52,
+    marginLeft: 29,
+    alignItems: 'flex-end',
+  },
+  manageIcon: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    transform: [{ translateY: -20 }],
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  manageChevron: {
+    position: 'absolute',
+    left: 12,
+    top: '50%',
+    transform: [{ translateY: -8.5 }],
+  },
+  manageTitle: {
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: 'Cairo-Bold',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  manageSubtitle: {
+    marginTop: 1,
+    fontSize: 11,
+    lineHeight: 17,
+    fontFamily: 'Cairo-Regular',
+    textAlign: 'right',
+    writingDirection: 'rtl',
   },
   notice: {
     marginHorizontal: 20,
