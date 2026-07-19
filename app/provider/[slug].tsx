@@ -271,6 +271,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             position: 'relative',
             justifyContent: 'center',
             width: '100%',
+            minHeight: 56,
             paddingHorizontal: 12,
             paddingVertical: 12,
             opacity: pressed ? 0.78 : 1,
