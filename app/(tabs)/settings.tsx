@@ -4,7 +4,6 @@ import { useMemo, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
-import { AppModeSegmentedControl } from '../../components/provider/AppModeSegmentedControl';
 import { useLogout } from '../../src/hooks/useAuth';
 import { registerCurrentDeviceForPushNotifications } from '../../src/hooks/usePushNotifications';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -352,7 +351,6 @@ export default function SettingsScreen() {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <View style={styles.modeActions}>
-              {isAuthenticated && user?.is_provider ? <AppModeSegmentedControl mode="public" compact /> : null}
               {isAuthenticated && user?.is_admin ? <AdminModeSwitch mode="public" compact /> : null}
             </View>
             <View style={styles.headerTitleRow}>
@@ -388,6 +386,19 @@ export default function SettingsScreen() {
             onPress={() => router.push('/(auth)/login')}
           />
         )}
+        {isAuthenticated && user?.is_provider ? (
+          <SectionBlock title="مقدم الخدمة">
+            <MenuItem
+              icon="briefcase"
+              iconColor={colors.gold}
+              label="لوحة مقدم الخدمة"
+              subtitle="العودة لإدارة ملفك وبياناتك"
+              onPress={() => router.replace('/(provider)/' as never)}
+              colors={colors}
+              isLast
+            />
+          </SectionBlock>
+        ) : null}
         <SectionBlock title="المظهر">
           <View style={[themedStyles.card, themedStyles.themeCard]}>
             <ThemeToggle colors={colors} />
