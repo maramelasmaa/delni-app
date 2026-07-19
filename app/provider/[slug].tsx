@@ -248,8 +248,6 @@ function getProfileRowSurface(colors: ThemeColors): ViewStyle {
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
     shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0,
@@ -263,60 +261,63 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
   return (
     <View style={{ marginBottom: 16, width: '100%' }}>
       <SectionHeader title="الموقع" colors={colors} />
-      <Pressable
-        accessibilityRole={mapUrl ? 'link' : undefined}
-        accessibilityLabel={mapUrl ? 'فتح موقع مقدم الخدمة على الخريطة' : undefined}
-        disabled={!mapUrl}
-        onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
-        style={({ pressed }) => ({
-          position: 'relative',
-          justifyContent: 'center',
-          width: '100%',
-          ...getProfileRowSurface(colors),
-          opacity: pressed ? 0.78 : 1,
-        })}
-      >
-        <View
-          style={{
-            position: 'absolute',
-            right: 12,
-            top: '50%',
-            transform: [{ translateY: -16 }],
-            width: 32,
-            height: 32,
-            borderRadius: 16,
-            backgroundColor: colors.primarySoft,
-            alignItems: 'center',
+      <View style={{ ...getProfileRowSurface(colors), overflow: 'hidden' }}>
+        <Pressable
+          accessibilityRole={mapUrl ? 'link' : undefined}
+          accessibilityLabel={mapUrl ? 'فتح موقع مقدم الخدمة على الخريطة' : undefined}
+          disabled={!mapUrl}
+          onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
+          style={({ pressed }) => ({
+            position: 'relative',
             justifyContent: 'center',
-          }}
+            width: '100%',
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            opacity: pressed ? 0.78 : 1,
+          })}
         >
-          <Ionicons name="location-outline" size={16} color={colors.primary} />
-        </View>
-
-        <View style={{ marginRight: 42, marginLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
+          <View
+            style={{
+              position: 'absolute',
+              right: 12,
+              top: '50%',
+              transform: [{ translateY: -16 }],
+              width: 32,
+              height: 32,
+              borderRadius: 16,
+              backgroundColor: colors.primarySoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            {cityName || 'موقع مقدم الخدمة'}
-          </Text>
-          <Text
-            numberOfLines={2}
-            style={{ marginTop: 2, fontSize: 12, lineHeight: 18, fontFamily: 'Cairo-Regular', color: colors.textMuted, textAlign: 'right', writingDirection: 'rtl' }}
-          >
-            {serviceAreaNote || (mapUrl ? 'فتح الموقع على الخريطة' : 'منطقة تقديم الخدمة')}
-          </Text>
-        </View>
+            <Ionicons name="location-outline" size={16} color={colors.primary} />
+          </View>
 
-        {mapUrl ? (
-          <Ionicons
-            name="chevron-back"
-            size={18}
-            color={colors.textMuted}
-            style={{ position: 'absolute', left: 12, top: '50%', transform: [{ translateY: -9 }] }}
-          />
-        ) : null}
-      </Pressable>
+          <View style={{ marginRight: 42, marginLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
+            >
+              {cityName || 'موقع مقدم الخدمة'}
+            </Text>
+            <Text
+              numberOfLines={2}
+              style={{ marginTop: 2, fontSize: 12, lineHeight: 18, fontFamily: 'Cairo-Regular', color: colors.textMuted, textAlign: 'right', writingDirection: 'rtl' }}
+            >
+              {serviceAreaNote || (mapUrl ? 'فتح الموقع على الخريطة' : 'منطقة تقديم الخدمة')}
+            </Text>
+          </View>
+
+          {mapUrl ? (
+            <Ionicons
+              name="chevron-back"
+              size={18}
+              color={colors.textMuted}
+              style={{ position: 'absolute', left: 12, top: '50%', transform: [{ translateY: -9 }] }}
+            />
+          ) : null}
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -343,6 +344,8 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
               flexGrow: 1,
               minWidth: 140,
               ...getProfileRowSurface(colors),
+              paddingHorizontal: 12,
+              paddingVertical: 12,
             }}
           >
             <View
