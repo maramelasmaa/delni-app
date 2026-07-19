@@ -132,7 +132,7 @@ function FieldRow({
             textAlign="right"
             cursorColor={colors.primary}
             selectionColor={colors.primary}
-            style={{ color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 15.5, writingDirection: 'rtl', paddingVertical: Platform.OS === 'ios' ? 4 : 2 }}
+            style={{ minHeight: 38, color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 15.5, writingDirection: 'rtl', paddingVertical: Platform.OS === 'ios' ? 4 : 2 }}
           />
         </View>
 
@@ -282,7 +282,8 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
 export default function AccountScreen() {
   const { colors } = useTheme();
   const storeUser = useAuthStore((s) => s.user);
-  const { data: meUser } = useMe();
+  const meQuery = useMe();
+  const meUser = meQuery.data;
   const user = meUser ?? storeUser;
   const updateProfile = useUpdateProfile();
   const deleteAccount = useDeleteAccount();
@@ -310,6 +311,7 @@ export default function AccountScreen() {
   };
 
   const initial = user?.name ? user.name.trim().charAt(0).toUpperCase() : 'U';
+  const isLoadingUser = !user && meQuery.isLoading;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
@@ -331,11 +333,30 @@ export default function AccountScreen() {
             </View>
 
             <SectionLabel colors={colors}>المعلومات الشخصية</SectionLabel>
-            <GroupCard colors={colors}>
-              <FieldRow label="الاسم الكامل" initialValue={user?.name ?? ''} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
-              <Divider colors={colors} />
-              <FieldRow label="البريد الإلكتروني" initialValue={user?.email ?? ''} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
-            </GroupCard>
+            {isLoadingUser ? (
+              <GroupCard colors={colors}>
+                <View style={{ paddingVertical: 26, alignItems: 'center', justifyContent: 'center' }}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={{ marginTop: 10, color: colors.textMuted, fontFamily: 'Cairo-SemiBold', fontSize: 13, textAlign: 'center' }}>
+                    جاري تحميل بيانات الحساب...
+                  </Text>
+                </View>
+              </GroupCard>
+            ) : user ? (
+              <GroupCard colors={colors}>
+                <FieldRow label="الاسم الكامل" initialValue={user.name ?? ''} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
+                <Divider colors={colors} />
+                <FieldRow label="البريد الإلكتروني" initialValue={user.email ?? ''} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
+              </GroupCard>
+            ) : (
+              <GroupCard colors={colors}>
+                <View style={{ padding: 18 }}>
+                  <Text style={{ color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 15, textAlign: 'right', writingDirection: 'rtl' }}>
+                    سجل الدخول لعرض معلوماتك الشخصية.
+                  </Text>
+                </View>
+              </GroupCard>
+            )}
 
             <View style={{ height: 24 }} />
             <SectionLabel colors={colors}>الأمان</SectionLabel>
