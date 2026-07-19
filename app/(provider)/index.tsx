@@ -119,20 +119,10 @@ export default function ProviderDashboardScreen() {
           <Image source={{ uri: logo }} style={styles.logo} contentFit="cover" />
           <View style={styles.identityText}>
             <Text numberOfLines={2} style={[styles.businessName, { color: colors.textPrimary }]}>{profile.name}</Text>
-            <Text numberOfLines={1} style={[styles.businessMeta, { color: colors.textMuted }]}>
-              {[profile.category?.name, profile.city?.name].filter(Boolean).join(' · ') || 'بيانات النشاط غير مكتملة'}
-            </Text>
-            <ProviderStatusBadge isComplete={stats.is_complete} isDiscoverable={stats.is_discoverable} />
+            <View style={styles.identityBadgeRow}>
+              <ProviderStatusBadge isComplete={stats.is_complete} isDiscoverable={stats.is_discoverable} />
+            </View>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="تعديل الملف التجاري"
-            onPress={() => router.push('/(provider)/profile-edit' as never)}
-            hitSlop={8}
-            style={({ pressed }) => [styles.editProfileButton, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, opacity: pressed ? 0.72 : 1 }]}
-          >
-            <Ionicons name="create-outline" size={18} color={colors.primary} />
-          </Pressable>
         </View>
 
         <View style={styles.sectionHeader}>
@@ -230,14 +220,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
   },
-  editProfileButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   businessName: {
     fontSize: 18,
     lineHeight: 26,
@@ -245,13 +227,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-  businessMeta: {
-    marginTop: 1,
-    fontSize: 12.5,
-    fontFamily: 'Cairo-SemiBold',
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  identityBadgeRow: { marginTop: 7, alignItems: 'flex-end' },
   sectionHeader: {
     marginTop: 24,
     marginBottom: 10,
