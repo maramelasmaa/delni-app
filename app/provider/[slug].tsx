@@ -245,6 +245,8 @@ interface LocationSectionProps {
 function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, serviceAreaNote, colors }: LocationSectionProps) {
   if (!cityName && !mapUrl && !worksRemotely && !travelsToCities && !serviceAreaNote) return null;
 
+  const locationUrl = mapUrl || (cityName ? `https://maps.google.com/?q=${encodeURIComponent(cityName)}` : null);
+
   const coverageBadges: Array<{ id: string; icon: keyof typeof Ionicons.glyphMap; label: string }> = [];
   if (travelsToCities) {
     coverageBadges.push({ id: 'travel', icon: 'car-outline', label: 'يتنقل بين المدن' });
@@ -265,15 +267,20 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
           overflow: 'hidden',
         }}
       >
-        <View
-          style={{
+        <Pressable
+          accessibilityRole={locationUrl ? 'link' : undefined}
+          accessibilityLabel={locationUrl ? 'فتح موقع مقدم الخدمة على الخريطة' : undefined}
+          disabled={!locationUrl}
+          onPress={() => openExternalUrl(locationUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
+          style={({ pressed }) => ({
             ...rtlRow(),
             alignItems: 'center',
             gap: 14,
             paddingHorizontal: 16,
             paddingVertical: 16,
             backgroundColor: colors.primarySoft,
-          }}
+            opacity: pressed ? 0.78 : 1,
+          })}
         >
           <View
             style={{
@@ -327,13 +334,13 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
               {mapUrl ? 'الموقع الدقيق متاح على الخرائط' : 'المدينة التي يقدم منها خدماته'}
             </Text>
           </View>
-        </View>
+        </Pressable>
 
-        {mapUrl ? (
+        {locationUrl ? (
           <Pressable
             accessibilityRole="link"
             accessibilityLabel="فتح موقع مقدم الخدمة والحصول على الاتجاهات"
-            onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
+            onPress={() => openExternalUrl(locationUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
             style={({ pressed }) => ({
               minHeight: 54,
               backgroundColor: colors.primary,
@@ -358,7 +365,7 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
                   writingDirection: 'rtl',
                 }}
               >
-                فتح الموقع والحصول على الاتجاهات
+                {mapUrl ? 'فتح الموقع والحصول على الاتجاهات' : 'فتح المدينة على الخريطة'}
               </Text>
             </View>
             <Ionicons name="open-outline" size={19} color={colors.textOnPrimary} />
@@ -370,7 +377,7 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
             style={{
               paddingHorizontal: 16,
               paddingVertical: 14,
-              borderTopWidth: mapUrl ? 0 : 1,
+              borderTopWidth: locationUrl ? 0 : 1,
               borderTopColor: colors.border,
             }}
           >
