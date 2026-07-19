@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth';
 import * as adminService from '../services/admin';
 import type {
+  AdminCatalogFilters,
+  AdminCatalogInput,
+  AdminCatalogKind,
   AdminProviderFilters,
   AdminReviewFilters,
   AdminUserFilters,
@@ -53,6 +56,44 @@ export function useAdminProviders(filters: AdminProviderFilters) {
     enabled,
     retry: false,
   });
+}
+
+export function useAdminCatalog(kind: AdminCatalogKind, filters: AdminCatalogFilters) {
+  const enabled = useIsAdmin();
+  return useQuery({
+    queryKey: ['admin-catalog', kind, filters],
+    queryFn: () => adminService.getCatalog(kind, filters),
+    enabled,
+    retry: false,
+  });
+}
+
+export function useAdminCatalogMutations(kind: AdminCatalogKind) {
+  const queryClient = useQueryClient();
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-catalog'] });
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
+    queryClient.invalidateQueries({ queryKey: ['cities'] });
+    queryClient.invalidateQueries({ queryKey: ['provider-types'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+  };
+
+  const create = useMutation({
+    mutationFn: (input: AdminCatalogInput) => adminService.createCatalogItem(kind, input),
+    onSuccess: invalidate,
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: number; input: AdminCatalogInput }) => adminService.updateCatalogItem(kind, id, input),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => adminService.deleteCatalogItem(kind, id),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove };
 }
 
 export function useAdminReviews(filters: AdminReviewFilters) {

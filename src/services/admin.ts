@@ -8,6 +8,61 @@ import type {
   Provider,
 } from '../types';
 
+export type AdminCatalogKind = 'categories' | 'subcategories' | 'cities' | 'providerTypes';
+
+export interface AdminCatalogItem {
+  id: number;
+  name: string;
+  name_ar?: string | null;
+  localized_name?: string | null;
+  slug?: string | null;
+  code?: string | null;
+  category_id?: number | null;
+  category_name?: string | null;
+  search_name?: string | null;
+  icon?: string | null;
+  sort_order?: number | null;
+  is_active: boolean;
+  profiles_count?: number | null;
+  subcategories_count?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export type AdminCatalogInput = Partial<Pick<AdminCatalogItem, 'name' | 'name_ar' | 'slug' | 'code' | 'category_id' | 'search_name' | 'icon' | 'sort_order' | 'is_active'>>;
+
+export interface AdminCatalogFilters {
+  search?: string;
+  category_id?: number;
+  page?: number;
+}
+
+const catalogEndpoint = (kind: AdminCatalogKind) => {
+  switch (kind) {
+    case 'categories':
+      return ENDPOINTS.admin.categories;
+    case 'subcategories':
+      return ENDPOINTS.admin.subcategories;
+    case 'cities':
+      return ENDPOINTS.admin.cities;
+    case 'providerTypes':
+      return ENDPOINTS.admin.providerTypes;
+  }
+};
+
+const catalogItemEndpoint = (kind: AdminCatalogKind, id: number) => {
+  switch (kind) {
+    case 'categories':
+      return ENDPOINTS.admin.category(id);
+    case 'subcategories':
+      return ENDPOINTS.admin.subcategory(id);
+    case 'cities':
+      return ENDPOINTS.admin.city(id);
+    case 'providerTypes':
+      return ENDPOINTS.admin.providerType(id);
+  }
+};
+
 export interface AdminUserFilters {
   search?: string;
   role?: 'provider' | 'user' | 'super_admin';
@@ -50,6 +105,28 @@ export async function getProviders(filters: AdminProviderFilters = {}) {
     { params: filters },
   );
   return { providers: res.data.data, pagination: res.data.pagination };
+}
+
+export async function getCatalog(kind: AdminCatalogKind, filters: AdminCatalogFilters = {}) {
+  const res = await api.get<ApiResponse<{ items: AdminCatalogItem[]; pagination: PaginationMeta }>>(
+    catalogEndpoint(kind),
+    { params: filters },
+  );
+  return res.data.data;
+}
+
+export async function createCatalogItem(kind: AdminCatalogKind, input: AdminCatalogInput): Promise<AdminCatalogItem> {
+  const res = await api.post<ApiResponse<AdminCatalogItem>>(catalogEndpoint(kind), input);
+  return res.data.data;
+}
+
+export async function updateCatalogItem(kind: AdminCatalogKind, id: number, input: AdminCatalogInput): Promise<AdminCatalogItem> {
+  const res = await api.patch<ApiResponse<AdminCatalogItem>>(catalogItemEndpoint(kind, id), input);
+  return res.data.data;
+}
+
+export async function deleteCatalogItem(kind: AdminCatalogKind, id: number): Promise<void> {
+  await api.delete(catalogItemEndpoint(kind, id));
 }
 
 export interface AdminReviewFilters {
