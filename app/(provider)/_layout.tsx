@@ -1,6 +1,6 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router, Tabs } from 'expo-router';
-import { Platform, Pressable, View } from 'react-native';
+import { Platform, Pressable, Text, View } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -53,6 +53,11 @@ export default function ProviderTabsLayout() {
         name="public"
         options={{
           title: 'انتقال',
+          tabBarLabel: ({ color }) => (
+            <Text style={{ marginTop: 6, color, fontSize: 10, lineHeight: 14, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' }}>
+              انتقال
+            </Text>
+          ),
           tabBarIcon: ({ focused }) => (
             <View
               style={{
