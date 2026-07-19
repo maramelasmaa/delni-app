@@ -255,196 +255,161 @@ function LocationSection({ cityName, mapUrl, worksRemotely, travelsToCities, ser
 
   return (
     <View style={{ marginBottom: 16, width: '100%' }}>
-      <SectionHeader title="الموقع ونطاق الخدمة" colors={colors} />
+      <SectionHeader title="الموقع" colors={colors} />
       <View
         style={{
-          borderRadius: 8,
+          borderRadius: 18,
           backgroundColor: colors.surface,
+          padding: 14,
           borderWidth: 1,
-          borderColor: colors.border,
-          overflow: 'hidden',
+          borderColor: colors.borderStrong,
+          shadowColor: colors.shadow,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0,
+          shadowRadius: 16,
+          elevation: 0,
         }}
       >
-        <View
-          style={{
-            ...rtlRow(),
-            alignItems: 'center',
-            gap: 14,
-            paddingHorizontal: 16,
-            paddingVertical: 16,
-            backgroundColor: colors.primarySoft,
-          }}
-        >
+        <View style={{ ...rtlRow(), alignItems: 'center', gap: 12 }}>
           <View
             style={{
-              width: 54,
-              height: 54,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
+              width: 48,
+              height: 48,
+              borderRadius: 15,
+              backgroundColor: colors.primarySoft,
+              borderWidth: 1,
+              borderColor: colors.border,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="location" size={27} color={colors.textOnPrimary} />
+            <Ionicons name={mapUrl ? 'navigate' : 'location'} size={22} color={colors.primary} />
           </View>
 
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text
-              style={{
-                fontSize: 11,
-                fontFamily: 'Cairo-Bold',
-                color: colors.primary,
-                textAlign: 'right',
-                writingDirection: 'rtl',
-                marginBottom: 2,
-              }}
-            >
-              موقع مقدم الخدمة
-            </Text>
-            <Text
               numberOfLines={1}
               style={{
-                fontSize: 18,
-                fontFamily: 'Cairo-Black',
+                fontSize: 16,
+                fontFamily: 'Cairo-Bold',
                 color: colors.textPrimary,
                 textAlign: 'right',
                 writingDirection: 'rtl',
               }}
             >
-              {cityName || 'الموقع الجغرافي'}
+              {cityName || 'موقع الخدمة'}
             </Text>
             <Text
-              numberOfLines={2}
+              numberOfLines={1}
               style={{
                 fontSize: 12,
                 fontFamily: 'Cairo-Regular',
-                color: colors.textSecondary,
+                color: colors.textMuted,
                 textAlign: 'right',
                 writingDirection: 'rtl',
-                marginTop: 2,
+                marginTop: 1,
               }}
             >
-              {mapUrl ? 'الموقع الدقيق متاح على الخرائط' : 'المدينة التي يقدم منها خدماته'}
+              {mapUrl ? 'الموقع متاح على الخريطة' : 'منطقة تقديم الخدمة'}
             </Text>
           </View>
         </View>
 
-        {mapUrl ? (
+        {coverageBadges.length > 0 && (
+          <View style={{ ...rtlRow(), flexWrap: 'wrap', gap: 8, marginTop: 14 }}>
+            {coverageBadges.map((badge) => (
+              <View
+                key={badge.id}
+                style={{
+                  ...rtlRow(),
+                  alignItems: 'center',
+                  gap: 6,
+                  backgroundColor: colors.primarySoft,
+                  borderWidth: 1,
+                  borderColor: colors.border,
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                }}
+              >
+                <Ionicons name={badge.icon} size={14} color={colors.primary} />
+                <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.primary, writingDirection: 'rtl' }}>
+                  {badge.label}
+                </Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {serviceAreaNote && (
+          <View
+            style={{
+              marginTop: 12,
+              borderRadius: 14,
+              backgroundColor: colors.surfaceAlt,
+              borderWidth: 1,
+              borderColor: colors.border,
+              padding: 12,
+              ...rtlRow(),
+              alignItems: 'flex-start',
+              gap: 8,
+            }}
+          >
+            <Ionicons name="information-circle-outline" size={17} color={colors.textMuted} style={{ marginTop: 2 }} />
+            <Text
+              style={{
+                flex: 1,
+                fontSize: 13,
+                lineHeight: 21,
+                fontFamily: 'Cairo-Regular',
+                color: colors.textSecondary,
+                textAlign: 'right',
+                writingDirection: 'rtl',
+              }}
+            >
+              {serviceAreaNote}
+            </Text>
+          </View>
+        )}
+
+        {mapUrl && (
           <Pressable
-            accessibilityRole="link"
-            accessibilityLabel="فتح موقع مقدم الخدمة والحصول على الاتجاهات"
             onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
             style={({ pressed }) => ({
-              minHeight: 54,
+              marginTop: 14,
+              minHeight: 48,
+              borderRadius: 14,
               backgroundColor: colors.primary,
+              borderWidth: 1,
+              borderColor: colors.primary,
               ...rtlRow(),
               alignItems: 'center',
               justifyContent: 'space-between',
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              opacity: pressed ? 0.84 : 1,
+              paddingHorizontal: 14,
+              paddingVertical: 11,
+              opacity: pressed ? 0.86 : 1,
+              transform: [{ scale: pressed ? 0.98 : 1 }],
             })}
           >
-            <View style={{ ...rtlRow(), alignItems: 'center', gap: 9, flex: 1 }}>
-              <Ionicons name="navigate-circle-outline" size={22} color={colors.textOnPrimary} />
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 8, flex: 1 }}>
+              <Ionicons name="map-outline" size={19} color={colors.textOnPrimary} />
               <Text
-                numberOfLines={2}
+                numberOfLines={1}
                 style={{
                   flex: 1,
                   fontFamily: 'Cairo-Bold',
-                  fontSize: 14,
+                  fontSize: 13.5,
                   color: colors.textOnPrimary,
                   textAlign: 'right',
                   writingDirection: 'rtl',
                 }}
               >
-                فتح الموقع والحصول على الاتجاهات
+                عرض الموقع على الخريطة
               </Text>
             </View>
-            <Ionicons name="open-outline" size={19} color={colors.textOnPrimary} />
+            <Ionicons name="chevron-back" size={18} color={colors.textOnPrimary} />
           </Pressable>
-        ) : null}
-
-        {coverageBadges.length > 0 ? (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              borderTopWidth: mapUrl ? 0 : 1,
-              borderTopColor: colors.border,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 11,
-                fontFamily: 'Cairo-Bold',
-                color: colors.textMuted,
-                textAlign: 'right',
-                writingDirection: 'rtl',
-                marginBottom: 9,
-              }}
-            >
-              نطاق تقديم الخدمة
-            </Text>
-            <View style={{ ...rtlRow(), flexWrap: 'wrap', gap: 8 }}>
-              {coverageBadges.map((badge) => (
-                <View
-                  key={badge.id}
-                  style={{
-                    ...rtlRow(),
-                    alignItems: 'center',
-                    gap: 6,
-                    backgroundColor: colors.surfaceAlt,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    paddingHorizontal: 10,
-                    paddingVertical: 7,
-                    borderRadius: 8,
-                  }}
-                >
-                  <Ionicons name={badge.icon} size={15} color={colors.primary} />
-                  <Text style={{ fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.textPrimary, writingDirection: 'rtl' }}>
-                    {badge.label}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {serviceAreaNote ? (
-          <View
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              borderTopWidth: 1,
-              borderTopColor: colors.border,
-              ...rtlRow(),
-              alignItems: 'flex-start',
-              gap: 9,
-            }}
-          >
-            <Ionicons name="information-circle-outline" size={18} color={colors.primary} style={{ marginTop: 2 }} />
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.textMuted, writingDirection: 'rtl' }}>
-                تفاصيل منطقة الخدمة
-              </Text>
-              <Text
-                style={{
-                  marginTop: 3,
-                  fontSize: 13,
-                  lineHeight: 21,
-                  fontFamily: 'Cairo-Regular',
-                  color: colors.textSecondary,
-                  textAlign: 'right',
-                  writingDirection: 'rtl',
-                }}
-              >
-                {serviceAreaNote}
-              </Text>
-            </View>
-          </View>
-        ) : null}
+        )}
       </View>
     </View>
   );
