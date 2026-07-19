@@ -21,32 +21,38 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
     : 'أكمل البيانات الناقصة لتحسين ظهور ملفك للعملاء.';
 
   return (
-    <View
+    <Pressable
+      accessibilityRole={isComplete ? undefined : 'button'}
       accessibilityLabel={`اكتمال الملف ${value} بالمئة`}
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      accessibilityHint={isComplete ? undefined : 'يفتح صفحة إكمال بيانات الملف التجاري'}
+      disabled={isComplete}
+      onPress={onCompletePress}
+      style={({ pressed }) => [
+        styles.card,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+          opacity: pressed ? 0.82 : 1,
+        },
+      ]}
     >
       <View style={styles.headerRow}>
+        <View style={[styles.iconBox, { backgroundColor: isComplete ? colors.successSoft : colors.goldSoft }]}>
+          <Ionicons name={isComplete ? 'checkmark' : 'sparkles-outline'} size={18} color={isComplete ? colors.success : colors.goldText} />
+        </View>
         <View style={styles.textWrap}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>اكتمال الملف التجاري</Text>
-          <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
+          <Text numberOfLines={1} style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
         </View>
-        <Text style={[styles.percent, { color: colors.textPrimary }]}>{value}%</Text>
+        <View style={styles.valueWrap}>
+          <Text style={[styles.percent, { color: isComplete ? colors.success : colors.primary }]}>{value}%</Text>
+          {!isComplete ? <Ionicons name="chevron-back" size={15} color={colors.textMuted} /> : null}
+        </View>
       </View>
       <View style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}>
         <View style={[styles.progressFill, { width: `${value}%`, backgroundColor: isComplete ? colors.success : colors.gold }]} />
       </View>
-      {!isComplete ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="إكمال بيانات الملف التجاري"
-          onPress={onCompletePress}
-          style={({ pressed }) => [styles.action, { backgroundColor: colors.primary, opacity: pressed ? 0.86 : 1 }]}
-        >
-          <Ionicons name="create-outline" size={17} color={colors.textOnPrimary} />
-          <Text style={[styles.actionText, { color: colors.textOnPrimary }]}>إكمال البيانات</Text>
-        </Pressable>
-      ) : null}
-    </View>
+    </Pressable>
   );
 }
 
@@ -54,64 +60,63 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 20,
     marginTop: 14,
-    borderRadius: 18,
+    borderRadius: 16,
     borderWidth: 1,
-    padding: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   headerRow: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 14,
   },
+  iconBox: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   percent: {
-    minWidth: 56,
-    fontSize: 24,
+    fontSize: 16,
+    lineHeight: 22,
     fontFamily: 'Cairo-Black',
-    textAlign: 'left',
+    textAlign: 'center',
+  },
+  valueWrap: {
+    minWidth: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 2,
   },
   textWrap: {
     flex: 1,
     alignItems: 'flex-end',
   },
   title: {
-    fontSize: 16,
+    fontSize: 14,
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   message: {
     marginTop: 2,
-    fontSize: 12,
-    lineHeight: 19,
+    fontSize: 11,
+    lineHeight: 17,
     fontFamily: 'Cairo-Regular',
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   progressTrack: {
-    height: 8,
+    height: 6,
     borderRadius: 999,
     overflow: 'hidden',
-    marginTop: 14,
+    marginTop: 10,
     alignItems: 'flex-end',
   },
   progressFill: {
     height: '100%',
     borderRadius: 999,
-  },
-  action: {
-    alignSelf: 'flex-end',
-    minHeight: 42,
-    marginTop: 14,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-  },
-  actionText: {
-    fontSize: 13,
-    fontFamily: 'Cairo-Bold',
-    writingDirection: 'rtl',
   },
 });

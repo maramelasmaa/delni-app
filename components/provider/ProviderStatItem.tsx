@@ -17,7 +17,9 @@ export function ProviderStatItem({ icon, label, value }: Props) {
         <Ionicons name={icon} size={17} color={colors.primary} />
       </View>
       <View style={styles.textWrap}>
-        <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}</Text>
+        <View style={styles.valueRow}>
+          <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}</Text>
+        </View>
         <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       </View>
     </View>
@@ -49,12 +51,18 @@ const styles = StyleSheet.create({
     marginRight: 46,
     alignItems: 'flex-end',
   },
+  valueRow: {
+    height: 34,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
   value: {
     fontSize: 18,
-    lineHeight: 34,
+    lineHeight: 26,
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
     writingDirection: 'rtl',
+    includeFontPadding: false,
   },
   label: {
     fontSize: 11,

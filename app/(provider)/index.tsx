@@ -133,11 +133,11 @@ export default function ProviderDashboardScreen() {
         <View style={[styles.identityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           <Image source={{ uri: logo }} style={styles.logo} contentFit="cover" />
           <View style={styles.identityText}>
-            <ProviderStatusBadge isComplete={stats.is_complete} isDiscoverable={stats.is_discoverable} />
             <Text numberOfLines={2} style={[styles.businessName, { color: colors.textPrimary }]}>{profile.name}</Text>
             <Text numberOfLines={1} style={[styles.businessMeta, { color: colors.textMuted }]}>
               {[profile.category?.name, profile.city?.name].filter(Boolean).join(' · ') || 'بيانات النشاط غير مكتملة'}
             </Text>
+            <ProviderStatusBadge isComplete={stats.is_complete} isDiscoverable={stats.is_discoverable} />
           </View>
           <Pressable
             accessibilityRole="button"
@@ -166,7 +166,6 @@ export default function ProviderDashboardScreen() {
           <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
           <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
           <ProviderStatItem label="أعمال المعرض" value={String(stats.portfolio_items_count)} icon="images" />
-          <ProviderStatItem label="صور المعرض" value={`${stats.portfolio_images_count} من 8`} icon="image" />
           <ProviderStatItem label="الشهادات والخبرات" value={String(stats.credentials_count)} icon="ribbon" />
           <ProviderStatItem label="المدة المتبقية" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
         </View>
@@ -267,7 +266,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   businessName: {
-    marginTop: 8,
     fontSize: 18,
     lineHeight: 26,
     fontFamily: 'Cairo-Black',
