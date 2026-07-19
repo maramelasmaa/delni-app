@@ -17,7 +17,7 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
   const { colors } = useTheme();
   const value = clampPercentage(percentage);
   const message = isComplete
-    ? 'بيانات نشاطك الأساسية مكتملة.'
+    ? 'ملفك التجاري مكتمل وجاهز للعرض.'
     : 'أكمل البيانات الناقصة لتحسين ظهور ملفك للعملاء.';
 
   return (
@@ -26,11 +26,11 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
       style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
     >
       <View style={styles.headerRow}>
-        <Text style={[styles.percent, { color: colors.textPrimary }]}>{value}%</Text>
         <View style={styles.textWrap}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>اكتمال البيانات</Text>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>اكتمال الملف التجاري</Text>
           <Text style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
         </View>
+        <Text style={[styles.percent, { color: colors.textPrimary }]}>{value}%</Text>
       </View>
       <View style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}>
         <View style={[styles.progressFill, { width: `${value}%`, backgroundColor: isComplete ? colors.success : colors.gold }]} />
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   headerRow: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 14,
   },
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     overflow: 'hidden',
     marginTop: 14,
+    alignItems: 'flex-end',
   },
   progressFill: {
     height: '100%',

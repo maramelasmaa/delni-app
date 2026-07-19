@@ -20,7 +20,7 @@ export function ProviderStatusBadge({ isComplete, isDiscoverable }: Props) {
   const status = resolveProviderStatus({ isComplete, isDiscoverable });
   const config = {
     active: {
-      label: 'نشط',
+      label: 'ظاهر للعملاء',
       icon: 'checkmark-circle' as const,
       color: colors.success,
       backgroundColor: colors.successSoft,

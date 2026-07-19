@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProfileCompletionCard } from '../../components/provider/ProfileCompletionCard';
 import { ProviderStatItem } from '../../components/provider/ProviderStatItem';
 import { ProviderStatusBadge } from '../../components/provider/ProviderStatusBadge';
@@ -43,13 +43,16 @@ function formatAccessRemaining(accessEndsAt: string | null | undefined) {
 
   const days = Math.ceil((end.getTime() - Date.now()) / 86_400_000);
   if (days <= 0) return 'منتهي';
-  return `${days} يوم`;
+  if (days === 1) return 'يوم واحد';
+  if (days === 2) return 'يومان';
+  if (days >= 3 && days <= 10) return `${days} أيام`;
+  return `${days} يومًا`;
 }
 
 function ReviewStatusPill({ status, colors }: { status?: string; colors: ThemeColors }) {
   if (!status || status === 'approved') return null;
 
-  const label = status === 'pending' ? 'قيد المراجعة' : status === 'rejected' ? 'مرفوضة' : status;
+  const label = status === 'pending' ? 'قيد المراجعة' : status === 'rejected' ? 'مرفوض' : status;
 
   return (
     <View style={[styles.reviewStatus, { backgroundColor: colors.surfaceAlt }]}>
@@ -73,17 +76,17 @@ function RecentReviewRow({ review, colors }: { review: Review; colors: ThemeColo
           <ReviewStatusPill status={review.status} colors={colors} />
         </View>
         <Text numberOfLines={1} style={[styles.reviewName, { color: colors.textPrimary }]}>{review.user_name || 'عميل دلني'}</Text>
-        <Text numberOfLines={2} style={[styles.reviewComment, { color: colors.textMuted }]}>{review.comment || 'تقييم بدون تعليق'}</Text>
+        <Text numberOfLines={2} style={[styles.reviewComment, { color: colors.textMuted }]}>{review.comment || 'لم يكتب العميل تعليقًا.'}</Text>
       </View>
     </View>
   );
 }
 
-function DashboardSkeleton({ colors, topInset }: { colors: ThemeColors; topInset: number }) {
+function DashboardSkeleton({ colors }: { colors: ThemeColors }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}>
-        <View style={[styles.header, { paddingTop: Math.max(topInset, 10) }]}>
+        <View style={styles.header}>
           <View style={[styles.skeletonLine, styles.skeletonTitle, { backgroundColor: colors.surfaceAlt }]} />
         </View>
         <View style={[styles.identityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -105,10 +108,9 @@ function DashboardSkeleton({ colors, topInset }: { colors: ThemeColors; topInset
 
 export default function ProviderDashboardScreen() {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
   const { data, isLoading, isError, error, refetch, isRefetching } = useProviderDashboard();
 
-  if (isLoading) return <DashboardSkeleton colors={colors} topInset={insets.top} />;
+  if (isLoading) return <DashboardSkeleton colors={colors} />;
   if (isError || !data) return <ErrorView error={error} onRetry={refetch} />;
 
   const { profile, stats } = data;
@@ -123,8 +125,9 @@ export default function ProviderDashboardScreen() {
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
         contentContainerStyle={{ paddingBottom: 116 }}
       >
-        <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
-          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>لوحتي</Text>
+        <View style={styles.header}>
+          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>لوحة التحكم</Text>
+          <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>ملخص أداء ملفك التجاري</Text>
         </View>
 
         <View style={[styles.identityCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -136,6 +139,15 @@ export default function ProviderDashboardScreen() {
               {[profile.category?.name, profile.city?.name].filter(Boolean).join(' · ') || 'بيانات النشاط غير مكتملة'}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="تعديل الملف التجاري"
+            onPress={() => router.push('/(provider)/profile-edit' as never)}
+            hitSlop={8}
+            style={({ pressed }) => [styles.editProfileButton, { backgroundColor: colors.surfaceAlt, borderColor: colors.border, opacity: pressed ? 0.72 : 1 }]}
+          >
+            <Ionicons name="create-outline" size={18} color={colors.primary} />
+          </Pressable>
         </View>
 
         <ProfileCompletionCard
@@ -145,15 +157,18 @@ export default function ProviderDashboardScreen() {
         />
 
         <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>الأرقام المهمة</Text>
+          <View style={styles.sectionHeading}>
+            <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نظرة عامة</Text>
+          </View>
         </View>
         <View style={styles.statsGrid}>
-          <ProviderStatItem label="التقييم" value={formatRating(stats.rating_average)} icon="star" />
-          <ProviderStatItem label="التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
-          <ProviderStatItem label="الأعمال" value={String(stats.portfolio_items_count)} icon="images" />
-          <ProviderStatItem label="صور الأعمال" value={`${stats.portfolio_images_count}/8`} icon="image" />
-          <ProviderStatItem label="الشهادات" value={String(stats.credentials_count)} icon="ribbon" />
-          <ProviderStatItem label="مدة الظهور" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
+          <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
+          <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
+          <ProviderStatItem label="أعمال المعرض" value={String(stats.portfolio_items_count)} icon="images" />
+          <ProviderStatItem label="صور المعرض" value={`${stats.portfolio_images_count} من 8`} icon="image" />
+          <ProviderStatItem label="الشهادات والخبرات" value={String(stats.credentials_count)} icon="ribbon" />
+          <ProviderStatItem label="المدة المتبقية" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
         </View>
 
         {showVisibilityNotice ? (
@@ -161,20 +176,24 @@ export default function ProviderDashboardScreen() {
             <Ionicons name="eye-off-outline" size={19} color={colors.goldText} />
             <View style={styles.noticeText}>
               <Text style={[styles.noticeTitle, { color: colors.textPrimary }]}>ملفك غير ظاهر للعملاء</Text>
-              <Text style={[styles.noticeMessage, { color: colors.textMuted }]}>بياناتك مكتملة، لكن ملفك غير متاح للظهور في نتائج العملاء حالياً.</Text>
+              <Text style={[styles.noticeMessage, { color: colors.textMuted }]}>بيانات ملفك مكتملة، لكنه لا يظهر حالياً في نتائج البحث.</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="عرض بياناتي"
+                accessibilityLabel="مراجعة حالة الملف"
                 onPress={() => router.push('/(provider)/profile' as never)}
                 style={({ pressed }) => [styles.noticeAction, { borderColor: colors.goldBorder, opacity: pressed ? 0.82 : 1 }]}
               >
-                <Text style={[styles.noticeActionText, { color: colors.goldText }]}>عرض بياناتي</Text>
+                <Text style={[styles.noticeActionText, { color: colors.goldText }]}>مراجعة الملف</Text>
               </Pressable>
             </View>
           </View>
         ) : null}
 
         <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeading}>
+            <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
+            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>أحدث التقييمات</Text>
+          </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="عرض كل التقييمات"
@@ -184,7 +203,6 @@ export default function ProviderDashboardScreen() {
           >
             <Text style={[styles.sectionActionText, { color: colors.primary }]}>عرض الكل</Text>
           </Pressable>
-          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>أحدث التقييمات</Text>
         </View>
 
         <View style={[styles.reviewsPanel, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -203,13 +221,22 @@ export default function ProviderDashboardScreen() {
 const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingTop: 12,
+    paddingBottom: 14,
     alignItems: 'flex-end',
   },
   pageTitle: {
     fontSize: 26,
     lineHeight: 36,
     fontFamily: 'Cairo-Black',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  pageSubtitle: {
+    marginTop: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily: 'Cairo-SemiBold',
     textAlign: 'right',
     writingDirection: 'rtl',
   },
@@ -231,6 +258,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
   },
+  editProfileButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   businessName: {
     marginTop: 8,
     fontSize: 18,
@@ -251,7 +286,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     paddingHorizontal: 20,
     minHeight: 28,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -260,6 +295,16 @@ const styles = StyleSheet.create({
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
     writingDirection: 'rtl',
+  },
+  sectionHeading: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionMarker: {
+    width: 4,
+    height: 18,
+    borderRadius: 2,
   },
   sectionAction: {
     minHeight: 34,
@@ -329,7 +374,7 @@ const styles = StyleSheet.create({
   reviewRow: {
     padding: 14,
     borderBottomWidth: 1,
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 12,
   },
