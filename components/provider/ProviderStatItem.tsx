@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../src/hooks/useTheme';
 
@@ -6,13 +6,15 @@ type Props = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
+  onPress?: () => void;
 };
 
-export function ProviderStatItem({ icon, label, value }: Props) {
+export function ProviderStatItem({ icon, label, value, accessibilityLabel, accessibilityHint, onPress }: Props) {
   const { colors } = useTheme();
-
-  return (
-    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+  const content = (
+    <>
       <View style={[styles.iconBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
         <Ionicons name={icon} size={17} color={colors.primary} />
       </View>
@@ -22,6 +24,26 @@ export function ProviderStatItem({ icon, label, value }: Props) {
         </View>
         <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       </View>
+    </>
+  );
+
+  if (onPress) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel ?? label}
+        accessibilityHint={accessibilityHint}
+        onPress={onPress}
+        style={({ pressed }) => [styles.item, { backgroundColor: colors.surface, borderColor: colors.border, opacity: pressed ? 0.82 : 1 }]}
+      >
+        {content}
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={[styles.item, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      {content}
     </View>
   );
 }
