@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RTLAlert, useRTLAlert } from '../components/ui/RTLAlert';
 import { useChangePassword, useDeleteAccount, useMe, useUpdateProfile } from '../src/hooks/useAuth';
@@ -289,16 +289,6 @@ export default function AccountScreen() {
   const deleteAccount = useDeleteAccount();
   const { alert, showAlert, hideAlert } = useRTLAlert();
 
-  const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(14)).current;
-
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(rise, { toValue: 0, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  }, [fade, rise]);
-
   const confirmDelete = () => {
     showAlert(
       'حذف حسابك نهائياً',
@@ -317,7 +307,7 @@ export default function AccountScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>
+          <View>
             <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 28 }}>
               <View style={{ width: 84, height: 84, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.goldBorder }}>
                 <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.goldText }}>{initial}</Text>
@@ -347,6 +337,32 @@ export default function AccountScreen() {
                 <FieldRow label="الاسم الكامل" initialValue={user.name ?? ''} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
                 <Divider colors={colors} />
                 <FieldRow label="البريد الإلكتروني" initialValue={user.email ?? ''} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
+              </GroupCard>
+            ) : meQuery.isError ? (
+              <GroupCard colors={colors}>
+                <View style={{ padding: 18, alignItems: 'center' }}>
+                  <Ionicons name="cloud-offline-outline" size={24} color={colors.error} />
+                  <Text style={{ marginTop: 8, color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 14, textAlign: 'center' }}>
+                    تعذر تحميل معلومات الحساب
+                  </Text>
+                  <Pressable
+                    onPress={() => meQuery.refetch()}
+                    accessibilityRole="button"
+                    accessibilityLabel="إعادة تحميل معلومات الحساب"
+                    style={({ pressed }) => ({
+                      marginTop: 12,
+                      minHeight: 40,
+                      paddingHorizontal: 18,
+                      borderRadius: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: colors.primary,
+                      opacity: pressed ? 0.8 : 1,
+                    })}
+                  >
+                    <Text style={{ color: '#FFFFFF', fontFamily: 'Cairo-Bold', fontSize: 13 }}>إعادة المحاولة</Text>
+                  </Pressable>
+                </View>
               </GroupCard>
             ) : (
               <GroupCard colors={colors}>
@@ -380,7 +396,7 @@ export default function AccountScreen() {
                 </Pressable>
               </View>
             </GroupCard>
-          </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
