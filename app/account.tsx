@@ -1,19 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useMe, useUpdateProfile, useChangePassword, useDeleteAccount } from '../src/hooks/useAuth';
+import { RTLAlert, useRTLAlert } from '../components/ui/RTLAlert';
+import { useChangePassword, useDeleteAccount, useMe, useUpdateProfile } from '../src/hooks/useAuth';
 import { useTheme } from '../src/hooks/useTheme';
 import { useAuthStore } from '../src/store/auth';
 import type { ThemeColors } from '../src/theme/tokens';
-import { rtlRow } from '../src/utils/rtl';
-import { RTLAlert, useRTLAlert } from '../components/ui/RTLAlert';
 import { isValidEmail, isValidName, normalizeEmail, normalizeName } from '../src/utils/authValidation';
+import { rtlRow } from '../src/utils/rtl';
 
 function extractError(err: unknown, fallback: string): string {
   const e = err as { response?: { data?: { errors?: Record<string, string[]>; message?: string } } };
-  if (!e.response) return 'فشل الاتصال';
+  if (!e.response) return 'فشل الاتصال بالخادم';
   const data = e.response.data;
   if (data?.errors) return Object.values(data.errors)[0]?.[0] ?? fallback;
   return data?.message ?? fallback;
@@ -23,7 +22,7 @@ const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
 
 function SectionLabel({ children, colors }: { children: string; colors: ThemeColors }) {
   return (
-    <Text style={{ textAlign: 'right', fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.textMuted, marginBottom: 10, marginRight: 4, letterSpacing: 0.3 }}>
+    <Text style={{ textAlign: 'right', fontSize: 12, fontFamily: 'Cairo-Bold', color: colors.textMuted, marginBottom: 10, marginRight: 4 }}>
       {children}
     </Text>
   );
@@ -38,11 +37,6 @@ function GroupCard({ children, colors }: { children: React.ReactNode; colors: Th
         borderWidth: 1,
         borderColor: colors.border,
         overflow: 'hidden',
-        shadowColor: colors.shadow,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 12,
-        elevation: 1,
       }}
     >
       {children}
@@ -54,7 +48,6 @@ function Divider({ colors }: { colors: ThemeColors }) {
   return <View style={{ height: 1, backgroundColor: colors.border, marginRight: 16 }} />;
 }
 
-/** Inline-editable row inside a grouped card. Stacked label + value; save pill on change. */
 function FieldRow({
   label,
   initialValue,
@@ -77,9 +70,6 @@ function FieldRow({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
-  const normalizedValue = type === 'email' ? normalizeEmail(value) : type === 'name' ? normalizeName(value) : value.trim();
-  const dirty = normalizedValue !== baseline.trim() && normalizedValue !== '';
-  const canSave = dirty && !saving;
 
   useEffect(() => {
     setValue(initialValue);
@@ -88,18 +78,25 @@ function FieldRow({
     setSaved(false);
   }, [initialValue]);
 
+  const normalizedValue = type === 'email' ? normalizeEmail(value) : type === 'name' ? normalizeName(value) : value.trim();
+  const dirty = normalizedValue !== baseline.trim() && normalizedValue !== '';
+  const canSave = dirty && !saving;
+
   const save = async () => {
     if (!canSave) return;
     setError('');
     setSaved(false);
+
     if (type === 'name' && !isValidName(normalizedValue)) {
-      setError('أدخل اسمًا صحيحًا بدون أرقام أو رموز');
+      setError('أدخل اسماً صحيحاً بدون أرقام أو رموز.');
       return;
     }
+
     if (type === 'email' && !isValidEmail(normalizedValue)) {
-      setError('أدخل بريدًا إلكترونيًا صحيحًا');
+      setError('أدخل بريداً إلكترونياً صحيحاً.');
       return;
     }
+
     setSaving(true);
     try {
       await onSave(normalizedValue);
@@ -107,7 +104,7 @@ function FieldRow({
       setBaseline(normalizedValue);
       setSaved(true);
     } catch (err) {
-      setError(extractError(err, 'لم نتمكن من الحفظ'));
+      setError(extractError(err, 'لم نتمكن من حفظ التغيير.'));
     } finally {
       setSaving(false);
     }
@@ -132,8 +129,9 @@ function FieldRow({
             inputMode={type === 'email' ? 'email' : undefined}
             returnKeyType="done"
             onSubmitEditing={save}
-            enablesReturnKeyAutomatically
             textAlign="right"
+            cursorColor={colors.primary}
+            selectionColor={colors.primary}
             style={{ color: colors.textPrimary, fontFamily: 'Cairo-Bold', fontSize: 15.5, writingDirection: 'rtl', paddingVertical: Platform.OS === 'ios' ? 4 : 2 }}
           />
         </View>
@@ -146,35 +144,30 @@ function FieldRow({
           accessibilityLabel={`حفظ ${label}`}
           hitSlop={8}
           style={({ pressed }) => ({
-            minWidth: 70,
+            minWidth: 82,
             minHeight: 36,
             paddingHorizontal: 14,
             paddingVertical: 7,
             borderRadius: 999,
-            backgroundColor: dirty ? colors.primary : colors.surfaceAlt,
-            borderWidth: dirty ? 0 : 1,
-            borderColor: colors.border,
+            backgroundColor: canSave ? '#DBEAFE' : colors.surfaceAlt,
+            borderWidth: 1,
+            borderColor: canSave ? '#1E3A8A' : colors.border,
             alignItems: 'center',
             justifyContent: 'center',
             transform: [{ scale: pressed && canSave ? 0.96 : 1 }],
-            opacity: saving ? 0.7 : 1,
+            opacity: saving ? 0.78 : 1,
           })}
         >
           {saving ? (
-            <ActivityIndicator size="small" color={colors.textOnPrimary} />
+            <ActivityIndicator size="small" color="#1E3A8A" />
           ) : (
-            <Text
-              style={{
-                color: dirty ? colors.textOnPrimary : colors.textMuted,
-                fontFamily: 'Cairo-Bold',
-                fontSize: 12.5,
-              }}
-            >
+            <Text style={{ color: canSave ? '#1E3A8A' : colors.textMuted, fontFamily: 'Cairo-Bold', fontSize: 13 }}>
               {dirty ? 'حفظ' : saved ? 'تم الحفظ' : 'محفوظ'}
             </Text>
           )}
         </Pressable>
       </View>
+
       {saved && !dirty ? (
         <View style={{ ...rtlRow(), alignItems: 'center', gap: 5, marginTop: 6 }}>
           <Ionicons name="checkmark-circle" size={14} color={colors.success} />
@@ -214,17 +207,23 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
 
   const submit = async () => {
     setError('');
-    if (!current) return setError('أدخل كلمة المرور الحالية');
-    if (!passwordRegex.test(next)) return setError('8 أحرف: حروف كبيرة وصغيرة ورقم');
-    if (next === current) return setError('كلمة المرور الجديدة يجب أن تختلف عن الحالية');
-    if (next !== confirm) return setError('كلمات المرور غير متطابقة');
+    if (!current) return setError('أدخل كلمة المرور الحالية.');
+    if (!passwordRegex.test(next)) return setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل وتحتوي على حرف كبير وحرف صغير ورقم.');
+    if (next === current) return setError('كلمة المرور الجديدة يجب أن تختلف عن الحالية.');
+    if (next !== confirm) return setError('كلمتا المرور غير متطابقتين.');
+
     try {
       await changePassword.mutateAsync({ current_password: current, password: next, password_confirmation: confirm });
       setDone(true);
-      setCurrent(''); setNext(''); setConfirm('');
-      setTimeout(() => { setOpen(false); setDone(false); }, 1200);
+      setCurrent('');
+      setNext('');
+      setConfirm('');
+      setTimeout(() => {
+        setOpen(false);
+        setDone(false);
+      }, 1200);
     } catch (err) {
-      setError(extractError(err, 'فشل تغيير كلمة المرور'));
+      setError(extractError(err, 'فشل تغيير كلمة المرور.'));
     }
   };
 
@@ -241,7 +240,10 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
           </View>
         </View>
         <Pressable
-          onPress={() => { setOpen((v) => !v); setError(''); }}
+          onPress={() => {
+            setOpen((v) => !v);
+            setError('');
+          }}
           hitSlop={8}
           style={({ pressed }) => ({ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: open ? colors.surfaceAlt : colors.primarySoft, transform: [{ scale: pressed ? 0.96 : 1 }] })}
         >
@@ -265,9 +267,9 @@ function PasswordSection({ colors }: { colors: ThemeColors }) {
               <Pressable
                 onPress={submit}
                 disabled={changePassword.isPending}
-                style={({ pressed }) => ({ marginTop: 16, marginHorizontal: -16, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: colors.primary, opacity: changePassword.isPending ? 0.65 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                style={({ pressed }) => ({ marginTop: 16, paddingHorizontal: 16, paddingVertical: 14, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#DBEAFE', borderWidth: 1, borderColor: '#1E3A8A', opacity: changePassword.isPending ? 0.65 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
               >
-                <Text style={{ color: colors.textOnPrimary, fontFamily: 'Cairo-Bold', fontSize: 15, fontWeight: '700' }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}</Text>
+                <Text style={{ color: '#1E3A8A', fontFamily: 'Cairo-Bold', fontSize: 15 }}>{changePassword.isPending ? 'جاري الحفظ...' : 'حفظ كلمة المرور'}</Text>
               </Pressable>
             </>
           )}
@@ -284,10 +286,11 @@ export default function AccountScreen() {
   const user = meUser ?? storeUser;
   const updateProfile = useUpdateProfile();
   const deleteAccount = useDeleteAccount();
+  const { alert, showAlert, hideAlert } = useRTLAlert();
 
-  // One restrained entrance: fade + slight rise (native driver, ease-out).
   const fade = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(14)).current;
+
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fade, { toValue: 1, duration: 340, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -295,12 +298,10 @@ export default function AccountScreen() {
     ]).start();
   }, [fade, rise]);
 
-  const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
-
   const confirmDelete = () => {
-    showRTLAlert(
+    showAlert(
       'حذف حسابك نهائياً',
-      'لا يمكن استرجاع هذا الإجراء بعد تنفيذه. سيتم حذف جميع بيانات حسابك وملفك الشخصي من النظام.',
+      'لا يمكن استرجاع هذا الإجراء بعد تنفيذه. سيتم حذف حسابك وبياناتك من النظام.',
       [
         { text: 'إلغاء', style: 'cancel' },
         { text: 'نعم، احذف حسابي', style: 'destructive', onPress: () => deleteAccount.mutate() },
@@ -312,24 +313,11 @@ export default function AccountScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
-
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
           <Animated.View style={{ opacity: fade, transform: [{ translateY: rise }] }}>
-            {/* Identity hero */}
             <View style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 28 }}>
-              <View
-                style={{
-                  width: 84,
-                  height: 84,
-                  borderRadius: 28,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  backgroundColor: colors.goldSoft,
-                  borderWidth: 1,
-                  borderColor: colors.goldBorder,
-                }}
-              >
+              <View style={{ width: 84, height: 84, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.goldSoft, borderWidth: 1, borderColor: colors.goldBorder }}>
                 <Text style={{ fontSize: 36, fontFamily: 'Cairo-Black', color: colors.goldText }}>{initial}</Text>
               </View>
               <Text style={{ marginTop: 14, fontSize: 21, fontFamily: 'Cairo-Black', color: colors.textPrimary }} numberOfLines={1}>
@@ -342,26 +330,17 @@ export default function AccountScreen() {
               ) : null}
             </View>
 
-            {/* Personal info */}
             <SectionLabel colors={colors}>المعلومات الشخصية</SectionLabel>
             <GroupCard colors={colors}>
-              {user?.name ? (
-                <>
-                  <FieldRow label="الاسم الكامل" initialValue={user.name} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
-                  {user?.email ? <Divider colors={colors} /> : null}
-                </>
-              ) : null}
-              {user?.email ? (
-                <FieldRow label="البريد الإلكتروني" initialValue={user.email} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
-              ) : null}
+              <FieldRow label="الاسم الكامل" initialValue={user?.name ?? ''} placeholder="أدخل اسمك الكامل" type="name" onSave={(v) => updateProfile.mutateAsync({ name: v })} colors={colors} />
+              <Divider colors={colors} />
+              <FieldRow label="البريد الإلكتروني" initialValue={user?.email ?? ''} placeholder="أدخل بريدك الإلكتروني" keyboardType="email-address" type="email" onSave={(v) => updateProfile.mutateAsync({ email: v })} colors={colors} />
             </GroupCard>
 
-            {/* Security */}
             <View style={{ height: 24 }} />
             <SectionLabel colors={colors}>الأمان</SectionLabel>
             <PasswordSection colors={colors} />
 
-            {/* Danger */}
             <View style={{ height: 28 }} />
             <SectionLabel colors={colors}>حذف الحساب</SectionLabel>
             <GroupCard colors={colors}>
@@ -370,32 +349,20 @@ export default function AccountScreen() {
                   <View style={{ width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.errorSoft }}>
                     <Ionicons name="trash-outline" size={18} color={colors.error} />
                   </View>
-                  <View>
+                  <View style={{ flex: 1 }}>
                     <Text style={{ textAlign: 'right', fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary }}>حذف الحساب</Text>
-                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>حذف حسابك ولا يمكن التراجع عن هذا</Text>
+                    <Text style={{ textAlign: 'right', fontSize: 11, fontFamily: 'Cairo-Regular', color: colors.textMuted, marginTop: 1 }}>حذف حسابك نهائياً من دلني</Text>
                   </View>
                 </View>
-                <Pressable
-                  onPress={confirmDelete}
-                  hitSlop={8}
-                  style={({ pressed }) => ({
-                    paddingHorizontal: 12,
-                    paddingVertical: 6,
-                    borderRadius: 999,
-                    backgroundColor: colors.errorSoft,
-                    transform: [{ scale: pressed ? 0.96 : 1 }]
-                  })}
-                >
+                <Pressable onPress={confirmDelete} hitSlop={8} style={({ pressed }) => ({ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: colors.errorSoft, transform: [{ scale: pressed ? 0.96 : 1 }] })}>
                   <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12.5 }}>حذف</Text>
                 </Pressable>
               </View>
             </GroupCard>
-
           </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Shared themed RTL alert (extracted from the copy-pasted modal). */}
       <RTLAlert alert={alert} onDismiss={hideAlert} />
 
       <Modal visible={deleteAccount.isPending} transparent animationType="fade">
