@@ -252,29 +252,26 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
         disabled={!mapUrl}
         onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
         style={({ pressed }) => ({
-          position: 'relative',
-          justifyContent: 'center',
-          minHeight: 72,
-          paddingHorizontal: 16,
-          paddingVertical: 16,
-          borderRadius: 20,
+          ...rtlRow(),
+          alignItems: 'center',
+          gap: 10,
+          width: '100%',
           backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
+          borderRadius: 14,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
           shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 4 },
+          shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0,
-          shadowRadius: 8,
+          shadowRadius: 4,
           elevation: 0,
           opacity: pressed ? 0.78 : 1,
         })}
       >
         <View
           style={{
-            position: 'absolute',
-            right: 16,
-            top: '50%',
-            transform: [{ translateY: -16 }],
             width: 32,
             height: 32,
             borderRadius: 16,
@@ -286,10 +283,10 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
           <Ionicons name="location-outline" size={16} color={colors.primary} />
         </View>
 
-        <View style={{ width: '100%', paddingRight: 54, paddingLeft: mapUrl ? 40 : 0, alignItems: 'flex-end' }}>
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
           <Text
             numberOfLines={1}
-            style={{ fontSize: 13.5, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
+            style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
           >
             {cityName || 'موقع مقدم الخدمة'}
           </Text>
@@ -306,7 +303,6 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             name="chevron-back"
             size={18}
             color={colors.textMuted}
-            style={{ position: 'absolute', left: 16, top: '50%', transform: [{ translateY: -9 }] }}
           />
         ) : null}
       </Pressable>
