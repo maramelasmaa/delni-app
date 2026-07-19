@@ -262,9 +262,9 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
           borderWidth: 1,
           borderColor: colors.border,
           shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0,
-          shadowRadius: 4,
+          shadowRadius: 8,
           elevation: 0,
           opacity: pressed ? 0.78 : 1,
         })}
