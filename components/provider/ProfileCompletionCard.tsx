@@ -35,16 +35,13 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
       ]}
     >
       <View style={[styles.iconBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-        <Ionicons name={isComplete ? 'checkmark' : 'sparkles-outline'} size={17} color={isComplete ? colors.success : colors.primary} />
+        <Ionicons name={isComplete ? 'checkmark' : 'sparkles-outline'} size={17} color={colors.primary} />
       </View>
       <View style={styles.textWrap}>
         <View style={styles.valueRow}>
-          <Text numberOfLines={1} style={[styles.percent, { color: isComplete ? colors.success : colors.textPrimary }]}>{value}%</Text>
+          <Text numberOfLines={1} style={[styles.value, { color: colors.textPrimary }]}>{value}%</Text>
         </View>
         <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
-      </View>
-      <View style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}>
-        <View style={[styles.progressFill, { width: `${value}%`, backgroundColor: isComplete ? colors.success : colors.gold }]} />
       </View>
     </Pressable>
   );
@@ -80,7 +77,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  percent: {
+  value: {
     fontSize: 18,
     lineHeight: 26,
     fontFamily: 'Cairo-Black',
@@ -94,16 +91,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Cairo-SemiBold',
     textAlign: 'right',
     writingDirection: 'rtl',
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: 999,
-    overflow: 'hidden',
-    marginTop: 7,
-    alignItems: 'flex-end',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
   },
 });
