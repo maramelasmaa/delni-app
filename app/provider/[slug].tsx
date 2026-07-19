@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import type { ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StarRating } from '../../components/ui/StarRating';
@@ -240,6 +241,22 @@ interface LocationSectionProps {
   serviceAreaNote: string | null;
   colors: ThemeColors;
 }
+
+function getProfileRowSurface(colors: ThemeColors): ViewStyle {
+  return {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0,
+    shadowRadius: 4,
+    elevation: 0,
+  };
+}
 function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: LocationSectionProps) {
   if (!cityName && !mapUrl && !serviceAreaNote) return null;
 
@@ -256,17 +273,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
           alignItems: 'center',
           gap: 10,
           width: '100%',
-          backgroundColor: colors.surface,
-          borderWidth: 1,
-          borderColor: colors.border,
-          borderRadius: 14,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-          shadowColor: colors.shadow,
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0,
-          shadowRadius: 4,
-          elevation: 0,
+          ...getProfileRowSurface(colors),
           opacity: pressed ? 0.78 : 1,
         })}
       >
@@ -331,17 +338,7 @@ function ServicesSection({ services, colors }: ServicesSectionProps) {
               width: '48%',
               flexGrow: 1,
               minWidth: 140,
-              backgroundColor: colors.surface,
-              borderWidth: 1,
-              borderColor: colors.border,
-              borderRadius: 14,
-              paddingHorizontal: 12,
-              paddingVertical: 12,
-              shadowColor: colors.shadow,
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0,
-              shadowRadius: 4,
-              elevation: 0,
+              ...getProfileRowSurface(colors),
             }}
           >
             <View
