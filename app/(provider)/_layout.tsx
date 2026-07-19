@@ -1,6 +1,6 @@
 ﻿import { Ionicons } from '@expo/vector-icons';
 import { Redirect, router, Tabs } from 'expo-router';
-import { Platform, Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, View } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -52,18 +52,16 @@ export default function ProviderTabsLayout() {
       <Tabs.Screen
         name="public"
         options={{
-          title: '',
+          title: 'انتقال',
           tabBarIcon: ({ focused }) => (
             <View
               style={{
-                width: 86,
+                width: 56,
                 height: 56,
                 borderRadius: 28,
                 backgroundColor: colors.gold,
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexDirection: 'row-reverse',
-                gap: 4,
                 marginBottom: Platform.OS === 'ios' ? 18 : 16,
                 shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 4 },
@@ -74,9 +72,7 @@ export default function ProviderTabsLayout() {
                 borderColor: focused ? colors.gold : colors.border,
               }}
             >
-              <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' }}>مزود</Text>
-              <Ionicons name="swap-horizontal-outline" size={20} color="#FFFFFF" />
-              <Text style={{ color: '#FFFFFF', fontSize: 10, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' }}>عام</Text>
+              <Ionicons name="swap-horizontal-outline" size={25} color="#FFFFFF" />
             </View>
           ),
           tabBarButton: ({ ref: _ref, ...props }) => (
