@@ -281,7 +281,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
           <Ionicons name="location-outline" size={21} color={colors.primary} />
         </View>
 
-        <View style={{ width: '100%', paddingRight: 52, paddingLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
+        <View style={{ width: '100%', paddingRight: 64, paddingLeft: mapUrl ? 40 : 0, alignItems: 'flex-end' }}>
           <Text
             numberOfLines={1}
             style={{ fontSize: 15, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
