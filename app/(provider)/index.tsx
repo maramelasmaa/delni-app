@@ -141,12 +141,12 @@ export default function ProviderDashboardScreen() {
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>نظرة عامة</Text>
           </View>
         </View>
-        <ProfileCompletionCard
-          percentage={stats.completion_percentage}
-          isComplete={stats.is_complete}
-          onCompletePress={() => router.push('/(provider)/profile-edit' as never)}
-        />
         <View style={styles.statsGrid}>
+          <ProfileCompletionCard
+            percentage={stats.completion_percentage}
+            isComplete={stats.is_complete}
+            onCompletePress={() => router.push('/(provider)/profile-edit' as never)}
+          />
           <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
           <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
           <ProviderStatItem label="أعمال المعرض" value={String(stats.portfolio_items_count)} icon="images" />

@@ -16,9 +16,7 @@ function clampPercentage(value: number) {
 export function ProfileCompletionCard({ percentage, isComplete, onCompletePress }: Props) {
   const { colors } = useTheme();
   const value = clampPercentage(percentage);
-  const message = isComplete
-    ? 'ملفك التجاري مكتمل وجاهز للعرض.'
-    : 'أكمل البيانات الناقصة لتحسين ظهور ملفك للعملاء.';
+  const label = isComplete ? 'الملف جاهز للعرض' : 'أكمل بيانات الملف';
 
   return (
     <Pressable
@@ -36,18 +34,14 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
         },
       ]}
     >
-      <View style={styles.headerRow}>
-        <View style={[styles.iconBox, { backgroundColor: isComplete ? colors.successSoft : colors.goldSoft }]}>
-          <Ionicons name={isComplete ? 'checkmark' : 'sparkles-outline'} size={18} color={isComplete ? colors.success : colors.goldText} />
+      <View style={[styles.iconBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+        <Ionicons name={isComplete ? 'checkmark' : 'sparkles-outline'} size={17} color={isComplete ? colors.success : colors.primary} />
+      </View>
+      <View style={styles.textWrap}>
+        <View style={styles.valueRow}>
+          <Text numberOfLines={1} style={[styles.percent, { color: isComplete ? colors.success : colors.textPrimary }]}>{value}%</Text>
         </View>
-        <View style={styles.textWrap}>
-          <Text style={[styles.title, { color: colors.textPrimary }]}>اكتمال الملف التجاري</Text>
-          <Text numberOfLines={1} style={[styles.message, { color: colors.textMuted }]}>{message}</Text>
-        </View>
-        <View style={styles.valueWrap}>
-          <Text style={[styles.percent, { color: isComplete ? colors.success : colors.primary }]}>{value}%</Text>
-          {!isComplete ? <Ionicons name="chevron-back" size={15} color={colors.textMuted} /> : null}
-        </View>
+        <Text numberOfLines={1} style={[styles.label, { color: colors.textMuted }]}>{label}</Text>
       </View>
       <View style={[styles.progressTrack, { backgroundColor: colors.surfaceAlt }]}>
         <View style={[styles.progressFill, { width: `${value}%`, backgroundColor: isComplete ? colors.success : colors.gold }]} />
@@ -58,61 +52,54 @@ export function ProfileCompletionCard({ percentage, isComplete, onCompletePress 
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 20,
-    marginTop: 14,
+    width: '48.5%',
+    minHeight: 82,
     borderRadius: 16,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  headerRow: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    gap: 14,
+    padding: 12,
+    position: 'relative',
+    justifyContent: 'center',
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    position: 'absolute',
+    right: 12,
+    top: 12,
+    width: 34,
+    height: 34,
     borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  percent: {
-    fontSize: 16,
-    lineHeight: 22,
-    fontFamily: 'Cairo-Black',
-    textAlign: 'center',
-  },
-  valueWrap: {
-    minWidth: 46,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 2,
   },
   textWrap: {
-    flex: 1,
+    marginRight: 46,
     alignItems: 'flex-end',
   },
-  title: {
-    fontSize: 14,
+  valueRow: {
+    height: 34,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+  },
+  percent: {
+    fontSize: 18,
+    lineHeight: 26,
     fontFamily: 'Cairo-Black',
     textAlign: 'right',
     writingDirection: 'rtl',
+    includeFontPadding: false,
   },
-  message: {
-    marginTop: 2,
+  label: {
     fontSize: 11,
     lineHeight: 17,
-    fontFamily: 'Cairo-Regular',
+    fontFamily: 'Cairo-SemiBold',
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   progressTrack: {
-    height: 6,
+    height: 4,
     borderRadius: 999,
     overflow: 'hidden',
-    marginTop: 10,
+    marginTop: 7,
     alignItems: 'flex-end',
   },
   progressFill: {
