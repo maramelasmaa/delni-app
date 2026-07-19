@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppModeSegmentedControl } from '../../components/provider/AppModeSegmentedControl';
 import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
-import { useAuthStore } from '../../src/store/auth';
 import type { ThemeColors } from '../../src/theme/tokens';
 
 type SettingsRoute = '/account';
@@ -33,7 +32,6 @@ function ProviderLink({ icon, label, subtitle, route, color, colors }: { icon: k
 
 export default function ProviderSettingsScreen() {
   const { colors } = useTheme();
-  const user = useAuthStore((s) => s.user);
   const logout = useLogout();
 
   return (
@@ -50,18 +48,6 @@ export default function ProviderSettingsScreen() {
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>كل ما يخص حسابك وملفك داخل التطبيق</Text>
         </View>
 
-        {user ? (
-          <View style={[styles.identity, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <View style={[styles.avatar, { backgroundColor: colors.goldSoft, borderColor: colors.goldBorder }]}>
-              <Text style={[styles.avatarText, { color: colors.goldText }]}>{user.name ? user.name.charAt(0).toUpperCase() : 'P'}</Text>
-            </View>
-            <View style={{ flex: 1, alignItems: 'flex-end' }}>
-              <Text numberOfLines={1} style={[styles.name, { color: colors.textPrimary }]}>{user.name}</Text>
-              <Text numberOfLines={1} style={[styles.email, { color: colors.textMuted }]}>{user.email}</Text>
-            </View>
-          </View>
-        ) : null}
-
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
         <ProviderLink icon="person-outline" label="المعلومات الشخصية" subtitle="تعديل الاسم والبريد وكلمة المرور" route="/account" color={colors.primary} colors={colors} />
 
@@ -77,12 +63,7 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 1 },
   headerTitle: { fontSize: 26, lineHeight: 36, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
   headerSubtitle: { marginTop: 4, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
-  identity: { marginHorizontal: 16, marginBottom: 22, padding: 12, borderRadius: 20, borderWidth: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
-  avatar: { width: 54, height: 54, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 22, fontFamily: 'Cairo-Black' },
-  name: { fontSize: 16, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
-  email: { marginTop: 2, fontSize: 12, fontFamily: 'Cairo-Regular', textAlign: 'right' },
-  sectionTitle: { paddingHorizontal: 24, marginTop: 8, marginBottom: 12, fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
+  sectionTitle: { paddingHorizontal: 24, marginTop: 14, marginBottom: 12, fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   menuRow: { marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   menuText: { flex: 1, marginRight: 16, marginLeft: 12, alignItems: 'flex-end' },
   menuLabel: { fontSize: 16, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
