@@ -84,7 +84,7 @@ function ChipSelect<T extends string | number>({
   );
 }
 
-export default function ProviderProfileEditScreen() {
+export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }) {
   const { colors } = useTheme();
   const { alert, showAlert, hideAlert } = useRTLAlert();
   const { data: profile, isLoading, isError, error, refetch } = useMyProviderProfile();
@@ -185,7 +185,7 @@ export default function ProviderProfileEditScreen() {
       {
         onSuccess: () => {
           showAlert('تم الحفظ', 'تم تحديث ملفك بنجاح.', [
-            { text: 'حسناً', onPress: () => router.back() },
+            { text: 'حسناً', onPress: asTab ? undefined : () => router.back() },
           ]);
         },
         onError: (err) => showAlert('تعذر الحفظ', parseApiError(err).message, [{ text: 'حسناً' }]),
@@ -199,10 +199,12 @@ export default function ProviderProfileEditScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10} style={{ padding: 4 }}>
-            <Ionicons name="arrow-forward" size={24} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>تعديل ملفي التجاري</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{asTab ? 'ملفي' : 'تعديل ملفي التجاري'}</Text>
+          {!asTab ? (
+            <Pressable onPress={() => router.back()} hitSlop={10} style={{ padding: 4 }}>
+              <Ionicons name="arrow-forward" size={24} color={colors.textPrimary} />
+            </Pressable>
+          ) : null}
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
@@ -351,6 +353,10 @@ export default function ProviderProfileEditScreen() {
       <RTLAlert alert={alert} onDismiss={hideAlert} />
     </SafeAreaView>
   );
+}
+
+export default function ProviderProfileEditRoute() {
+  return <ProviderProfileEditScreen />;
 }
 
 const styles = StyleSheet.create({

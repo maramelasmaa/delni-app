@@ -49,8 +49,8 @@ export default function ProviderTabsLayout() {
     >
       <Tabs.Screen name="settings" options={{ title: 'الإعدادات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
       <Tabs.Screen name="reviews" options={{ title: 'التقييمات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'star' : 'star-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
-      <Tabs.Screen name="portfolio" options={{ title: 'أعمالي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'images' : 'images-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
-      <Tabs.Screen name="profile" options={{ title: 'بياناتي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'business' : 'business-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
+      <Tabs.Screen name="portfolio" options={{ href: null }} />
+      <Tabs.Screen name="profile" options={{ title: 'ملفي', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'create' : 'create-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
       <Tabs.Screen name="index" options={{ title: 'لوحة التحكم', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'grid' : 'grid-outline'} size={TAB_ICON_SIZE} color={color} /> }} />
       <Tabs.Screen name="profile-edit" options={{ href: null }} />
       <Tabs.Screen name="credentials" options={{ href: null }} />
