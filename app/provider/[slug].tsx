@@ -293,7 +293,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             <Ionicons name="location-outline" size={16} color={colors.primary} />
           </View>
 
-          <View style={{ marginRight: 42, marginLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
+          <View style={{ marginRight: 46, marginLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
             <Text
               numberOfLines={1}
               style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
