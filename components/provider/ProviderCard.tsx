@@ -13,7 +13,7 @@ import { useProviderDetail } from '../../src/hooks/useProviderDetail';
 import { useReviewModal } from '../../src/hooks/useReviewModal';
 import { useReportModal } from '../../src/hooks/useReportModal';
 import type { ThemeColors } from '../../src/theme/tokens';
-import type { PortfolioItem, Review } from '../../src/types';
+import type { PortfolioItem } from '../../src/types';
 import { buildSocialUrl, openExternalUrl } from '../../src/utils/links';
 import { getAvatarTheme } from '../../src/utils/providerMappers';
 import { getProviderTypeIcon, getProviderTypeLabel } from '../../src/utils/providerTypes';
@@ -120,32 +120,6 @@ export default function ProviderScreen() {
   const insets = useSafeAreaInsets();
   const [galleryItem, setGalleryItem] = useState<PortfolioItem | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [blockedReviewUserIds, setBlockedReviewUserIds] = useState<number[]>([]);
-
-  const visibleReviews = detail.allReviews.filter((review) => !blockedReviewUserIds.includes(review.user_id));
-
-  const handleBlockReviewUser = useCallback((review: Review) => {
-    if (review.user_id === detail.user?.id) {
-      showRTLAlert('لا يمكن حظر نفسك', 'هذا التقييم تابع لحسابك الحالي.', [{ text: 'حسناً', style: 'default' }]);
-      return;
-    }
-
-    showRTLAlert(
-      'حظر المستخدم',
-      `سيتم إخفاء تقييمات ${review.user_name} من هذا الجهاز. هل تريد المتابعة؟`,
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'حظر',
-          style: 'destructive',
-          onPress: () => setBlockedReviewUserIds((current) => (
-            current.includes(review.user_id) ? current : [...current, review.user_id]
-          )),
-        },
-      ],
-    );
-  }, [detail.user?.id, showRTLAlert]);
-
   const handleWriteReviewPress = useCallback(() => {
     if (!detail.provider?.can_review) {
       showRTLAlert('تعذر كتابة تقييم', detail.provider?.review_status_message ?? "", [{ text: 'حسناً', style: 'default' }]);
@@ -444,7 +418,7 @@ export default function ProviderScreen() {
           <CredentialsSection credentials={profile.credentials} colors={colors} />
           <View style={{ marginTop: 4 }}>
             <ReviewsSection
-              reviews={visibleReviews}
+              reviews={detail.allReviews}
               rating={profile.rating}
               reviewsCount={profile.reviewsCount}
               colors={colors}
@@ -456,7 +430,6 @@ export default function ProviderScreen() {
               onWriteReviewPress={handleWriteReviewPress}
               onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
               onReportReview={handleReportReview}
-              onBlockReviewUser={handleBlockReviewUser}
               isFetching={detail.isFetchingReviews}
               hasMore={detail.hasMoreReviews}
               onLoadMore={() => detail.setReviewPage((p) => p + 1)}

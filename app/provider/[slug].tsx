@@ -629,13 +629,11 @@ function ReviewCard({
   review,
   colors,
   onReport,
-  onBlock,
   isLast,
 }: {
   review: Review;
   colors: ThemeColors;
   onReport: (reviewId: number) => void;
-  onBlock: (review: Review) => void;
   isLast?: boolean;
 }) {
   const { isDark } = useTheme();
@@ -687,18 +685,6 @@ function ReviewCard({
             >
               <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
             </Pressable>
-            <Pressable
-              onPress={() => onBlock(review)}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="حظر المستخدم"
-              style={({ pressed }) => ({
-                padding: 4,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Ionicons name="ban-outline" size={16} color={colors.textMuted} />
-            </Pressable>
           </View>
         </View>
         <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 4 }}>
@@ -737,7 +723,6 @@ function ReviewsSection({
   onWriteReviewPress,
   onUnauthenticatedWriteReview,
   onReportReview,
-  onBlockReviewUser,
   isFetching,
   hasMore,
   onLoadMore,
@@ -754,7 +739,6 @@ function ReviewsSection({
   onWriteReviewPress: () => void;
   onUnauthenticatedWriteReview: () => void;
   onReportReview: (reviewId: number) => void;
-  onBlockReviewUser: (review: Review) => void;
   isFetching: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
@@ -920,7 +904,6 @@ function ReviewsSection({
             review={review}
             colors={colors}
             onReport={onReportReview}
-            onBlock={onBlockReviewUser}
             isLast={index === displayedReviews.length - 1}
           />
         ))
@@ -982,7 +965,6 @@ export default function ProviderScreen() {
   const { data: provider, isLoading, isError, error, refetch } = useProvider(slug);
   const [reviewPage, setReviewPage] = useState(1);
   const [allReviews, setAllReviews] = useState<Review[]>([]);
-  const [blockedReviewUserIds, setBlockedReviewUserIds] = useState<number[]>([]);
   const { data: reviewsData, isFetching: isFetchingReviews } = useProviderReviews(slug, reviewPage);
 
   useEffect(() => {
@@ -1005,28 +987,6 @@ export default function ProviderScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
-
-  const handleBlockReviewUser = useCallback((review: Review) => {
-    if (review.user_id === user?.id) {
-      showRTLAlert('لا يمكن حظر نفسك', 'هذا التقييم تابع لحسابك الحالي.', [{ text: 'حسناً', style: 'default' }]);
-      return;
-    }
-
-    showRTLAlert(
-      'حظر المستخدم',
-      `سيتم إخفاء تقييمات ${review.user_name} من هذا الجهاز. هل تريد المتابعة؟`,
-      [
-        { text: 'إلغاء', style: 'cancel' },
-        {
-          text: 'حظر',
-          style: 'destructive',
-          onPress: () => setBlockedReviewUserIds((current) => (
-            current.includes(review.user_id) ? current : [...current, review.user_id]
-          )),
-        },
-      ],
-    );
-  }, [showRTLAlert, user?.id]);
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReviewIdState, setReportReviewIdState] = useState<number | null>(null);
@@ -1207,7 +1167,6 @@ export default function ProviderScreen() {
   if (isError || !provider) return <ErrorView error={error} onRetry={refetch} />;
 
   const profile = mapProviderProfile(provider);
-  const visibleReviews = allReviews.filter((review) => !blockedReviewUserIds.includes(review.user_id));
   const HERO_HEIGHT = 250;
   const AVATAR_SIZE = 140;
 
@@ -1536,7 +1495,7 @@ export default function ProviderScreen() {
         {/* ═══ REVIEWS SECTION (Pasted Old Design) ═══ */}
         <View style={{ paddingHorizontal: 16, paddingBottom: 28, marginTop: 0 }}>
           <ReviewsSection
-            reviews={visibleReviews}
+            reviews={allReviews}
             rating={profile.rating}
             reviewsCount={profile.reviewsCount}
             colors={colors}
@@ -1548,7 +1507,6 @@ export default function ProviderScreen() {
             onWriteReviewPress={handleWriteReviewPress}
             onUnauthenticatedWriteReview={handleUnauthenticatedWriteReview}
             onReportReview={handleReportReview}
-            onBlockReviewUser={handleBlockReviewUser}
             isFetching={isFetchingReviews}
             hasMore={hasMoreReviews}
             onLoadMore={() => setReviewPage((p) => p + 1)}

@@ -400,13 +400,11 @@ export function ReviewCard({
   review,
   colors,
   onReport,
-  onBlock,
   isLast,
 }: {
   review: Review;
   colors: ThemeColors;
   onReport: (reviewId: number) => void;
-  onBlock: (review: Review) => void;
   isLast?: boolean;
 }) {
   const { isDark } = useTheme();
@@ -458,18 +456,6 @@ export function ReviewCard({
             >
               <Ionicons name="flag-outline" size={16} color={colors.textMuted} />
             </Pressable>
-            <Pressable
-              onPress={() => onBlock(review)}
-              hitSlop={12}
-              accessibilityRole="button"
-              accessibilityLabel="حظر المستخدم"
-              style={({ pressed }) => ({
-                padding: 4,
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Ionicons name="ban-outline" size={16} color={colors.textMuted} />
-            </Pressable>
           </View>
         </View>
         <View style={{ ...rtlRow(), marginTop: 2, marginBottom: 6 }}>
@@ -508,7 +494,6 @@ export function ReviewsSection({
   onWriteReviewPress,
   onUnauthenticatedWriteReview,
   onReportReview,
-  onBlockReviewUser,
   isFetching,
   hasMore,
   onLoadMore,
@@ -525,7 +510,6 @@ export function ReviewsSection({
   onWriteReviewPress: () => void;
   onUnauthenticatedWriteReview: () => void;
   onReportReview: (reviewId: number) => void;
-  onBlockReviewUser: (review: Review) => void;
   isFetching: boolean;
   hasMore: boolean;
   onLoadMore: () => void;
@@ -691,7 +675,6 @@ export function ReviewsSection({
             review={review}
             colors={colors}
             onReport={onReportReview}
-            onBlock={onBlockReviewUser}
             isLast={index === displayedReviews.length - 1}
           />
         ))
