@@ -6,7 +6,7 @@ import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import type { ThemeColors } from '../../src/theme/tokens';
 
-type SettingsRoute = '/account';
+type SettingsRoute = '/account' | '/contact' | '/privacy' | '/terms' | '/disclaimer';
 
 function MenuRow({ icon, label, subtitle, color, onPress, colors, danger = false }: { icon: keyof typeof Ionicons.glyphMap; label: string; subtitle: string; color: string; onPress: () => void; colors: ThemeColors; danger?: boolean }) {
   return (
@@ -46,6 +46,14 @@ export default function ProviderSettingsScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
         <ProviderLink icon="person-outline" label="المعلومات الشخصية" subtitle="تعديل الاسم والبريد وكلمة المرور" route="/account" color={colors.primary} colors={colors} />
+
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الدعم</Text>
+        <ProviderLink icon="call-outline" label="تواصل معنا" subtitle="الدعم والمساعدة لمقدمي الخدمة" route="/contact" color={colors.primary} colors={colors} />
+
+        <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>السياسات</Text>
+        <ProviderLink icon="lock-closed-outline" label="سياسة الخصوصية" subtitle="كيف نجمع ونستخدم ونحمي بياناتك" route="/privacy" color="#8B5CF6" colors={colors} />
+        <ProviderLink icon="document-text-outline" label="الشروط والأحكام" subtitle="شروط استخدام دلني ولوحة مقدم الخدمة" route="/terms" color={colors.gold} colors={colors} />
+        <ProviderLink icon="shield-checkmark-outline" label="إخلاء المسؤولية" subtitle="تنويه مهم حول دور دلني كمنصة دليل" route="/disclaimer" color={colors.primary} colors={colors} />
 
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب مقدم الخدمة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />
       </ScrollView>
