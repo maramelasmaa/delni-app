@@ -139,8 +139,6 @@ export default function ProviderDashboardScreen() {
           />
           <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
           <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
-          <ProviderStatItem label="أعمال المعرض" value={String(stats.portfolio_items_count)} icon="images" />
-          <ProviderStatItem label="الشهادات والخبرات" value={String(stats.credentials_count)} icon="ribbon" />
           <ProviderStatItem label="المدة المتبقية" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
         </View>
 
