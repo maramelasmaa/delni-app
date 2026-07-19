@@ -269,9 +269,8 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
         disabled={!mapUrl}
         onPress={() => openExternalUrl(mapUrl, { errorMessage: 'تعذر فتح الخريطة.' })}
         style={({ pressed }) => ({
-          ...rtlRow(),
-          alignItems: 'center',
-          gap: 10,
+          position: 'relative',
+          justifyContent: 'center',
           width: '100%',
           ...getProfileRowSurface(colors),
           opacity: pressed ? 0.78 : 1,
@@ -279,6 +278,10 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
       >
         <View
           style={{
+            position: 'absolute',
+            right: 12,
+            top: '50%',
+            transform: [{ translateY: -16 }],
             width: 32,
             height: 32,
             borderRadius: 16,
@@ -290,7 +293,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
           <Ionicons name="location-outline" size={16} color={colors.primary} />
         </View>
 
-        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+        <View style={{ marginRight: 42, marginLeft: mapUrl ? 28 : 0, alignItems: 'flex-end' }}>
           <Text
             numberOfLines={1}
             style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right', writingDirection: 'rtl' }}
@@ -310,6 +313,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             name="chevron-back"
             size={18}
             color={colors.textMuted}
+            style={{ position: 'absolute', left: 12, top: '50%', transform: [{ translateY: -9 }] }}
           />
         ) : null}
       </Pressable>
