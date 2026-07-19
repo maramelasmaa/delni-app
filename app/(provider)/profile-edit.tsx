@@ -51,6 +51,25 @@ function Field({ label, colors, children }: { label: string; colors: ThemeColors
   );
 }
 
+function SectionHeading({
+  title,
+  icon,
+  colors,
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  colors: ThemeColors;
+}) {
+  return (
+    <View style={styles.sectionHeadingRow}>
+      <View style={[styles.sectionIcon, { backgroundColor: colors.surfaceAlt }]}>
+        <Ionicons name={icon} size={17} color={colors.primary} />
+      </View>
+      <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>{title}</Text>
+    </View>
+  );
+}
+
 function ChipSelect<T extends string | number>({
   options,
   selected,
@@ -199,39 +218,46 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{asTab ? 'ملفي' : 'تعديل ملفي التجاري'}</Text>
+          <View style={styles.headerCopy}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{asTab ? 'ملفي' : 'تعديل ملفي التجاري'}</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>حدّث المعلومات التي تظهر للعملاء</Text>
+          </View>
           {!asTab ? (
-            <Pressable onPress={() => router.back()} hitSlop={10} style={{ padding: 4 }}>
+            <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="arrow-forward" size={24} color={colors.textPrimary} />
             </Pressable>
           ) : null}
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
-          <View style={styles.imageRow}>
-            <Pressable onPress={async () => setLogo((await pickOne([1, 1])) ?? logo)} style={styles.logoPick}>
-              <Image
-                source={{ uri: logo?.uri ?? profile.logo_url ?? undefined }}
-                style={[styles.logoPreview, { backgroundColor: colors.surfaceAlt }]}
-                contentFit="cover"
-              />
-              <View style={[styles.editBadge, { backgroundColor: colors.primary }]}>
-                <Ionicons name="camera" size={13} color={colors.textOnPrimary} />
-              </View>
-              <Text style={[styles.imageLabel, { color: colors.textMuted }]}>الشعار</Text>
-            </Pressable>
-            <Pressable onPress={async () => setCover((await pickOne([8, 5])) ?? cover)} style={{ flex: 1 }}>
+          <SectionHeading title="الهوية البصرية" icon="images-outline" colors={colors} />
+
+          <View style={[styles.mediaCard, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+            <Pressable onPress={async () => setCover((await pickOne([8, 5])) ?? cover)} style={styles.coverPick}>
               <Image
                 source={{ uri: cover?.uri ?? profile.cover_url ?? undefined }}
                 style={[styles.coverPreview, { backgroundColor: colors.surfaceAlt }]}
                 contentFit="cover"
               />
-              <View style={[styles.editBadge, { backgroundColor: colors.primary }]}>
+              <View style={[styles.coverAction, { backgroundColor: colors.surface }]}>
+                <Ionicons name="camera-outline" size={15} color={colors.primary} />
+                <Text style={[styles.coverActionText, { color: colors.primary }]}>تغيير الغلاف</Text>
+              </View>
+            </Pressable>
+
+            <Pressable onPress={async () => setLogo((await pickOne([1, 1])) ?? logo)} style={[styles.logoPick, { borderColor: colors.surface }]}>
+              <Image
+                source={{ uri: logo?.uri ?? profile.logo_url ?? undefined }}
+                style={[styles.logoPreview, { backgroundColor: colors.surfaceAlt }]}
+                contentFit="cover"
+              />
+              <View style={[styles.logoBadge, { backgroundColor: colors.primary }]}>
                 <Ionicons name="camera" size={13} color={colors.textOnPrimary} />
               </View>
-              <Text style={[styles.imageLabel, { color: colors.textMuted }]}>صورة الغلاف</Text>
             </Pressable>
           </View>
+
+          <SectionHeading title="المعلومات الأساسية" icon="business-outline" colors={colors} />
 
           <Field label="اسم النشاط التجاري" colors={colors}>
             <TextInput value={businessName} onChangeText={setBusinessName} placeholder="مثال: الأمان للصيانة" placeholderTextColor={colors.textMuted} style={inputStyle} maxLength={500} />
@@ -285,6 +311,8 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
             <TextInput value={bio} onChangeText={setBio} placeholder="اكتب نبذة قصيرة عن خدماتك" placeholderTextColor={colors.textMuted} style={[...inputStyle, styles.multiline]} multiline maxLength={500} />
           </Field>
 
+          <SectionHeading title="معلومات التواصل" icon="call-outline" colors={colors} />
+
           <Field label="رقم الهاتف" colors={colors}>
             <TextInput value={phone} onChangeText={setPhone} placeholder="+218912345678" placeholderTextColor={colors.textMuted} style={inputStyle} keyboardType="phone-pad" maxLength={20} />
           </Field>
@@ -297,17 +325,25 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
             <TextInput value={experienceYears} onChangeText={setExperienceYears} placeholder="5" placeholderTextColor={colors.textMuted} style={inputStyle} keyboardType="number-pad" maxLength={3} />
           </Field>
 
-          <View style={styles.switchRow}>
+          <SectionHeading title="طريقة تقديم الخدمة" icon="options-outline" colors={colors} />
+
+          <View style={[styles.switchRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.switchCopy}>
+              <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>تقديم خدمات عن بعد</Text>
+              <Text style={[styles.switchHint, { color: colors.textMuted }]}>تظهر للعملاء كخدمة يمكن تنفيذها أونلاين</Text>
+            </View>
             <Switch value={offersRemote} onValueChange={setOffersRemote} trackColor={{ true: colors.primary }} />
-            <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>تقديم خدمات عن بعد</Text>
           </View>
 
-          <View style={styles.switchRow}>
+          <View style={[styles.switchRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.switchCopy}>
+              <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>يتنقل بين المدن</Text>
+              <Text style={[styles.switchHint, { color: colors.textMuted }]}>فعّلها إذا كنت تقبل طلبات خارج مدينتك</Text>
+            </View>
             <Switch value={travelsToCities} onValueChange={setTravelsToCities} trackColor={{ true: colors.primary }} />
-            <Text style={[styles.switchLabel, { color: colors.textPrimary }]}>الاستعداد للتنقل بين المدن</Text>
           </View>
 
-          <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>روابط التواصل (اختياري)</Text>
+          <SectionHeading title="الروابط (اختياري)" icon="link-outline" colors={colors} />
 
           <Field label="الموقع الإلكتروني" colors={colors}>
             <TextInput value={website} onChangeText={setWebsite} placeholder="https://example.com" placeholderTextColor={colors.textMuted} style={inputStyle} autoCapitalize="none" keyboardType="url" maxLength={255} />
@@ -360,23 +396,32 @@ export default function ProviderProfileEditRoute() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, minHeight: 78, justifyContent: 'center' },
+  headerCopy: { alignItems: 'flex-end', paddingLeft: 56 },
   headerTitle: { fontSize: 22, fontFamily: 'Cairo-Black', writingDirection: 'rtl' },
-  imageRow: { flexDirection: 'row-reverse', gap: 14, marginTop: 6 },
-  logoPick: { width: 96 },
-  logoPreview: { width: 96, height: 96, borderRadius: 24 },
-  coverPreview: { width: '100%', height: 96, borderRadius: 16 },
-  editBadge: { position: 'absolute', top: 6, left: 6, borderRadius: 999, padding: 5 },
-  imageLabel: { marginTop: 6, fontSize: 11, fontFamily: 'Cairo-Bold', textAlign: 'center' },
+  headerSubtitle: { marginTop: 2, fontSize: 12, fontFamily: 'Cairo-SemiBold', writingDirection: 'rtl' },
+  backButton: { position: 'absolute', left: 20, top: 22, width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  mediaCard: { minHeight: 190, borderRadius: 18, borderWidth: 1, padding: 8, marginTop: 12, marginBottom: 20 },
+  coverPick: { minHeight: 132, borderRadius: 14, overflow: 'hidden' },
+  logoPick: { position: 'absolute', right: 22, bottom: 14, width: 78, height: 78, borderRadius: 24, borderWidth: 4 },
+  logoPreview: { width: '100%', height: '100%', borderRadius: 20 },
+  coverPreview: { width: '100%', height: 132 },
+  coverAction: { position: 'absolute', top: 10, left: 10, minHeight: 34, borderRadius: 999, paddingHorizontal: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  coverActionText: { fontSize: 12, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
+  logoBadge: { position: 'absolute', left: -2, bottom: -2, borderRadius: 999, padding: 6 },
   fieldLabel: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl', marginBottom: 6 },
   input: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
   chipWrap: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
   chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
-  switchRow: { marginTop: 18, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
-  sectionHeading: { marginTop: 26, fontSize: 16, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
+  sectionHeadingRow: { marginTop: 26, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  sectionIcon: { width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  switchRow: { marginTop: 10, minHeight: 74, borderRadius: 16, borderWidth: 1, paddingVertical: 12, paddingRight: 14, paddingLeft: 10, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  switchCopy: { flex: 1, alignItems: 'flex-end' },
+  sectionHeading: { fontSize: 16, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
   switchLabel: { fontSize: 14, fontFamily: 'Cairo-Bold' },
+  switchHint: { marginTop: 2, fontSize: 11, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
   saveBtn: { marginTop: 24, minHeight: 52, borderRadius: 16, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8 },
   saveText: { fontSize: 15, fontFamily: 'Cairo-Bold' },
 });
