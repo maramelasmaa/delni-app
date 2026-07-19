@@ -254,11 +254,11 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
         style={({ pressed }) => ({
           position: 'relative',
           justifyContent: 'center',
-          minHeight: 58,
-          paddingHorizontal: 12,
-          paddingVertical: 12,
-          borderRadius: 16,
-          backgroundColor: colors.surfaceAlt,
+          minHeight: 72,
+          paddingHorizontal: 16,
+          paddingVertical: 16,
+          borderRadius: 20,
+          backgroundColor: colors.surface,
           borderWidth: 1,
           borderColor: colors.border,
           shadowColor: colors.shadow,
@@ -272,7 +272,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
         <View
           style={{
             position: 'absolute',
-            right: 12,
+            right: 16,
             top: '50%',
             transform: [{ translateY: -16 }],
             width: 32,
@@ -306,7 +306,7 @@ function LocationSection({ cityName, mapUrl, serviceAreaNote, colors }: Location
             name="chevron-back"
             size={18}
             color={colors.textMuted}
-            style={{ position: 'absolute', left: 12, top: '50%', transform: [{ translateY: -9 }] }}
+            style={{ position: 'absolute', left: 16, top: '50%', transform: [{ translateY: -9 }] }}
           />
         ) : null}
       </Pressable>
