@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useSegments } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 
@@ -30,6 +30,7 @@ export function AppModeSegmentedControl({ mode, compact = false, style }: Props)
   const nextMode: AppMode = activeMode === 'provider' ? 'public' : 'provider';
   const target = nextMode === 'provider' ? '/(provider)/' : '/(tabs)/';
   const label = nextMode === 'provider' ? 'فتح لوحة مقدم الخدمة' : 'العودة إلى التطبيق العام';
+  const displayLabel = nextMode === 'provider' ? 'لوحة المزود' : 'التطبيق العام';
 
   const handleSwitch = useCallback(() => {
     if (lockRef.current || (nextMode === 'provider' && !user?.is_provider)) return;
@@ -73,10 +74,13 @@ export function AppModeSegmentedControl({ mode, compact = false, style }: Props)
       ) : (
         <>
           <Ionicons
-            name={nextMode === 'provider' ? 'grid-outline' : 'home-outline'}
-            size={compact ? 20 : 23}
+            name={nextMode === 'provider' ? 'briefcase-outline' : 'home-outline'}
+            size={compact ? 17 : 19}
             color={colors.primary}
           />
+          <Text style={[styles.label, compact && styles.compactLabel, { color: colors.primary }]} numberOfLines={1}>
+            {displayLabel}
+          </Text>
         </>
       )}
     </Pressable>
@@ -85,15 +89,19 @@ export function AppModeSegmentedControl({ mode, compact = false, style }: Props)
 
 const styles = StyleSheet.create({
   button: {
-    width: 46,
-    height: 46,
+    minHeight: 42,
     borderRadius: 8,
     borderWidth: 1,
+    paddingHorizontal: 11,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row-reverse',
+    gap: 6,
   },
   compactButton: {
-    width: 40,
-    height: 40,
+    minHeight: 38,
+    paddingHorizontal: 9,
   },
+  label: { fontSize: 12, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
+  compactLabel: { fontSize: 11 },
 });

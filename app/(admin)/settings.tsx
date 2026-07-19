@@ -35,11 +35,11 @@ export default function AdminSettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}> 
         <View style={styles.header}> 
           <View style={styles.headerTopRow}>
+            <AdminModeSwitch mode="admin" compact />
             <View style={styles.headerTitleRow}> 
               <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
               <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
             </View>
-            <AdminModeSwitch mode="admin" />
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>لوحة الإدارة</Text>
         </View>
@@ -68,8 +68,8 @@ export default function AdminSettingsScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  headerTopRow: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'flex-start', gap: 12 },
-  headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
+  headerTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 1 },
   headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
   headerSubtitle: { marginTop: 4, fontSize: 15, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
   identity: { marginHorizontal: 16, marginBottom: 22, padding: 12, borderRadius: 22, borderWidth: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
