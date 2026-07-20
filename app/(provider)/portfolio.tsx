@@ -36,6 +36,7 @@ const PROJECT_EDITOR_WIDTH = 300;
 const PROJECT_EDITOR_HEIGHT = 200;
 const PROJECT_OUTPUT_WIDTH = 1200;
 const PROJECT_OUTPUT_HEIGHT = 800;
+const PROJECT_MAX_IMAGE_SIDE = 1600;
 
 type EditableProjectImage = LocalImage & {
   width: number;
@@ -54,13 +55,27 @@ async function pickImages(limit: number): Promise<EditableProjectImage[]> {
     quality: 0.85,
   });
   if (result.canceled) return [];
-  return result.assets.map((asset, i) => ({
-    uri: asset.uri,
-    name: asset.fileName ?? `image-${Date.now()}-${i}.jpg`,
-    type: asset.mimeType ?? 'image/jpeg',
-    alt: '',
-    width: asset.width,
-    height: asset.height,
+  return Promise.all(result.assets.map(async (asset, i) => {
+    const resize =
+      asset.width >= asset.height && asset.width > PROJECT_MAX_IMAGE_SIDE
+        ? { width: PROJECT_MAX_IMAGE_SIDE }
+        : asset.height > PROJECT_MAX_IMAGE_SIDE
+          ? { height: PROJECT_MAX_IMAGE_SIDE }
+          : undefined;
+    const normalized = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      resize ? [{ resize }] : [],
+      { compress: 0.88, format: ImageManipulator.SaveFormat.JPEG },
+    );
+
+    return {
+      uri: normalized.uri,
+      name: `project-${Date.now()}-${i}.jpg`,
+      type: 'image/jpeg',
+      alt: '',
+      width: normalized.width,
+      height: normalized.height,
+    };
   }));
 }
 
@@ -318,7 +333,7 @@ export default function ProviderPortfolioScreen() {
         renderItem={({ item }) => (
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             {item.images[0] ? (
-              <Image source={{ uri: item.images[0] }} style={styles.cardImage} contentFit="cover" />
+              <Image source={{ uri: item.images[0] }} style={styles.cardImage} contentFit="contain" />
             ) : null}
             <View style={styles.cardFooter}>
               <View style={styles.cardBody}>
@@ -412,7 +427,7 @@ export default function ProviderPortfolioScreen() {
                 {keptExisting.map((img) => (
                   <View key={img.id} style={styles.imageEditorRow}>
                     <View style={styles.thumbWrap}>
-                      <Image source={{ uri: img.url }} style={styles.thumb} contentFit="cover" />
+                      <Image source={{ uri: img.url }} style={styles.thumb} contentFit="contain" />
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="حذف الصورة"
@@ -439,7 +454,10 @@ export default function ProviderPortfolioScreen() {
             <Pressable
               onPress={async () => {
                 const picked = await pickImages(MAX_IMAGES - totalImages);
-                openProjectEditorQueue(picked);
+                setImages((prev) => [
+                  ...prev,
+                  ...picked.map(({ uri, name, type, alt }) => ({ uri, name, type, alt })),
+                ].slice(0, MAX_IMAGES - keptExisting.length));
               }}
               disabled={totalImages >= MAX_IMAGES}
               style={({ pressed }) => [styles.pickBtn, { borderColor: colors.borderStrong, backgroundColor: colors.surface, opacity: pressed ? 0.7 : totalImages >= MAX_IMAGES ? 0.55 : 1 }]}
@@ -459,7 +477,7 @@ export default function ProviderPortfolioScreen() {
                 {images.map((img, i) => (
                   <View key={img.uri} style={styles.imageEditorRow}>
                     <View style={styles.thumbWrap}>
-                      <Image source={{ uri: img.uri }} style={styles.thumb} contentFit="cover" />
+                      <Image source={{ uri: img.uri }} style={styles.thumb} contentFit="contain" />
                       <Pressable
                         accessibilityRole="button"
                         accessibilityLabel="حذف الصورة"

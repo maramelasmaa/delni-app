@@ -16,28 +16,29 @@ export default function SplashScreen() {
   }, [navigation]);
 
   useEffect(() => {
-    const pulse = Animated.loop(
+    const bounce = Animated.loop(
       Animated.stagger(
-        180,
+        150,
         dotAnims.map((value) =>
           Animated.sequence([
             Animated.timing(value, {
               toValue: 1,
-              duration: 420,
-              easing: Easing.out(Easing.cubic),
+              duration: 300,
+              easing: Easing.out(Easing.quad),
               useNativeDriver: true,
             }),
             Animated.timing(value, {
               toValue: 0,
-              duration: 420,
-              easing: Easing.in(Easing.cubic),
+              duration: 300,
+              easing: Easing.bounce,
               useNativeDriver: true,
             }),
+            Animated.delay(300),
           ]),
         ),
       ),
     );
-    pulse.start();
+    bounce.start();
 
     const timer = setTimeout(() => {
       router.replace('/(tabs)/');
@@ -45,7 +46,7 @@ export default function SplashScreen() {
 
     return () => {
       clearTimeout(timer);
-      pulse.stop();
+      bounce.stop();
     };
   }, [dotAnims]);
 
@@ -58,8 +59,8 @@ export default function SplashScreen() {
     >
       <View style={styles.content}>
         <View style={styles.brandRow}>
-          <View style={styles.brandDot} />
           <Text style={styles.brandName}>دلني</Text>
+          <View style={styles.brandDot} />
         </View>
         <Text style={styles.tagline}>ابحث عن الخدمات بسهولة</Text>
 
@@ -70,8 +71,11 @@ export default function SplashScreen() {
               style={[
                 styles.dot,
                 {
-                  opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
-                  transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }],
+                  opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }),
+                  transform: [
+                    { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -16] }) },
+                    { scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) },
+                  ],
                 },
               ]}
             />
@@ -118,8 +122,9 @@ const styles = StyleSheet.create({
   },
   dotsRow: {
     marginTop: 40,
+    height: 24,
     flexDirection: 'row-reverse',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     gap: 10,
   },
   dot: {

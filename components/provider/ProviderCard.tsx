@@ -463,7 +463,11 @@ export default function ProviderScreen() {
 
       {/* ═══ CUSTOM REPORT MODAL ═══ */}
       <Modal visible={reportModal.showReportModal} transparent animationType="slide" onRequestClose={() => reportModal.setShowReportModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: colors.overlayMedium, justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+          style={{ flex: 1, backgroundColor: colors.overlayMedium, justifyContent: 'flex-end' }}
+        >
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
@@ -501,7 +505,9 @@ export default function ProviderScreen() {
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={4}
-              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
+              blurOnSubmit={false}
+              scrollEnabled={false}
+              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', textAlignVertical: 'top', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
             />
 
             {reportModal.reportError ? (

@@ -70,8 +70,6 @@ function mapProviderProfile(provider: Provider): MappedProvider {
 
   if (isValidUrl(provider.cover_url)) {
     coverUrl = provider.cover_url!;
-  } else if (provider.portfolio_items?.[0]?.images?.[0]) {
-    coverUrl = provider.portfolio_items[0].images[0];
   } else if (isValidUrl(provider.logo_url)) {
     coverUrl = provider.logo_url!;
     coverBlur = true;
@@ -459,7 +457,7 @@ function PortfolioSection({ projects, colors, onImagePress }: PortfolioSectionPr
                     <Image
                       source={{ uri: project.images[0] }}
                       style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
+                      contentFit="contain"
                     />
                   </Pressable>
                   {imageCount > 1 && (
@@ -1256,15 +1254,6 @@ export default function ProviderScreen() {
       value: 'يتنقل بين المدن',
     });
   }
-  if (typeMeta) {
-    specs.push({
-      id: 'type',
-      icon: typeMeta.icon,
-      label: 'النوع',
-      value: typeMeta.label,
-    });
-  }
-
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['bottom']}>
       <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
@@ -1387,6 +1376,15 @@ export default function ProviderScreen() {
 
             {/* City, category, rating, and featured badges */}
             <View style={{ ...rtlRow(), alignItems: 'center', gap: 6, justifyContent: 'center', flexWrap: 'wrap' }}>
+              {typeMeta && (
+                <View style={{ backgroundColor: colors.primarySoft, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, ...rtlRow(), alignItems: 'center', gap: 4 }}>
+                  <Ionicons name={typeMeta.icon} size={11} color={colors.primary} />
+                  <Text style={{ fontSize: 11, fontFamily: 'Cairo-Bold', color: colors.primary }}>
+                    {typeMeta.label}
+                  </Text>
+                </View>
+              )}
+
               {profile.cityName && (
                 <View style={{ backgroundColor: colors.surfaceAlt, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 9, ...rtlRow(), alignItems: 'center', gap: 4 }}>
                   <Ionicons name="location-outline" size={11} color={colors.textSecondary} />
@@ -1624,7 +1622,11 @@ export default function ProviderScreen() {
 
       {/* ═══ CUSTOM REPORT MODAL ═══ */}
       <Modal visible={showReportModal} transparent animationType="slide" onRequestClose={() => setShowReportModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+        >
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن التقييم</Text>
@@ -1662,7 +1664,9 @@ export default function ProviderScreen() {
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={4}
-              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
+              blurOnSubmit={false}
+              scrollEnabled={false}
+              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', textAlignVertical: 'top', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
             />
 
             {reportError ? (
@@ -1683,7 +1687,11 @@ export default function ProviderScreen() {
 
       {/* ═══ REPORT PROVIDER MODAL ═══ */}
       <Modal visible={showProviderReportModal} transparent animationType="slide" onRequestClose={() => setShowProviderReportModal(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}
+        >
           <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
             <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن مقدم الخدمة</Text>
@@ -1700,7 +1708,9 @@ export default function ProviderScreen() {
               placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={4}
-              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
+              blurOnSubmit={false}
+              scrollEnabled={false}
+              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', textAlignVertical: 'top', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
             />
 
             {providerReportError ? (

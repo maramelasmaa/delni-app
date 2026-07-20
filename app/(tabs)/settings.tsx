@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { useMemo, type ReactNode } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
 import { useLogout } from '../../src/hooks/useAuth';
 import { registerCurrentDeviceForPushNotifications } from '../../src/hooks/usePushNotifications';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -349,14 +348,9 @@ export default function SettingsScreen() {
         contentContainerStyle={themedStyles.scrollContent}
       >
         <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.modeActions}>
-              {isAuthenticated && user?.is_admin ? <AdminModeSwitch mode="public" compact /> : null}
-            </View>
-            <View style={styles.headerTitleRow}>
-              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
-              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
-            </View>
+          <View style={styles.headerTitleRow}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
+            <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>
             معلومات الحساب والتطبيق
@@ -394,6 +388,19 @@ export default function SettingsScreen() {
               label="لوحة مقدم الخدمة"
               subtitle="العودة لإدارة ملفك وبياناتك"
               onPress={() => router.replace('/(provider)/' as never)}
+              colors={colors}
+              isLast
+            />
+          </SectionBlock>
+        ) : null}
+        {isAuthenticated && user?.is_admin ? (
+          <SectionBlock title="الإدارة">
+            <MenuItem
+              icon="shield-checkmark"
+              iconColor={colors.gold}
+              label="لوحة الإدارة"
+              subtitle="الانتقال إلى مؤشرات المنصة والتقييمات"
+              onPress={() => router.replace('/(admin)/' as never)}
               colors={colors}
               isLast
             />
@@ -491,18 +498,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 8,
-  },
-  headerTopRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  modeActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   headerTitleRow: {
     flexDirection: 'row-reverse',

@@ -53,8 +53,6 @@ export function mapProviderProfile(provider: Provider): MappedProvider {
 
   if (isValidImageUrl(provider.cover_url)) {
     coverUrl = provider.cover_url!;
-  } else if (provider.portfolio_items?.[0]?.images?.[0]) {
-    coverUrl = provider.portfolio_items[0].images[0];
   } else if (isValidImageUrl(provider.logo_url)) {
     coverUrl = provider.logo_url!;
     coverBlur = true;

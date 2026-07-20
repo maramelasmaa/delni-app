@@ -21,6 +21,20 @@ export default function RegisterScreen() {
   const confirmationRef = useRef<TextInput>(null);
   const register = useRegister();
 
+  const passwordRules = useMemo(
+    () => [
+      { key: 'length', label: '8 أحرف على الأقل', done: password.length >= 8 },
+      { key: 'case', label: 'حرف كبير وصغير', done: /[a-z]/.test(password) && /[A-Z]/.test(password) },
+      { key: 'number', label: 'رقم واحد', done: /\d/.test(password) },
+    ],
+    [password],
+  );
+  const passwordScore = passwordRules.filter((rule) => rule.done).length;
+  const missingPasswordRules = passwordRules.filter((rule) => !rule.done).map((rule) => rule.label);
+  const passwordStrengthLabel = passwordScore === 3 ? 'كلمة مرور قوية' : passwordScore === 2 ? 'قريبة من المطلوب' : password ? 'ضعيفة' : 'أدخل كلمة مرور قوية';
+  const passwordMissingLabel = passwordScore === 3 ? 'كل الشروط مكتملة' : `ينقصها: ${missingPasswordRules.join('، ')}`;
+  const passwordStrengthColor = passwordScore === 3 ? '#16A34A' : passwordScore === 2 ? C.orange : C.text3;
+
   const formValid = useMemo(
     () =>
       isValidName(normalizeName(name)) &&
@@ -123,31 +137,29 @@ export default function RegisterScreen() {
               onSubmitEditing={() => confirmationRef.current?.focus()}
             />
 
-            <View
-              style={{
-                marginTop: -6,
-                marginBottom: 16,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: C.outlineMuted,
-                backgroundColor: C.iconBg,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                gap: 7,
-              }}
-            >
-              <Text style={{ color: C.text, fontSize: 12.5, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' }}>
-                يجب أن تحتوي كلمة المرور على:
-              </Text>
+            <View style={{ marginTop: -6, marginBottom: 14, gap: 8, paddingHorizontal: 2 }}>
+              <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                <Text style={{ color: passwordStrengthColor, fontSize: 12.5, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' }}>
+                  {passwordStrengthLabel}
+                </Text>
+                <Text numberOfLines={1} style={{ maxWidth: '100%', color: C.text3, fontSize: 12, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' }}>
+                  {passwordMissingLabel}
+                </Text>
+              </View>
 
-              {['8 أحرف أو أكثر', 'حرف كبير وحرف صغير بالإنجليزية', 'رقم واحد على الأقل'].map((rule) => (
-                <View key={rule} style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 8 }}>
-                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: C.orange }} />
-                  <Text style={{ flex: 1, color: C.text2, fontSize: 12.5, lineHeight: 20, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' }}>
-                    {rule}
-                  </Text>
-                </View>
-              ))}
+              <View style={{ flexDirection: 'row-reverse', gap: 6 }}>
+                {passwordRules.map((rule, index) => (
+                  <View
+                    key={rule.key}
+                    style={{
+                      flex: 1,
+                      height: 5,
+                      borderRadius: 999,
+                      backgroundColor: index < passwordScore ? passwordStrengthColor : C.outlineMuted,
+                    }}
+                  />
+                ))}
+              </View>
             </View>
 
             <PremiumField
@@ -166,7 +178,6 @@ export default function RegisterScreen() {
               onSubmitEditing={handleRegister}
             />
 
-            {/* Primary CTA — orange gradient */}
             <View style={{ marginTop: 8 }}>
               <PremiumButton
                 title="إنشاء حساب"

@@ -305,7 +305,7 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
       {
         onSuccess: () => {
           showAlert('تم الحفظ', 'تم تحديث ملفك بنجاح.', [
-            { text: 'حسناً', onPress: asTab ? undefined : () => router.replace('/(provider)/' as never) },
+            { text: 'حسناً' },
           ]);
         },
         onError: (err) => showAlert('تعذر الحفظ', parseApiError(err).message, [{ text: 'حسناً' }]),

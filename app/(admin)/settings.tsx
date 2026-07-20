@@ -2,7 +2,6 @@
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
 import { useLogout } from '../../src/hooks/useAuth';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
@@ -33,13 +32,10 @@ export default function AdminSettingsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}> 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 116 }}> 
-        <View style={styles.header}> 
-          <View style={styles.headerTopRow}>
-            <AdminModeSwitch mode="admin" compact />
-            <View style={styles.headerTitleRow}> 
-              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
-              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
-            </View>
+        <View style={styles.header}>
+          <View style={styles.headerTitleRow}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الإعدادات</Text>
+            <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
           </View>
           <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>لوحة الإدارة</Text>
         </View>
@@ -58,8 +54,6 @@ export default function AdminSettingsScreen() {
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
         <MenuRow icon="person-outline" label="المعلومات الشخصية" subtitle="تعديل الاسم والبريد وكلمة المرور" color={colors.primary} onPress={() => router.push('/account')} colors={colors} />
-        <MenuRow icon="megaphone-outline" label="إرسال إشعار عام" subtitle="بث إعلان لجميع مستخدمي التطبيق" color={colors.primary} onPress={() => router.push('/admin-broadcast' as never)} colors={colors} />
-        <MenuRow icon="shield-checkmark-outline" label="لوحة الإدارة" subtitle="العودة إلى مؤشرات المنصة" color={colors.gold} onPress={() => router.push('/(admin)' as never)} colors={colors} />
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب الإدارة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />
       </ScrollView>
     </SafeAreaView>
@@ -68,7 +62,6 @@ export default function AdminSettingsScreen() {
 
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
-  headerTopRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 1 },
   headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
   headerSubtitle: { marginTop: 4, fontSize: 15, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },

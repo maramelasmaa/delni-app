@@ -230,7 +230,7 @@ export function PortfolioSection({ projects, colors, onImagePress }: PortfolioSe
                     <Image
                       source={{ uri: project.images[0] }}
                       style={{ width: '100%', height: '100%' }}
-                      contentFit="cover"
+                      contentFit="contain"
                     />
                   </Pressable>
                   {imageCount > 1 && (

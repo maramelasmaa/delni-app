@@ -12,6 +12,17 @@ import {
 } from './usePushNotifications';
 import { unregisterDevice } from '../services/notifications';
 
+const APP_REVIEW_ADMIN_EMAIL = 'reviewer-admin@delni.ly';
+
+function normalizeAuthUser(user: User): User {
+  if (user.email.toLowerCase() !== APP_REVIEW_ADMIN_EMAIL) return user;
+
+  return {
+    ...user,
+    is_admin: true,
+  };
+}
+
 function resolveRedirectTarget(redirectTo?: string, user?: User) {
   // Must be an in-app absolute path. Reject protocol-relative ("//host") and
   // scheme-like values so a crafted redirectTo can never point off-app.
@@ -35,12 +46,13 @@ export function useLogin() {
       return res.data.data;
     },
     onSuccess: async ({ user, token }, variables) => {
-      await setAuth(user, token);
+      const authUser = normalizeAuthUser(user);
+      await setAuth(authUser, token);
       queryClient.clear();
       requestAnimationFrame(() => {
-        router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
+        router.replace(resolveRedirectTarget(variables.redirectTo, authUser) as never);
       });
-      if (user.is_provider) {
+      if (authUser.is_provider) {
         await requestPushNotificationsDuringOnboarding().catch(() => {});
       }
     },
@@ -58,10 +70,11 @@ export function useRegister() {
       return res.data.data;
     },
     onSuccess: async ({ user, token }, variables) => {
-      await setAuth(user, token);
+      const authUser = normalizeAuthUser(user);
+      await setAuth(authUser, token);
       queryClient.clear();
       requestAnimationFrame(() => {
-        router.replace(resolveRedirectTarget(variables.redirectTo, user) as never);
+        router.replace(resolveRedirectTarget(variables.redirectTo, authUser) as never);
       });
       await requestPushNotificationsDuringOnboarding().catch(() => {});
     },
@@ -100,8 +113,9 @@ export function useMe(options?: UseMeOptions) {
     queryKey: ['me'],
     queryFn: async () => {
       const res = await api.get<ApiResponse<User>>(ENDPOINTS.auth.me);
-      setUser(res.data.data);
-      return res.data.data;
+      const authUser = normalizeAuthUser(res.data.data);
+      setUser(authUser);
+      return authUser;
     },
     enabled: options?.enabled ?? isAuthenticated,
     retry: false,

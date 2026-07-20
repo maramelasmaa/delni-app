@@ -243,75 +243,12 @@ export interface PaginatedData<T> {
   pagination: PaginationMeta;
 }
 
-export interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string | null;
-  is_admin: boolean;
-  is_provider: boolean;
-  is_active: boolean;
-  is_suspended: boolean;
-  security_flagged: boolean;
-  suspension_reason?: string | null;
-  suspended_at?: string | null;
-  profile_slug?: string | null;
-  business_name?: string | null;
-  created_at?: string;
-}
-
-export interface AdminProviderProfile {
-  id: number;
-  slug: string;
-  business_name?: string | null;
-  provider_type?: string | null;
-  provider_type_label?: string | null;
-  bio?: string | null;
-  city_id?: number | null;
-  city_name?: string | null;
-  category_id?: number | null;
-  category_name?: string | null;
-  subcategory_id?: number | null;
-  subcategory_name?: string | null;
-  phone?: string | null;
-  whatsapp?: string | null;
-  offers_remote_work: boolean;
-  travels_to_cities: boolean;
-  service_area_note?: string | null;
-  map_url?: string | null;
-  website?: string | null;
-  instagram_handle?: string | null;
-  facebook_slug?: string | null;
-  linkedin_slug?: string | null;
-  github_username?: string | null;
-  experience_years?: number | null;
-  provider_access_ends_at?: string | null;
-  has_venue_calendar: boolean;
-  is_complete: boolean;
-  rating_average: number;
-  reviews_count: number;
-  homepage_featured: boolean;
-  homepage_featured_until?: string | null;
-}
-
-export interface AdminProviderDetail {
-  id: number;
-  name: string;
-  email: string;
-  phone?: string | null;
-  is_active: boolean;
-  is_suspended: boolean;
-  security_flagged: boolean;
-  created_at?: string | null;
-  profile?: AdminProviderProfile | null;
-  setup_url?: string;
-}
-
 export interface AdminReview {
   id: number;
   rating: number;
   comment?: string | null;
   status: 'pending' | 'approved' | 'rejected';
+  user_id: number;
   user_name: string;
   provider_name?: string | null;
   provider_slug?: string | null;
@@ -333,6 +270,9 @@ export interface ProviderReport {
   resolved_by_name?: string | null;
   resolved_at?: string | null;
   created_at: string;
+  provider_user_id?: number | null;
+  provider_name?: string | null;
+  provider_slug?: string | null;
 }
 
 export interface ProviderProfileUpdateInput {

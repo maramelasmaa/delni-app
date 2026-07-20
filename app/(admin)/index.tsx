@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AdminModeSwitch } from '../../components/provider/AdminModeSwitch';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { useAdminDashboard } from '../../src/hooks/useAdminDashboard';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -54,10 +53,9 @@ export default function AdminDashboardScreen() {
         contentContainerStyle={{ paddingBottom: 116 }}
       >
         <View style={[styles.header, { paddingTop: Math.max(insets.top, 10) }]}>
-          <AdminModeSwitch mode="admin" compact />
           <View style={styles.brandRow}>
-            <Text style={[styles.brandDot, { color: colors.gold }]}>.</Text>
             <Text style={[styles.brand, { color: colors.textPrimary }]}>دلني</Text>
+            <Text style={[styles.brandDot, { color: colors.gold }]}>.</Text>
           </View>
         </View>
 
@@ -81,8 +79,8 @@ export default function AdminDashboardScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  brandRow: { flexDirection: 'row', alignItems: 'center', flexShrink: 0 },
+  header: { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
+  brandRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 0 },
   brand: { fontSize: 26, fontFamily: 'Cairo-Black' },
   brandDot: { fontSize: 26, fontFamily: 'Cairo-Black' },
   pageTitleWrap: { marginTop: 8, paddingHorizontal: 20, alignItems: 'flex-end' },

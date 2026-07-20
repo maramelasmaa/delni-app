@@ -96,10 +96,6 @@ export function AuthBootstrap() {
         options={{ headerShown: true, headerTitle: 'المعلومات الشخصية', headerBackTitle: ' ' }}
       />
       <Stack.Screen
-        name="admin-broadcast"
-        options={{ headerShown: true, headerTitle: 'إرسال إشعار عام', headerBackTitle: ' ' }}
-      />
-      <Stack.Screen
         name="about"
         options={{ headerShown: true, headerTitle: 'من نحن', headerBackTitle: ' ' }}
       />
