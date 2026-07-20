@@ -1,5 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
   RefreshControl,
@@ -37,7 +40,18 @@ export default function AdminReviewsScreen() {
   const { alert, showAlert, hideAlert } = useRTLAlert();
   const [filter, setFilter] = useState<FilterKey>('pending');
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useAdminReviews({
+  const {
+    data,
+    reviews,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminReviews({
     status: filter === 'pending' ? 'pending' : undefined,
     flagged: filter === 'flagged' ? true : undefined,
   });
@@ -80,8 +94,13 @@ export default function AdminReviewsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إدارة التقييمات</Text>
+        <View style={styles.titleWrap}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إدارة التقييمات</Text>
+          </View>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>مراجعة التقييمات والبلاغات المفتوحة</Text>
+        </View>
       </View>
 
       <View style={styles.filterRow}>
@@ -105,18 +124,36 @@ export default function AdminReviewsScreen() {
         <ErrorView error={error} onRetry={refetch} />
       ) : (
         <FlatList
-          data={data.reviews}
+          data={reviews}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 20, gap: 12, paddingTop: 4 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
           ListEmptyComponent={<EmptyState icon="star-outline" title="لا توجد تقييمات" message="لا يوجد ما يحتاج مراجعتك في هذا الفلتر." />}
+          onEndReached={() => hasNextPage && fetchNextPage()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={isFetchingNextPage ? (
+            <View style={{ paddingVertical: 16 }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null}
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.cardTop}>
                 <View style={[styles.statusPill, { backgroundColor: colors.surfaceAlt }]}>
                   <Text style={[styles.statusText, { color: colors.textMuted }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
                 </View>
-                <Text style={[styles.reviewer, { color: colors.textPrimary }]}>{item.user_name}</Text>
+                <View style={styles.reviewerRow}>
+                  <Text style={[styles.reviewer, { color: colors.textPrimary }]}>{item.user_name}</Text>
+                  {item.provider_slug ? (
+                    <Pressable
+                      onPress={() => router.push({ pathname: '/provider/[slug]', params: { slug: item.provider_slug! } })}
+                      hitSlop={8}
+                      style={({ pressed }) => [styles.viewProfileBtn, { backgroundColor: colors.surfaceAlt, opacity: pressed ? 0.75 : 1 }]}
+                    >
+                      <Ionicons name="eye-outline" size={16} color={colors.textMuted} />
+                    </Pressable>
+                  ) : null}
+                </View>
               </View>
               {item.provider_name ? (
                 <Text style={[styles.providerName, { color: colors.textMuted }]}>على: {item.provider_name}</Text>
@@ -125,6 +162,7 @@ export default function AdminReviewsScreen() {
               {item.comment ? <Text style={[styles.comment, { color: colors.textMuted }]}>{item.comment}</Text> : null}
               {item.flag_pending && item.flagged_reason ? (
                 <View style={[styles.flagBox, { backgroundColor: colors.errorSoft }]}>
+                  <Ionicons name="flag" size={13} color={colors.error} style={styles.flagIcon} />
                   <Text style={[styles.flagText, { color: colors.error }]}>سبب البلاغ: {item.flagged_reason}</Text>
                 </View>
               ) : null}
@@ -152,21 +190,27 @@ function ActionButton({ label, bg, fg, disabled, onPress }: { label: string; bg:
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' },
+  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, flexDirection: 'row-reverse', alignItems: 'center' },
+  titleWrap: { alignItems: 'flex-end' },
+  titleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   headerTitle: { fontSize: 26, fontFamily: 'Cairo-Black' },
   headerDot: { fontSize: 26, fontFamily: 'Cairo-Black' },
-  filterRow: { flexDirection: 'row-reverse', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
+  headerSubtitle: { marginTop: 1, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
+  filterRow: { direction: 'rtl', flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
   card: { borderRadius: 18, borderWidth: 1, padding: 14, alignItems: 'flex-end', gap: 6 },
   cardTop: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  reviewerRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
   reviewer: { fontSize: 14, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
+  viewProfileBtn: { width: 28, height: 28, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   providerName: { fontSize: 12, fontFamily: 'Cairo-SemiBold', writingDirection: 'rtl' },
   statusPill: { paddingHorizontal: 10, height: 24, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
   statusText: { fontSize: 11, fontFamily: 'Cairo-Bold' },
   comment: { fontSize: 13, lineHeight: 22, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' },
-  flagBox: { width: '100%', borderRadius: 12, padding: 10 },
-  flagText: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
+  flagBox: { width: '100%', borderRadius: 12, padding: 10, flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  flagIcon: { marginTop: 1 },
+  flagText: { flex: 1, fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   actionsRow: { width: '100%', flexDirection: 'row-reverse', gap: 8, marginTop: 6, flexWrap: 'wrap' },
   actionBtn: { paddingHorizontal: 14, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontSize: 12, fontFamily: 'Cairo-Bold' },

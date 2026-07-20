@@ -59,6 +59,10 @@ export async function updateMyProfile(
   return res.data.data;
 }
 
+export async function reportProvider(profileId: string | number, reason: string): Promise<void> {
+  await api.post(ENDPOINTS.providers.report(profileId), { reason });
+}
+
 export async function getMyReviews(page = 1) {
   const res = await api.get<ApiResponse<Review[]> & { pagination: PaginationMeta }>(
     ENDPOINTS.provider.reviews,

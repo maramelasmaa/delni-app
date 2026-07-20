@@ -24,6 +24,7 @@ export const ENDPOINTS = {
     reviews: (slug: string) => `/providers/${slug}/reviews`,
     storeReview: (slug: string) => `/providers/${slug}/reviews`,
     flagReview: (id: number) => `/reviews/${id}/flag`,
+    report: (profileId: string | number) => `/providers/${profileId}/report`,
   },
   auth: {
     register: '/auth/register',
@@ -56,6 +57,8 @@ export const ENDPOINTS = {
     extendProviderAccess: (id: number) => `/admin/providers/${id}/extend-access`,
     providerOnboardingLink: (id: number) => `/admin/providers/${id}/onboarding-link`,
     clearProviderSecurityFlag: (id: number) => `/admin/providers/${id}/clear-security-flag`,
+    providerReports: (userId: number) => `/admin/providers/${userId}/reports`,
+    resolveProviderReport: (userId: number, reportId: number) => `/admin/providers/${userId}/reports/${reportId}/resolve`,
     categories: '/admin/categories',
     category: (id: number) => `/admin/categories/${id}`,
     subcategories: '/admin/subcategories',

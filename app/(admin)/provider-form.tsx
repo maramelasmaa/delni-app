@@ -2,18 +2,20 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PremiumButton } from '../../components/auth/premiumAuth';
+import { AdminField } from '../../components/admin/AdminField';
+import { AdminOptionChips } from '../../components/admin/AdminOptionChips';
+import { AdminSection } from '../../components/admin/AdminSection';
+import { AdminToggleRow } from '../../components/admin/AdminToggleRow';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { RTLAlert, useRTLAlert } from '../../components/ui/RTLAlert';
@@ -24,7 +26,7 @@ import {
 } from '../../src/hooks/useAdminManagement';
 import { useTheme } from '../../src/hooks/useTheme';
 import { parseApiError } from '../../src/lib/error-parser';
-import type { AdminCatalogItem, AdminProviderInput } from '../../src/services/admin';
+import type { AdminProviderInput } from '../../src/services/admin';
 import type { AdminProviderDetail } from '../../src/types';
 
 const emptyDraft: AdminProviderInput = {
@@ -56,6 +58,9 @@ const emptyDraft: AdminProviderInput = {
   homepage_featured: false,
   homepage_featured_until: '',
 };
+
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function draftFromProvider(provider?: AdminProviderDetail): AdminProviderInput {
   if (!provider) return emptyDraft;
@@ -138,39 +143,67 @@ export default function AdminProviderFormScreen() {
   const providerId = params.id ? Number(params.id) : undefined;
   const isEditing = !!providerId;
   const [draft, setDraft] = useState<AdminProviderInput>(emptyDraft);
+  const [marketSectionOpen, setMarketSectionOpen] = useState(false);
 
   const providerQuery = useAdminProvider(providerId);
-  const { data: categoriesData } = useAdminCatalog('categories', {});
-  const { data: subcategoriesData } = useAdminCatalog('subcategories', {
+  const categoriesQuery = useAdminCatalog('categories', {});
+  const subcategoriesQuery = useAdminCatalog('subcategories', {
     category_id: draft.category_id ? Number(draft.category_id) : undefined,
   });
-  const { data: citiesData } = useAdminCatalog('cities', {});
-  const { data: providerTypesData } = useAdminCatalog('providerTypes', {});
+  const citiesQuery = useAdminCatalog('cities', {});
+  const providerTypesQuery = useAdminCatalog('providerTypes', {});
   const mutations = useAdminProviderMutations();
 
-  const busy =
-    mutations.create.isPending ||
-    mutations.update.isPending ||
-    mutations.remove.isPending ||
-    mutations.extendAccess.isPending ||
-    mutations.clearSecurityFlag.isPending ||
-    mutations.onboardingLink.isPending;
+  // Save/update drives the bottom bar button; secondary actions get their own
+  // busy flag so tapping "extend access" etc. no longer disables Save.
+  const saveBusy = mutations.create.isPending || mutations.update.isPending || mutations.remove.isPending;
+  const secondaryBusy =
+    mutations.extendAccess.isPending || mutations.clearSecurityFlag.isPending || mutations.onboardingLink.isPending;
+
+  const catalogLoading =
+    categoriesQuery.isLoading || subcategoriesQuery.isLoading || citiesQuery.isLoading || providerTypesQuery.isLoading;
+  const catalogError =
+    categoriesQuery.isError || subcategoriesQuery.isError || citiesQuery.isError || providerTypesQuery.isError;
+  const retryCatalog = () => {
+    categoriesQuery.refetch();
+    subcategoriesQuery.refetch();
+    citiesQuery.refetch();
+    providerTypesQuery.refetch();
+  };
 
   useEffect(() => {
     if (providerQuery.data) setDraft(draftFromProvider(providerQuery.data));
   }, [providerQuery.data]);
 
   const title = isEditing ? 'تعديل مزود' : 'إضافة مزود';
-  const visibleSubcategories = useMemo(() => subcategoriesData?.items ?? [], [subcategoriesData?.items]);
+  const visibleSubcategories = useMemo(() => subcategoriesQuery.items ?? [], [subcategoriesQuery.items]);
 
   const updateDraft = (patch: Partial<AdminProviderInput>) => setDraft((current) => ({ ...current, ...patch }));
 
+  const validate = (): string | null => {
+    if (!draft.name.trim() || !draft.email.trim()) {
+      return 'اسم المزود والبريد الإلكتروني مطلوبان.';
+    }
+    if (!EMAIL_PATTERN.test(draft.email.trim())) {
+      return 'صيغة البريد الإلكتروني غير صحيحة.';
+    }
+    if (draft.provider_access_ends_at && !DATE_PATTERN.test(draft.provider_access_ends_at.trim())) {
+      return 'صيغة تاريخ انتهاء صلاحية الظهور غير صحيحة (YYYY-MM-DD).';
+    }
+    if (draft.homepage_featured && draft.homepage_featured_until && !DATE_PATTERN.test(draft.homepage_featured_until.trim())) {
+      return 'صيغة تاريخ «مميز حتى» غير صحيحة (YYYY-MM-DD).';
+    }
+    return null;
+  };
+
   const save = () => {
-    const input = cleanDraft(draft);
-    if (!input.name || !input.email) {
-      showAlert('تنبيه', 'اسم المزود والبريد الإلكتروني مطلوبان.', [{ text: 'حسنا' }]);
+    const validationError = validate();
+    if (validationError) {
+      showAlert('تنبيه', validationError, [{ text: 'حسنا' }]);
       return;
     }
+
+    const input = cleanDraft(draft);
 
     const callbacks = {
       onSuccess: (saved: AdminProviderDetail) => {
@@ -208,7 +241,10 @@ export default function AdminProviderFormScreen() {
   const extendAccess = (days: number) => {
     if (!providerId) return;
     mutations.extendAccess.mutate({ id: providerId, days }, {
-      onSuccess: (provider) => setDraft(draftFromProvider(provider)),
+      onSuccess: (provider) => {
+        setDraft(draftFromProvider(provider));
+        showAlert('تم التمديد', `تم تمديد صلاحية المزود ${days} يوما بنجاح.`, [{ text: 'حسنا' }]);
+      },
       onError: (err) => showAlert('تعذر التمديد', parseApiError(err).message, [{ text: 'حسنا' }]),
     });
   };
@@ -224,7 +260,10 @@ export default function AdminProviderFormScreen() {
   const clearFlag = () => {
     if (!providerId) return;
     mutations.clearSecurityFlag.mutate(providerId, {
-      onSuccess: (provider) => setDraft(draftFromProvider(provider)),
+      onSuccess: (provider) => {
+        setDraft(draftFromProvider(provider));
+        showAlert('تم التحديث', 'تم مسح علامة الأمان عن هذا المزود.', [{ text: 'حسنا' }]);
+      },
       onError: (err) => showAlert('تعذر تحديث الحالة', parseApiError(err).message, [{ text: 'حسنا' }]),
     });
   };
@@ -232,6 +271,10 @@ export default function AdminProviderFormScreen() {
   if (isEditing && providerQuery.isLoading) return <LoadingSpinner />;
   if (isEditing && (providerQuery.isError || !providerQuery.data)) {
     return <ErrorView error={providerQuery.error} onRetry={providerQuery.refetch} />;
+  }
+  if (catalogLoading) return <LoadingSpinner />;
+  if (catalogError) {
+    return <ErrorView error={categoriesQuery.error ?? subcategoriesQuery.error ?? citiesQuery.error ?? providerTypesQuery.error} onRetry={retryCatalog} />;
   }
 
   return (
@@ -252,196 +295,97 @@ export default function AdminProviderFormScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 130, gap: 14 }}
         >
-          <Section title="الحساب">
-            <Field label="اسم المسؤول/المالك" value={draft.name} onChangeText={(value) => updateDraft({ name: value })} colors={colors} />
-            <Field label="البريد الإلكتروني" value={draft.email} onChangeText={(value) => updateDraft({ email: value })} colors={colors} autoCapitalize="none" keyboardType="email-address" />
-            <Field label="هاتف الحساب" value={draft.phone ?? ''} onChangeText={(value) => updateDraft({ phone: value })} colors={colors} keyboardType="phone-pad" />
-            <Field label={isEditing ? 'كلمة مرور جديدة' : 'كلمة المرور'} value={draft.password ?? ''} onChangeText={(value) => updateDraft({ password: value })} colors={colors} secureTextEntry />
-            <ToggleRow label="الحساب نشط" value={!!draft.is_active} onValueChange={(value) => updateDraft({ is_active: value })} colors={colors} />
-            <ToggleRow label="موقوف" value={!!draft.is_suspended} onValueChange={(value) => updateDraft({ is_suspended: value })} colors={colors} />
-          </Section>
+          <AdminSection title="الحساب">
+            <AdminField label="اسم المسؤول/المالك" value={draft.name} onChangeText={(value) => updateDraft({ name: value })} colors={colors} />
+            <AdminField label="البريد الإلكتروني" value={draft.email} onChangeText={(value) => updateDraft({ email: value })} colors={colors} autoCapitalize="none" keyboardType="email-address" />
+            <AdminField label="هاتف الحساب" value={draft.phone ?? ''} onChangeText={(value) => updateDraft({ phone: value })} colors={colors} keyboardType="phone-pad" />
+            <AdminField label={isEditing ? 'كلمة مرور جديدة' : 'كلمة المرور'} value={draft.password ?? ''} onChangeText={(value) => updateDraft({ password: value })} colors={colors} secureTextEntry />
+            <AdminToggleRow label="الحساب نشط" value={!!draft.is_active} onValueChange={(value) => updateDraft({ is_active: value })} colors={colors} />
+            <AdminToggleRow label="موقوف" value={!!draft.is_suspended} onValueChange={(value) => updateDraft({ is_suspended: value })} colors={colors} />
+          </AdminSection>
 
-          <Section title="الملف">
-            <Field label="اسم النشاط" value={draft.business_name ?? ''} onChangeText={(value) => updateDraft({ business_name: value })} colors={colors} />
-            <OptionChips
+          <AdminSection title="الملف">
+            <AdminField label="اسم النشاط" value={draft.business_name ?? ''} onChangeText={(value) => updateDraft({ business_name: value })} colors={colors} />
+            <AdminOptionChips
               label="نوع المزود"
-              items={providerTypesData?.items ?? []}
+              items={providerTypesQuery.items ?? []}
               selectedValue={draft.provider_type ?? ''}
               getValue={(item) => item.code ?? ''}
               onSelect={(value) => updateDraft({ provider_type: String(value) })}
               colors={colors}
             />
-            <OptionChips label="المدينة" items={citiesData?.items ?? []} selectedValue={draft.city_id ?? null} onSelect={(value) => updateDraft({ city_id: Number(value) })} colors={colors} />
-            <OptionChips
+            <AdminOptionChips label="المدينة" items={citiesQuery.items ?? []} selectedValue={draft.city_id ?? null} onSelect={(value) => updateDraft({ city_id: Number(value) })} colors={colors} />
+            <AdminOptionChips
               label="التصنيف"
-              items={categoriesData?.items ?? []}
+              items={categoriesQuery.items ?? []}
               selectedValue={draft.category_id ?? null}
               onSelect={(value) => updateDraft({ category_id: Number(value), subcategory_id: null })}
               colors={colors}
             />
-            <OptionChips label="التخصص" items={visibleSubcategories} selectedValue={draft.subcategory_id ?? null} onSelect={(value) => updateDraft({ subcategory_id: Number(value) })} colors={colors} />
-            <Field label="نبذة" value={draft.bio ?? ''} onChangeText={(value) => updateDraft({ bio: value })} colors={colors} multiline />
-            <Field label="هاتف الملف" value={draft.profile_phone ?? ''} onChangeText={(value) => updateDraft({ profile_phone: value })} colors={colors} keyboardType="phone-pad" />
-            <Field label="واتساب" value={draft.whatsapp ?? ''} onChangeText={(value) => updateDraft({ whatsapp: value })} colors={colors} keyboardType="phone-pad" />
-            <ToggleRow label="يقدم الخدمة عن بعد" value={!!draft.offers_remote_work} onValueChange={(value) => updateDraft({ offers_remote_work: value })} colors={colors} />
-            <ToggleRow label="ينتقل بين المدن" value={!!draft.travels_to_cities} onValueChange={(value) => updateDraft({ travels_to_cities: value })} colors={colors} />
-            <ToggleRow label="تفعيل تقويم الحجز" value={!!draft.has_venue_calendar} onValueChange={(value) => updateDraft({ has_venue_calendar: value })} colors={colors} />
-          </Section>
+            <AdminOptionChips label="التخصص" items={visibleSubcategories} selectedValue={draft.subcategory_id ?? null} onSelect={(value) => updateDraft({ subcategory_id: Number(value) })} colors={colors} />
+            <AdminField label="نبذة" value={draft.bio ?? ''} onChangeText={(value) => updateDraft({ bio: value })} colors={colors} multiline />
+            <AdminField label="هاتف الملف" value={draft.profile_phone ?? ''} onChangeText={(value) => updateDraft({ profile_phone: value })} colors={colors} keyboardType="phone-pad" />
+            <AdminField label="واتساب" value={draft.whatsapp ?? ''} onChangeText={(value) => updateDraft({ whatsapp: value })} colors={colors} keyboardType="phone-pad" />
+            <AdminToggleRow label="يقدم الخدمة عن بعد" value={!!draft.offers_remote_work} onValueChange={(value) => updateDraft({ offers_remote_work: value })} colors={colors} />
+            <AdminToggleRow label="ينتقل بين المدن" value={!!draft.travels_to_cities} onValueChange={(value) => updateDraft({ travels_to_cities: value })} colors={colors} />
+            <AdminToggleRow label="تفعيل تقويم الحجز" value={!!draft.has_venue_calendar} onValueChange={(value) => updateDraft({ has_venue_calendar: value })} colors={colors} />
+          </AdminSection>
 
-          <Section title="السوق والروابط">
-            <Field label="انتهاء صلاحية الظهور YYYY-MM-DD" value={draft.provider_access_ends_at ?? ''} onChangeText={(value) => updateDraft({ provider_access_ends_at: value })} colors={colors} autoCapitalize="none" />
-            <ToggleRow label="مميز في الرئيسية" value={!!draft.homepage_featured} onValueChange={(value) => updateDraft({ homepage_featured: value })} colors={colors} />
-            {draft.homepage_featured ? (
-              <Field label="مميز حتى YYYY-MM-DD" value={draft.homepage_featured_until ?? ''} onChangeText={(value) => updateDraft({ homepage_featured_until: value })} colors={colors} autoCapitalize="none" />
+          <View style={[styles.collapsibleSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Pressable onPress={() => setMarketSectionOpen((open) => !open)} style={styles.collapsibleHeader}>
+              <Ionicons name={marketSectionOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
+              <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>السوق والروابط</Text>
+            </Pressable>
+            {marketSectionOpen ? (
+              <View style={{ gap: 10 }}>
+                <AdminField label="انتهاء صلاحية الظهور YYYY-MM-DD" value={draft.provider_access_ends_at ?? ''} onChangeText={(value) => updateDraft({ provider_access_ends_at: value })} colors={colors} autoCapitalize="none" />
+                <AdminToggleRow label="مميز في الرئيسية" value={!!draft.homepage_featured} onValueChange={(value) => updateDraft({ homepage_featured: value })} colors={colors} />
+                {draft.homepage_featured ? (
+                  <AdminField label="مميز حتى YYYY-MM-DD" value={draft.homepage_featured_until ?? ''} onChangeText={(value) => updateDraft({ homepage_featured_until: value })} colors={colors} autoCapitalize="none" />
+                ) : null}
+                <AdminField label="الموقع" value={draft.website ?? ''} onChangeText={(value) => updateDraft({ website: value })} colors={colors} autoCapitalize="none" keyboardType="url" />
+                <AdminField label="الخريطة" value={draft.map_url ?? ''} onChangeText={(value) => updateDraft({ map_url: value })} colors={colors} autoCapitalize="none" keyboardType="url" />
+                <AdminField label="Instagram" value={draft.instagram_handle ?? ''} onChangeText={(value) => updateDraft({ instagram_handle: value })} colors={colors} autoCapitalize="none" />
+                <AdminField label="Facebook" value={draft.facebook_slug ?? ''} onChangeText={(value) => updateDraft({ facebook_slug: value })} colors={colors} autoCapitalize="none" />
+                <AdminField label="LinkedIn" value={draft.linkedin_slug ?? ''} onChangeText={(value) => updateDraft({ linkedin_slug: value })} colors={colors} autoCapitalize="none" />
+                <AdminField label="ملاحظات نطاق الخدمة" value={draft.service_area_note ?? ''} onChangeText={(value) => updateDraft({ service_area_note: value })} colors={colors} multiline />
+              </View>
             ) : null}
-            <Field label="الموقع" value={draft.website ?? ''} onChangeText={(value) => updateDraft({ website: value })} colors={colors} autoCapitalize="none" keyboardType="url" />
-            <Field label="الخريطة" value={draft.map_url ?? ''} onChangeText={(value) => updateDraft({ map_url: value })} colors={colors} autoCapitalize="none" keyboardType="url" />
-            <Field label="Instagram" value={draft.instagram_handle ?? ''} onChangeText={(value) => updateDraft({ instagram_handle: value })} colors={colors} autoCapitalize="none" />
-            <Field label="Facebook" value={draft.facebook_slug ?? ''} onChangeText={(value) => updateDraft({ facebook_slug: value })} colors={colors} autoCapitalize="none" />
-            <Field label="LinkedIn" value={draft.linkedin_slug ?? ''} onChangeText={(value) => updateDraft({ linkedin_slug: value })} colors={colors} autoCapitalize="none" />
-            <Field label="ملاحظات نطاق الخدمة" value={draft.service_area_note ?? ''} onChangeText={(value) => updateDraft({ service_area_note: value })} colors={colors} multiline />
-          </Section>
+          </View>
 
           {isEditing ? (
-            <Section title="إجراءات">
+            <AdminSection title="إجراءات">
               <View style={styles.actionRow}>
                 {[30, 90, 365].map((days) => (
-                  <Pressable key={days} onPress={() => extendAccess(days)} disabled={busy} style={[styles.actionBtn, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+                  <Pressable key={days} onPress={() => extendAccess(days)} disabled={secondaryBusy} style={[styles.actionBtn, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
                     <Text style={[styles.actionText, { color: colors.textPrimary }]}>+{days}</Text>
                   </Pressable>
                 ))}
               </View>
-              <Pressable onPress={generateLink} disabled={busy} style={[styles.wideAction, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+              <Pressable onPress={generateLink} disabled={secondaryBusy} style={[styles.wideAction, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
                 <Ionicons name="link-outline" size={18} color={colors.primary} />
                 <Text style={[styles.wideActionText, { color: colors.textPrimary }]}>إنشاء رابط الإعداد</Text>
               </Pressable>
               {providerQuery.data?.security_flagged ? (
-                <Pressable onPress={clearFlag} disabled={busy} style={[styles.wideAction, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
+                <Pressable onPress={clearFlag} disabled={secondaryBusy} style={[styles.wideAction, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
                   <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
                   <Text style={[styles.wideActionText, { color: colors.textPrimary }]}>مسح علامة الأمان</Text>
                 </Pressable>
               ) : null}
-              <Pressable onPress={confirmDelete} disabled={busy} style={[styles.deleteBtn, { borderColor: colors.error }]}>
+              <Pressable onPress={confirmDelete} disabled={saveBusy} style={[styles.deleteBtn, { borderColor: colors.error }]}>
                 <Ionicons name="trash-outline" size={18} color={colors.error} />
                 <Text style={[styles.deleteText, { color: colors.error }]}>حذف المزود</Text>
               </Pressable>
-            </Section>
+            </AdminSection>
           ) : null}
         </ScrollView>
 
         <View style={[styles.bottomBar, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
-          <Pressable onPress={save} disabled={busy} style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: busy ? 0.7 : 1 }]}>
-            {busy ? <ActivityIndicator size="small" color={colors.textOnPrimary} /> : <Text style={[styles.saveText, { color: colors.textOnPrimary }]}>حفظ</Text>}
-          </Pressable>
+          <PremiumButton title="حفظ" loadingTitle="جاري الحفظ..." loading={saveBusy} onPress={save} />
         </View>
       </KeyboardAvoidingView>
       <RTLAlert alert={alert} onDismiss={hideAlert} />
     </SafeAreaView>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>{title}</Text>
-      {children}
-    </View>
-  );
-}
-
-function Field({
-  label,
-  value,
-  onChangeText,
-  colors,
-  keyboardType,
-  autoCapitalize = 'sentences',
-  multiline = false,
-  secureTextEntry = false,
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  colors: ReturnType<typeof useTheme>['colors'];
-  keyboardType?: 'default' | 'email-address' | 'phone-pad' | 'url';
-  autoCapitalize?: 'none' | 'sentences';
-  multiline?: boolean;
-  secureTextEntry?: boolean;
-}) {
-  return (
-    <View style={styles.fieldWrap}>
-      <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        multiline={multiline}
-        secureTextEntry={secureTextEntry}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, multiline && styles.textArea, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.bg }]}
-        textAlignVertical={multiline ? 'top' : 'center'}
-      />
-    </View>
-  );
-}
-
-function ToggleRow({
-  label,
-  value,
-  onValueChange,
-  colors,
-}: {
-  label: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-  colors: ReturnType<typeof useTheme>['colors'];
-}) {
-  return (
-    <View style={[styles.toggleRow, { backgroundColor: colors.bg, borderColor: colors.border }]}>
-      <Switch value={value} onValueChange={onValueChange} trackColor={{ true: colors.primary }} />
-      <Text style={[styles.toggleText, { color: colors.textPrimary }]}>{label}</Text>
-    </View>
-  );
-}
-
-function OptionChips({
-  label,
-  items,
-  selectedValue,
-  onSelect,
-  colors,
-  getValue = (item) => item.id,
-}: {
-  label: string;
-  items: AdminCatalogItem[];
-  selectedValue: string | number | null;
-  onSelect: (value: string | number) => void;
-  colors: ReturnType<typeof useTheme>['colors'];
-  getValue?: (item: AdminCatalogItem) => string | number;
-}) {
-  return (
-    <View style={styles.fieldWrap}>
-      <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
-      <View style={styles.chips}>
-        {items.map((item) => {
-          const value = getValue(item);
-          const active = String(selectedValue ?? '') === String(value);
-          return (
-            <Pressable
-              key={`${label}-${item.id}`}
-              onPress={() => onSelect(value)}
-              style={[styles.chip, { backgroundColor: active ? colors.primary : colors.bg, borderColor: active ? colors.primary : colors.border }]}
-            >
-              <Text numberOfLines={1} style={[styles.chipText, { color: active ? colors.textOnPrimary : colors.textMuted }]}>
-                {item.localized_name || item.name}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
   );
 }
 
@@ -450,17 +394,9 @@ const styles = StyleSheet.create({
   iconBtn: { width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   kicker: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   headerTitle: { fontSize: 25, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
-  section: { borderRadius: 18, borderWidth: 1, padding: 14, gap: 10 },
-  sectionTitle: { fontSize: 17, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl', marginBottom: 2 },
-  fieldWrap: { gap: 6 },
-  fieldLabel: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
-  input: { minHeight: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 13, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
-  textArea: { minHeight: 92, paddingTop: 12 },
-  toggleRow: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  toggleText: { fontSize: 13, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
-  chips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 7 },
-  chip: { maxWidth: '100%', minHeight: 32, borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
-  chipText: { maxWidth: 180, fontSize: 11, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
+  sectionTitle: { fontSize: 17, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
+  collapsibleSection: { borderRadius: 18, borderWidth: 1, padding: 14, gap: 10 },
+  collapsibleHeader: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   actionRow: { flexDirection: 'row-reverse', gap: 8 },
   actionBtn: { flex: 1, minHeight: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontSize: 13, fontFamily: 'Cairo-Bold' },

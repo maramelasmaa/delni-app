@@ -8,7 +8,7 @@ type Props = { mode: 'public' | 'admin'; compact?: boolean };
 export function AdminModeSwitch({ mode, compact = false }: Props) {
   const { colors } = useTheme();
   const adminMode = mode === 'admin';
-  const target = adminMode ? '/(tabs)/' : '/(admin)/';
+  const target = adminMode ? '/(tabs)' : '/(admin)';
   const label = adminMode ? 'العودة إلى التطبيق العام' : 'فتح لوحة الإدارة';
   const displayLabel = adminMode ? 'التطبيق العام' : 'لوحة الإدارة';
 

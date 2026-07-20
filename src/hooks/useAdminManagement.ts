@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth';
 import * as adminService from '../services/admin';
 import type {
@@ -19,12 +19,23 @@ function useIsAdmin() {
 
 export function useAdminUsers(filters: AdminUserFilters) {
   const enabled = useIsAdmin();
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['admin-users', filters],
-    queryFn: () => adminService.getUsers(filters),
+    queryFn: ({ pageParam }) => adminService.getUsers({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.current_page < lastPage.pagination.last_page
+        ? lastPage.pagination.current_page + 1
+        : undefined,
     enabled,
     retry: false,
   });
+
+  return {
+    ...query,
+    users: query.data?.pages.flatMap((page) => page.users) ?? [],
+    pagination: query.data?.pages[query.data.pages.length - 1]?.pagination,
+  };
 }
 
 export function useAdminUserMutations() {
@@ -51,12 +62,23 @@ export function useAdminUserMutations() {
 
 export function useAdminProviders(filters: AdminProviderFilters) {
   const enabled = useIsAdmin();
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['admin-providers', filters],
-    queryFn: () => adminService.getProviders(filters),
+    queryFn: ({ pageParam }) => adminService.getProviders({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.current_page < lastPage.pagination.last_page
+        ? lastPage.pagination.current_page + 1
+        : undefined,
     enabled,
     retry: false,
   });
+
+  return {
+    ...query,
+    providers: query.data?.pages.flatMap((page) => page.providers) ?? [],
+    pagination: query.data?.pages[query.data.pages.length - 1]?.pagination,
+  };
 }
 
 export function useAdminProvider(id?: number) {
@@ -112,14 +134,57 @@ export function useAdminProviderMutations() {
   return { create, update, remove, extendAccess, clearSecurityFlag, onboardingLink };
 }
 
+export function useAdminProviderReports(userId?: number, enabled = false) {
+  const isAdmin = useIsAdmin();
+  return useQuery({
+    queryKey: ['admin-provider-reports', userId],
+    queryFn: () => adminService.getProviderReports(userId as number),
+    enabled: isAdmin && !!userId && enabled,
+    retry: false,
+  });
+}
+
+export function useResolveProviderReport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      userId,
+      reportId,
+      decision,
+      resolutionNote,
+    }: {
+      userId: number;
+      reportId: number;
+      decision: 'resolve' | 'dismiss';
+      resolutionNote?: string;
+    }) => adminService.resolveProviderReport(userId, reportId, decision, resolutionNote),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-providers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-provider'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-provider-reports', variables.userId] });
+    },
+  });
+}
+
 export function useAdminCatalog(kind: AdminCatalogKind, filters: AdminCatalogFilters) {
   const enabled = useIsAdmin();
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['admin-catalog', kind, filters],
-    queryFn: () => adminService.getCatalog(kind, filters),
+    queryFn: ({ pageParam }) => adminService.getCatalog(kind, { ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.current_page < lastPage.pagination.last_page
+        ? lastPage.pagination.current_page + 1
+        : undefined,
     enabled,
     retry: false,
   });
+
+  return {
+    ...query,
+    items: query.data?.pages.flatMap((page) => page.items) ?? [],
+    pagination: query.data?.pages[query.data.pages.length - 1]?.pagination,
+  };
 }
 
 export function useAdminCatalogMutations(kind: AdminCatalogKind) {
@@ -152,12 +217,23 @@ export function useAdminCatalogMutations(kind: AdminCatalogKind) {
 
 export function useAdminReviews(filters: AdminReviewFilters) {
   const enabled = useIsAdmin();
-  return useQuery({
+  const query = useInfiniteQuery({
     queryKey: ['admin-reviews', filters],
-    queryFn: () => adminService.getReviews(filters),
+    queryFn: ({ pageParam }) => adminService.getReviews({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.current_page < lastPage.pagination.last_page
+        ? lastPage.pagination.current_page + 1
+        : undefined,
     enabled,
     retry: false,
   });
+
+  return {
+    ...query,
+    reviews: query.data?.pages.flatMap((page) => page.reviews) ?? [],
+    pagination: query.data?.pages[query.data.pages.length - 1]?.pagination,
+  };
 }
 
 export function useAdminReviewMutations() {

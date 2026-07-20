@@ -7,6 +7,7 @@ import type {
   ApiResponse,
   PaginationMeta,
   Provider,
+  ProviderReport,
 } from '../types';
 
 export type AdminCatalogKind = 'categories' | 'subcategories' | 'cities' | 'providerTypes';
@@ -193,6 +194,24 @@ export async function updateCatalogItem(kind: AdminCatalogKind, id: number, inpu
 
 export async function deleteCatalogItem(kind: AdminCatalogKind, id: number): Promise<void> {
   await api.delete(catalogItemEndpoint(kind, id));
+}
+
+export async function getProviderReports(userId: number): Promise<ProviderReport[]> {
+  const res = await api.get<ApiResponse<ProviderReport[]>>(ENDPOINTS.admin.providerReports(userId));
+  return res.data.data;
+}
+
+export async function resolveProviderReport(
+  userId: number,
+  reportId: number,
+  decision: 'resolve' | 'dismiss',
+  resolutionNote?: string,
+): Promise<ProviderReport> {
+  const res = await api.post<ApiResponse<ProviderReport>>(ENDPOINTS.admin.resolveProviderReport(userId, reportId), {
+    decision,
+    resolution_note: resolutionNote,
+  });
+  return res.data.data;
 }
 
 export interface AdminReviewFilters {

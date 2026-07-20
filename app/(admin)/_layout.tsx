@@ -36,13 +36,13 @@ export default function AdminTabsLayout() {
         tabBarLabelStyle: { fontSize: 10, fontFamily: 'Cairo-Bold' },
       }}
     >
-      <Tabs.Screen name="settings" options={{ title: 'الإعدادات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'settings' : 'settings-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="index" options={{ title: 'الإحصاءات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
       <Tabs.Screen name="provider-form" options={{ href: null }} />
       <Tabs.Screen name="providers" options={{ title: 'المزودون', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="catalog" options={{ title: 'الفهرس', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'albums' : 'albums-outline'} size={22} color={color} /> }} />
       <Tabs.Screen name="reviews" options={{ title: 'التقييمات', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'star' : 'star-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="users" options={{ title: 'المستخدمون', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} /> }} />
-      <Tabs.Screen name="index" options={{ title: 'الإدارة', tabBarIcon: ({ color, focused }) => <Ionicons name={focused ? 'shield-checkmark' : 'shield-checkmark-outline'} size={22} color={color} /> }} />
+      <Tabs.Screen name="catalog" options={{ href: null }} />
+      <Tabs.Screen name="users" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -59,7 +59,7 @@ export default function AdminSettingsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
         <MenuRow icon="person-outline" label="المعلومات الشخصية" subtitle="تعديل الاسم والبريد وكلمة المرور" color={colors.primary} onPress={() => router.push('/account')} colors={colors} />
         <MenuRow icon="megaphone-outline" label="إرسال إشعار عام" subtitle="بث إعلان لجميع مستخدمي التطبيق" color={colors.primary} onPress={() => router.push('/admin-broadcast' as never)} colors={colors} />
-        <MenuRow icon="shield-checkmark-outline" label="لوحة الإدارة" subtitle="العودة إلى مؤشرات المنصة" color={colors.gold} onPress={() => router.push('/(admin)/' as never)} colors={colors} />
+        <MenuRow icon="shield-checkmark-outline" label="لوحة الإدارة" subtitle="العودة إلى مؤشرات المنصة" color={colors.gold} onPress={() => router.push('/(admin)' as never)} colors={colors} />
         <MenuRow icon="log-out-outline" label={logout.isPending ? 'جاري تسجيل الخروج...' : 'تسجيل الخروج'} subtitle="الخروج من حساب الإدارة" color={colors.error} danger onPress={() => { if (!logout.isPending) logout.mutate(); }} colors={colors} />
       </ScrollView>
     </SafeAreaView>

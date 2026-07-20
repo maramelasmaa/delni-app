@@ -1,13 +1,13 @@
 import React, { useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useNavigation } from 'expo-router';
 
+const DOT_COUNT = 3;
+
 export default function SplashScreen() {
   const navigation = useNavigation();
-  const titleOpacity = React.useRef(new Animated.Value(0)).current;
-  const taglineOpacity = React.useRef(new Animated.Value(0)).current;
-  const dotsScale = React.useRef(new Animated.Value(0.6)).current;
+  const dotAnims = React.useRef(Array.from({ length: DOT_COUNT }, () => new Animated.Value(0))).current;
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -16,94 +16,66 @@ export default function SplashScreen() {
   }, [navigation]);
 
   useEffect(() => {
-    Animated.sequence([
-      Animated.timing(titleOpacity, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.timing(taglineOpacity, {
-        toValue: 1,
-        duration: 600,
-        useNativeDriver: true,
-      }),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(dotsScale, {
-            toValue: 1,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(dotsScale, {
-            toValue: 0.6,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
+    const pulse = Animated.loop(
+      Animated.stagger(
+        180,
+        dotAnims.map((value) =>
+          Animated.sequence([
+            Animated.timing(value, {
+              toValue: 1,
+              duration: 420,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+            Animated.timing(value, {
+              toValue: 0,
+              duration: 420,
+              easing: Easing.in(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+        ),
       ),
-    ]).start();
+    );
+    pulse.start();
 
     const timer = setTimeout(() => {
       router.replace('/(tabs)/');
-    }, 2500);
+    }, 2300);
 
-    return () => clearTimeout(timer);
-  }, [titleOpacity, taglineOpacity, dotsScale]);
+    return () => {
+      clearTimeout(timer);
+      pulse.stop();
+    };
+  }, [dotAnims]);
 
   return (
     <LinearGradient
-      colors={['#071A33', '#0E2A4D', '#123A6F']}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
+      colors={['#0A1A33', '#070E1F', '#050A17']}
+      start={{ x: 0.2, y: 0 }}
+      end={{ x: 0.8, y: 1 }}
       style={styles.container}
     >
       <View style={styles.content}>
-        <Animated.View style={[{ opacity: titleOpacity }]}>
-          <View style={{ flexDirection: 'row-reverse', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
-            <Text style={styles.title}>دلني</Text>
-            <Text style={[styles.title, { color: '#FCD34D' }]}>.</Text>
-          </View>
-        </Animated.View>
+        <View style={styles.brandRow}>
+          <View style={styles.brandDot} />
+          <Text style={styles.brandName}>دلني</Text>
+        </View>
+        <Text style={styles.tagline}>ابحث عن الخدمات بسهولة</Text>
 
-        <Animated.View style={[{ opacity: taglineOpacity }]}>
-          <Text style={styles.tagline}>ابحث عن الخدمات بسهولة</Text>
-        </Animated.View>
-
-        <View style={styles.dotsContainer}>
-          {[0, 1, 2].map((index) => {
-            const dotAnim = React.useRef(new Animated.Value(0.4)).current;
-
-            React.useEffect(() => {
-              Animated.loop(
-                Animated.sequence([
-                  Animated.delay(index * 200),
-                  Animated.timing(dotAnim, {
-                    toValue: 1,
-                    duration: 800,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(dotAnim, {
-                    toValue: 0.4,
-                    duration: 800,
-                    useNativeDriver: true,
-                  }),
-                ])
-              ).start();
-            }, [dotAnim]);
-
-            return (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.dot,
-                  {
-                    backgroundColor: '#FFFFFF',
-                    opacity: dotAnim,
-                  },
-                ]}
-              />
-            );
-          })}
+        <View style={styles.dotsRow}>
+          {dotAnims.map((value, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+                  transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }) }],
+                },
+              ]}
+            />
+          ))}
         </View>
       </View>
     </LinearGradient>
@@ -113,36 +85,47 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
   },
-  title: {
+  brandRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 8,
+  },
+  brandDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: '#F4C400',
+  },
+  brandName: {
     fontSize: 56,
+    lineHeight: 76,
     fontFamily: 'Cairo-Black',
     color: '#FFFFFF',
-    letterSpacing: -1,
-    textAlign: 'center',
   },
   tagline: {
+    marginTop: 6,
     fontSize: 16,
     fontFamily: 'Cairo-SemiBold',
-    color: 'rgba(255, 255, 255, 0.85)',
+    color: 'rgba(255,255,255,0.7)',
     textAlign: 'center',
-    marginTop: 8,
+    writingDirection: 'rtl',
   },
-  dotsContainer: {
-    flexDirection: 'row',
+  dotsRow: {
+    marginTop: 40,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
     gap: 10,
-    marginTop: 32,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
   },
 });

@@ -109,6 +109,7 @@ export interface Provider {
   phone?: string | null;
   email?: string | null;
   is_favorited?: boolean;
+  open_reports_count?: number;
   // Detail-only fields
   description?: string;
   portfolio_items?: PortfolioItem[];
@@ -320,6 +321,17 @@ export interface AdminReview {
   flag_pending: boolean;
   moderation_note?: string | null;
   moderated_at?: string | null;
+  created_at: string;
+}
+
+export interface ProviderReport {
+  id: number;
+  reason: string;
+  status: 'pending' | 'resolved' | 'dismissed';
+  reporter_name?: string | null;
+  resolution_note?: string | null;
+  resolved_by_name?: string | null;
+  resolved_at?: string | null;
   created_at: string;
 }
 

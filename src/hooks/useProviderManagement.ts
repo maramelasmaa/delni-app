@@ -37,6 +37,13 @@ export function useUpdateProviderProfile() {
   });
 }
 
+export function useReportProvider() {
+  return useMutation({
+    mutationFn: ({ profileId, reason }: { profileId: string | number; reason: string }) =>
+      providerService.reportProvider(profileId, reason),
+  });
+}
+
 export function useMyReviews() {
   const enabled = useIsProvider();
   return useInfiniteQuery({

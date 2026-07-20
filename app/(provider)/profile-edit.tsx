@@ -774,7 +774,7 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
           </Field>
 
           <Field label="رابط موقعك على الخريطة" colors={colors}>
-            <TextInput value={mapUrl} onChangeText={setMapUrl} placeholder="https://maps.google.com/..." placeholderTextColor={colors.textMuted} style={inputStyle} autoCapitalize="none" keyboardType="url" maxLength={255} />
+            <TextInput value={mapUrl} onChangeText={setMapUrl} placeholder="https://maps.google.com/..." placeholderTextColor={colors.textMuted} style={[inputStyle, styles.mapUrlInput]} autoCapitalize="none" keyboardType="url" maxLength={255} />
           </Field>
 
           <View style={styles.saveActionWrap}>
@@ -967,6 +967,7 @@ const styles = StyleSheet.create({
   logoBadge: { position: 'absolute', left: -2, bottom: -2, borderRadius: 999, padding: 6 },
   fieldLabel: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl', marginBottom: 6 },
   input: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
+  mapUrlInput: { minHeight: 76, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 14, fontSize: 15, textAlign: 'center', textAlignVertical: 'center', writingDirection: 'ltr', includeFontPadding: false },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
   chipWrap: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
   chipScrollRow: { gap: 8, paddingVertical: 4 },

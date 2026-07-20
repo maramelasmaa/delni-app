@@ -193,7 +193,6 @@ export default function ProviderDashboardScreen() {
             </View>
           </View>
         ) : null}
-
       </ScrollView>
     </SafeAreaView>
   );

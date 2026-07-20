@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PremiumButton } from '../../components/auth/premiumAuth';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -36,7 +37,18 @@ export default function AdminUsersScreen() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<FilterKey>('all');
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useAdminUsers({
+  const {
+    data,
+    users,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminUsers({
     search: query || undefined,
     role: filter === 'providers' ? 'provider' : undefined,
     suspended: filter === 'suspended' ? true : undefined,
@@ -71,11 +83,16 @@ export default function AdminUsersScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>المستخدمون</Text>
+        <View style={styles.titleWrap}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>المستخدمون</Text>
+          </View>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>إدارة الحسابات والإيقاف والتفعيل</Text>
+        </View>
       </View>
 
-      <View style={[styles.searchBox, { backgroundColor: colors.surfaceAlt }]}>
+      <View style={[styles.searchBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
           value={search}
@@ -114,11 +131,18 @@ export default function AdminUsersScreen() {
         <ErrorView error={error} onRetry={refetch} />
       ) : (
         <FlatList
-          data={data.users}
+          data={users}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 20, gap: 12, paddingTop: 4 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
           ListEmptyComponent={<EmptyState icon="people-outline" title="لا توجد نتائج" message="جرب بحثاً أو فلتراً مختلفاً." />}
+          onEndReached={() => hasNextPage && fetchNextPage()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={isFetchingNextPage ? (
+            <View style={{ paddingVertical: 16 }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null}
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={{ flex: 1, alignItems: 'flex-end' }}>
@@ -168,7 +192,7 @@ export default function AdminUsersScreen() {
 
       <Modal visible={reasonTarget !== null} animationType="slide" transparent onRequestClose={() => setReasonTarget(null)}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.surfaceElevated }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
               {reasonTarget?.action === 'suspend' ? `إيقاف ${reasonTarget?.user.name}` : `إعادة تفعيل ${reasonTarget?.user.name}`}
             </Text>
@@ -185,17 +209,7 @@ export default function AdminUsersScreen() {
               <Pressable onPress={() => setReasonTarget(null)} style={({ pressed }) => [styles.cancelBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}>
                 <Text style={[styles.cancelText, { color: colors.textMuted }]}>إلغاء</Text>
               </Pressable>
-              <Pressable
-                onPress={submitReason}
-                disabled={pending}
-                style={({ pressed }) => [styles.saveBtn, { backgroundColor: reasonTarget?.action === 'suspend' ? colors.error : colors.primary, opacity: pending || pressed ? 0.7 : 1 }]}
-              >
-                {pending ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={[styles.saveText, { color: '#fff' }]}>تأكيد</Text>
-                )}
-              </Pressable>
+              <PremiumButton title="تأكيد" loading={pending} onPress={submitReason} style={styles.saveBtnWrap} />
             </View>
           </View>
         </View>
@@ -207,12 +221,15 @@ export default function AdminUsersScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' },
-  headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
-  headerDot: { fontSize: 28, fontFamily: 'Cairo-Black' },
-  searchBox: { marginHorizontal: 20, minHeight: 46, borderRadius: 14, flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
+  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, flexDirection: 'row-reverse', alignItems: 'center' },
+  titleWrap: { alignItems: 'flex-end' },
+  titleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
+  headerTitle: { fontSize: 26, fontFamily: 'Cairo-Black' },
+  headerDot: { fontSize: 26, fontFamily: 'Cairo-Black' },
+  headerSubtitle: { marginTop: 1, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
+  searchBox: { marginHorizontal: 20, minHeight: 46, borderRadius: 14, borderWidth: 1, flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
   searchInput: { flex: 1, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl', paddingVertical: 10 },
-  filterRow: { flexDirection: 'row-reverse', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
+  filterRow: { direction: 'rtl', flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingVertical: 12 },
   chip: { paddingHorizontal: 14, height: 34, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
   card: { borderRadius: 18, borderWidth: 1, padding: 14, flexDirection: 'row-reverse', alignItems: 'center', gap: 12 },
@@ -224,12 +241,11 @@ const styles = StyleSheet.create({
   actionBtn: { paddingHorizontal: 14, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   actionText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 22, paddingBottom: 40 },
+  modalSheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 22, paddingBottom: 40 },
   modalTitle: { fontSize: 18, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl', marginBottom: 12 },
   reasonInput: { minHeight: 96, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, paddingTop: 12, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl', textAlignVertical: 'top' },
-  modalActions: { marginTop: 16, flexDirection: 'row-reverse', gap: 10 },
-  saveBtn: { flex: 1, minHeight: 50, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  saveText: { fontSize: 14, fontFamily: 'Cairo-Bold' },
-  cancelBtn: { paddingHorizontal: 20, minHeight: 50, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  modalActions: { marginTop: 16, flexDirection: 'row-reverse', gap: 10, alignItems: 'center' },
+  saveBtnWrap: { flex: 1 },
+  cancelBtn: { paddingHorizontal: 20, height: 58, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontSize: 14, fontFamily: 'Cairo-Bold' },
 });

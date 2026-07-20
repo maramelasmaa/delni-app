@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
   FlatList,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   RefreshControl,
@@ -30,8 +32,21 @@ import type { PortfolioItem } from '../../src/types';
 
 const MAX_IMAGES = 4;
 const MAX_ITEMS = 2;
+const PROJECT_EDITOR_WIDTH = 300;
+const PROJECT_EDITOR_HEIGHT = 200;
+const PROJECT_OUTPUT_WIDTH = 1200;
+const PROJECT_OUTPUT_HEIGHT = 800;
 
-async function pickImages(limit: number): Promise<LocalImage[]> {
+type EditableProjectImage = LocalImage & {
+  width: number;
+  height: number;
+};
+
+function getGestureTouches(event: { nativeEvent?: { touches?: Array<{ pageX: number; pageY: number }>; changedTouches?: Array<{ pageX: number; pageY: number }> } }) {
+  return event.nativeEvent?.touches ?? event.nativeEvent?.changedTouches ?? [];
+}
+
+async function pickImages(limit: number): Promise<EditableProjectImage[]> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
     allowsMultipleSelection: true,
@@ -44,6 +59,8 @@ async function pickImages(limit: number): Promise<LocalImage[]> {
     name: asset.fileName ?? `image-${Date.now()}-${i}.jpg`,
     type: asset.mimeType ?? 'image/jpeg',
     alt: '',
+    width: asset.width,
+    height: asset.height,
   }));
 }
 
@@ -60,6 +77,14 @@ export default function ProviderPortfolioScreen() {
   const [images, setImages] = useState<LocalImage[]>([]);
   const [removeImageIds, setRemoveImageIds] = useState<number[]>([]);
   const [imageAlts, setImageAlts] = useState<Record<number, string>>({});
+  const [projectDraft, setProjectDraft] = useState<EditableProjectImage | null>(null);
+  const [projectEditorQueue, setProjectEditorQueue] = useState<EditableProjectImage[]>([]);
+  const [projectZoom, setProjectZoom] = useState(1);
+  const [projectOffsetX, setProjectOffsetX] = useState(0);
+  const [projectOffsetY, setProjectOffsetY] = useState(0);
+  const projectDragStart = useRef({ x: 0, y: 0 });
+  const projectPinchStartDistance = useRef<number | null>(null);
+  const projectPinchStartZoom = useRef(1);
 
   if (isLoading) return <LoadingSpinner />;
   if (isError || !items) return <ErrorView error={error} onRetry={refetch} />;
@@ -71,6 +96,11 @@ export default function ProviderPortfolioScreen() {
     setImages([]);
     setRemoveImageIds([]);
     setImageAlts({});
+    setProjectDraft(null);
+    setProjectEditorQueue([]);
+    setProjectZoom(1);
+    setProjectOffsetX(0);
+    setProjectOffsetY(0);
     setFormVisible(false);
   };
 
@@ -89,6 +119,129 @@ export default function ProviderPortfolioScreen() {
   // Images the item keeps if the form is saved now.
   const keptExisting = (editing?.image_items ?? []).filter((img) => !removeImageIds.includes(img.id));
   const totalImages = keptExisting.length + images.length;
+
+  const resetProjectEditorTransform = () => {
+    setProjectZoom(1);
+    setProjectOffsetX(0);
+    setProjectOffsetY(0);
+  };
+
+  const openProjectEditorQueue = (picked: EditableProjectImage[]) => {
+    const [next, ...rest] = picked;
+    if (!next) return;
+    setProjectDraft(next);
+    setProjectEditorQueue(rest);
+    resetProjectEditorTransform();
+  };
+
+  const closeProjectEditor = () => {
+    setProjectDraft(null);
+    setProjectEditorQueue([]);
+    resetProjectEditorTransform();
+  };
+
+  const openNextProjectEditor = () => {
+    const [next, ...rest] = projectEditorQueue;
+    if (!next) {
+      setProjectDraft(null);
+      resetProjectEditorTransform();
+      return;
+    }
+    setProjectDraft(next);
+    setProjectEditorQueue(rest);
+    resetProjectEditorTransform();
+  };
+
+  const projectPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => Boolean(projectDraft),
+    onMoveShouldSetPanResponder: (event, gestureState) =>
+      Boolean(projectDraft) && (getGestureTouches(event).length >= 2 || Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2),
+    onPanResponderGrant: (event) => {
+      projectDragStart.current = { x: projectOffsetX, y: projectOffsetY };
+      const touches = getGestureTouches(event);
+      if (touches.length >= 2) {
+        projectPinchStartDistance.current = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+        projectPinchStartZoom.current = projectZoom;
+      }
+    },
+    onPanResponderMove: (event, gestureState) => {
+      const touches = getGestureTouches(event);
+      if (touches.length >= 2) {
+        const distance = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+        if (!projectPinchStartDistance.current) {
+          projectPinchStartDistance.current = distance;
+          projectPinchStartZoom.current = projectZoom;
+        }
+        const nextZoom = projectPinchStartZoom.current * (distance / projectPinchStartDistance.current);
+        setProjectZoom(Math.max(1, Math.min(3, Number(nextZoom.toFixed(2)))));
+        return;
+      }
+
+      projectPinchStartDistance.current = null;
+      setProjectOffsetX(Math.max(-PROJECT_EDITOR_WIDTH, Math.min(PROJECT_EDITOR_WIDTH, projectDragStart.current.x + gestureState.dx)));
+      setProjectOffsetY(Math.max(-PROJECT_EDITOR_HEIGHT, Math.min(PROJECT_EDITOR_HEIGHT, projectDragStart.current.y + gestureState.dy)));
+    },
+    onPanResponderRelease: () => {
+      projectPinchStartDistance.current = null;
+    },
+    onPanResponderTerminate: () => {
+      projectPinchStartDistance.current = null;
+    },
+  });
+
+  const saveProjectDraft = async () => {
+    if (!projectDraft) return;
+    const baseScale = Math.max(PROJECT_EDITOR_WIDTH / projectDraft.width, PROJECT_EDITOR_HEIGHT / projectDraft.height);
+    const renderedScale = baseScale * projectZoom;
+    const visibleWidth = PROJECT_EDITOR_WIDTH / renderedScale;
+    const visibleHeight = PROJECT_EDITOR_HEIGHT / renderedScale;
+    const projectRatio = PROJECT_OUTPUT_WIDTH / PROJECT_OUTPUT_HEIGHT;
+    const visibleRatio = visibleWidth / visibleHeight;
+    const rawCropWidth = visibleRatio > projectRatio ? visibleHeight * projectRatio : visibleWidth;
+    const rawCropHeight = visibleRatio > projectRatio ? visibleHeight : visibleWidth / projectRatio;
+    const cropWidth = Math.max(1, Math.min(projectDraft.width, rawCropWidth));
+    const cropHeight = Math.max(1, Math.min(projectDraft.height, rawCropHeight));
+    const maxOriginX = projectDraft.width - cropWidth;
+    const maxOriginY = projectDraft.height - cropHeight;
+    const rawOriginX = (projectDraft.width - cropWidth) / 2 - projectOffsetX / renderedScale;
+    const rawOriginY = (projectDraft.height - cropHeight) / 2 - projectOffsetY / renderedScale;
+    const originX = Math.max(0, Math.min(maxOriginX, rawOriginX));
+    const originY = Math.max(0, Math.min(maxOriginY, rawOriginY));
+
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        projectDraft.uri,
+        [
+          {
+            crop: {
+              originX: Math.round(originX),
+              originY: Math.round(originY),
+              width: Math.round(cropWidth),
+              height: Math.round(cropHeight),
+            },
+          },
+          { resize: { width: PROJECT_OUTPUT_WIDTH, height: PROJECT_OUTPUT_HEIGHT } },
+        ],
+        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      setImages((prev) => [
+        ...prev,
+        {
+          uri: result.uri,
+          name: `project-${Date.now()}.jpg`,
+          type: 'image/jpeg',
+          alt: projectDraft.alt ?? '',
+        },
+      ].slice(0, MAX_IMAGES - keptExisting.length));
+      openNextProjectEditor();
+    } catch {
+      showAlert('تعذر تعديل الصورة', 'لم نتمكن من حفظ تعديل صورة المشروع. حاول بصورة أخرى.', [{ text: 'حسناً' }]);
+    }
+  };
+
+  const projectDraftBaseScale = projectDraft ? Math.max(PROJECT_EDITOR_WIDTH / projectDraft.width, PROJECT_EDITOR_HEIGHT / projectDraft.height) : 1;
+  const projectRenderedWidth = projectDraft ? projectDraft.width * projectDraftBaseScale * projectZoom : PROJECT_EDITOR_WIDTH;
+  const projectRenderedHeight = projectDraft ? projectDraft.height * projectDraftBaseScale * projectZoom : PROJECT_EDITOR_HEIGHT;
 
   const submit = () => {
     if (!title.trim()) {
@@ -286,7 +439,7 @@ export default function ProviderPortfolioScreen() {
             <Pressable
               onPress={async () => {
                 const picked = await pickImages(MAX_IMAGES - totalImages);
-                setImages((prev) => [...prev, ...picked].slice(0, MAX_IMAGES - keptExisting.length));
+                openProjectEditorQueue(picked);
               }}
               disabled={totalImages >= MAX_IMAGES}
               style={({ pressed }) => [styles.pickBtn, { borderColor: colors.borderStrong, backgroundColor: colors.surface, opacity: pressed ? 0.7 : totalImages >= MAX_IMAGES ? 0.55 : 1 }]}
@@ -355,6 +508,70 @@ export default function ProviderPortfolioScreen() {
         </View>
       </Modal>
 
+      <Modal visible={Boolean(projectDraft)} animationType="fade" transparent onRequestClose={closeProjectEditor}>
+        <View style={styles.projectEditorOverlay}>
+          <View style={[styles.projectEditorSheet, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderStrong }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="إغلاق تعديل الصورة"
+              onPress={closeProjectEditor}
+              hitSlop={10}
+              style={({ pressed }) => [
+                styles.projectEditorCloseButton,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Ionicons name="close" size={22} color={colors.textPrimary} />
+            </Pressable>
+            <View style={[styles.projectEditorHandle, { backgroundColor: colors.textMuted }]} />
+            <Text style={[styles.projectEditorTitle, { color: colors.textPrimary }]}>تعديل صورة المشروع</Text>
+            <Text style={[styles.projectEditorHint, { color: colors.textMuted }]}>حرّك الصورة بإصبعك وكبّرها أو صغّرها داخل الإطار.</Text>
+
+            <View style={[styles.projectEditorFrame, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]} {...projectPanResponder.panHandlers}>
+              {projectDraft ? (
+                <Image
+                  source={{ uri: projectDraft.uri }}
+                  style={[
+                    styles.projectEditorImage,
+                    {
+                      width: projectRenderedWidth,
+                      height: projectRenderedHeight,
+                      transform: [{ translateX: projectOffsetX }, { translateY: projectOffsetY }],
+                    },
+                  ]}
+                  contentFit="cover"
+                />
+              ) : null}
+              <View pointerEvents="none" style={styles.projectEditorGrid}>
+                <View style={styles.projectEditorGridV} />
+                <View style={styles.projectEditorGridH} />
+              </View>
+            </View>
+
+            <Text style={[styles.projectEditorZoomText, { color: colors.primary }]}>{Math.round(projectZoom * 100)}%</Text>
+
+            <View style={styles.projectEditorActions}>
+              <PremiumButton
+                title={projectEditorQueue.length > 0 ? 'حفظ ومتابعة' : 'حفظ الصورة'}
+                loading={false}
+                onPress={saveProjectDraft}
+                style={styles.projectEditorMainAction}
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={closeProjectEditor}
+                style={({ pressed }) => [
+                  styles.projectEditorCancelButton,
+                  { backgroundColor: colors.surfaceAlt, borderColor: colors.borderStrong, opacity: pressed ? 0.78 : 1 },
+                ]}
+              >
+                <Text style={[styles.projectEditorCancelText, { color: colors.textPrimary }]}>إلغاء</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <RTLAlert alert={alert} onDismiss={hideAlert} />
     </SafeAreaView>
   );
@@ -404,4 +621,20 @@ const styles = StyleSheet.create({
   saveBtn: { width: '100%' },
   cancelBtn: { width: '100%', minHeight: 58, borderRadius: 20, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontSize: 16, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
+  projectEditorOverlay: { flex: 1, backgroundColor: 'rgba(5,12,24,0.62)', justifyContent: 'center', paddingHorizontal: 24 },
+  projectEditorSheet: { width: '100%', maxWidth: 430, alignSelf: 'center', borderRadius: 30, borderWidth: 1, paddingTop: 16, paddingHorizontal: 18, paddingBottom: 18 },
+  projectEditorCloseButton: { position: 'absolute', top: 16, left: 18, zIndex: 2, width: 40, height: 40, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  projectEditorHandle: { alignSelf: 'center', width: 52, height: 6, borderRadius: 999, opacity: 0.62, marginBottom: 18 },
+  projectEditorTitle: { fontSize: 26, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl', paddingLeft: 48 },
+  projectEditorHint: { marginTop: 3, fontSize: 12, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl', paddingLeft: 48 },
+  projectEditorFrame: { width: PROJECT_EDITOR_WIDTH, height: PROJECT_EDITOR_HEIGHT, marginTop: 18, alignSelf: 'center', borderRadius: 22, borderWidth: 1, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  projectEditorImage: { flexShrink: 0 },
+  projectEditorGrid: { ...StyleSheet.absoluteFillObject },
+  projectEditorGridV: { position: 'absolute', top: 0, bottom: 0, left: '50%', width: 1, backgroundColor: 'rgba(255,255,255,0.38)' },
+  projectEditorGridH: { position: 'absolute', left: 0, right: 0, top: '50%', height: 1, backgroundColor: 'rgba(255,255,255,0.38)' },
+  projectEditorZoomText: { marginTop: 10, fontSize: 13, fontFamily: 'Cairo-Bold', textAlign: 'center' },
+  projectEditorActions: { marginTop: 14, gap: 10 },
+  projectEditorMainAction: { width: '100%' },
+  projectEditorCancelButton: { width: '100%', minHeight: 52, borderRadius: 16, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  projectEditorCancelText: { fontSize: 15, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
 });

@@ -20,8 +20,8 @@ function resolveRedirectTarget(redirectTo?: string, user?: User) {
 
   if (isSafeInAppPath) return redirectTo;
 
-  if (user?.is_admin) return '/(admin)/';
-  return user?.is_provider ? '/(provider)/' : '/(tabs)/';
+  if (user?.is_admin) return '/(admin)';
+  return user?.is_provider ? '/(provider)' : '/(tabs)';
 }
 
 export function useLogin() {

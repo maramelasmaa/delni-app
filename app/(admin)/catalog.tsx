@@ -13,6 +13,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PremiumButton } from '../../components/auth/premiumAuth';
+import { AdminField } from '../../components/admin/AdminField';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
@@ -111,8 +113,19 @@ export default function AdminCatalogScreen() {
   const [draft, setDraft] = useState<AdminCatalogInput>(blankDraft);
 
   const filters = useMemo(() => ({ search: query || undefined }), [query]);
-  const { data, isLoading, isError, error, refetch, isRefetching } = useAdminCatalog(kind, filters);
-  const { data: categoriesData } = useAdminCatalog('categories', {});
+  const {
+    data,
+    items,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAdminCatalog(kind, filters);
+  const { items: categoryItems } = useAdminCatalog('categories', {});
   const mutations = useAdminCatalogMutations(kind);
   const busy = mutations.create.isPending || mutations.update.isPending || mutations.remove.isPending;
   const modalOpen = editing !== null;
@@ -170,8 +183,13 @@ export default function AdminCatalogScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
-        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الفهرس</Text>
+        <View style={styles.titleWrap}>
+          <View style={styles.titleRow}>
+            <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>الفهرس</Text>
+          </View>
+          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>إدارة التصنيفات والمدن وأنواع المزودين</Text>
+        </View>
       </View>
 
       <View style={styles.resourceRow}>
@@ -194,7 +212,7 @@ export default function AdminCatalogScreen() {
         })}
       </View>
 
-      <View style={[styles.searchBox, { backgroundColor: colors.surfaceAlt }]}>
+      <View style={[styles.searchBox, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
         <Ionicons name="search" size={18} color={colors.textMuted} />
         <TextInput
           value={search}
@@ -216,11 +234,18 @@ export default function AdminCatalogScreen() {
         <ErrorView error={error} onRetry={refetch} />
       ) : (
         <FlatList
-          data={data.items}
+          data={items}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120, gap: 12 }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
           ListEmptyComponent={<EmptyState icon="albums-outline" title="لا توجد عناصر" message="أضف أول عنصر من زر + بالأعلى." />}
+          onEndReached={() => hasNextPage && fetchNextPage()}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={isFetchingNextPage ? (
+            <View style={{ paddingVertical: 16 }}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null}
           renderItem={({ item }) => (
             <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Pressable onPress={() => openEdit(item)} style={styles.cardBody}>
@@ -244,19 +269,19 @@ export default function AdminCatalogScreen() {
 
       <Modal visible={modalOpen} animationType="slide" transparent onRequestClose={closeModal}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalSheet, { backgroundColor: colors.surfaceElevated }]}>
+          <View style={[styles.modalSheet, { backgroundColor: colors.surfaceElevated, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
               {editing?.id === 0 ? `إضافة ${resourceTitle(kind)}` : `تعديل ${resourceTitle(kind)}`}
             </Text>
 
             {kind === 'providerTypes' ? (
-              <Field label="الكود" value={draft.code ?? ''} onChangeText={(value) => updateDraft({ code: value })} colors={colors} />
+              <AdminField label="الكود" value={draft.code ?? ''} onChangeText={(value) => updateDraft({ code: value })} colors={colors} containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} />
             ) : null}
             {kind === 'subcategories' ? (
               <View style={{ marginBottom: 10 }}>
                 <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>التصنيف</Text>
                 <View style={styles.categoryChips}>
-                  {(categoriesData?.items ?? []).map((category) => {
+                  {(categoryItems ?? []).map((category) => {
                     const active = Number(draft.category_id) === category.id;
                     return (
                       <Pressable
@@ -272,13 +297,13 @@ export default function AdminCatalogScreen() {
               </View>
             ) : null}
 
-            <Field label="الاسم بالإنجليزية" value={draft.name ?? ''} onChangeText={(value) => updateDraft({ name: value })} colors={colors} />
-            <Field label="الاسم بالعربية" value={draft.name_ar ?? ''} onChangeText={(value) => updateDraft({ name_ar: value })} colors={colors} />
-            {kind !== 'providerTypes' ? <Field label="الرابط المختصر" value={draft.slug ?? ''} onChangeText={(value) => updateDraft({ slug: value })} colors={colors} autoCapitalize="none" /> : null}
-            {kind === 'subcategories' ? <Field label="اسم البحث" value={draft.search_name ?? ''} onChangeText={(value) => updateDraft({ search_name: value })} colors={colors} /> : null}
-            {kind === 'cities' || kind === 'providerTypes' ? <Field label="الأيقونة" value={draft.icon ?? ''} onChangeText={(value) => updateDraft({ icon: value })} colors={colors} /> : null}
+            <AdminField label="الاسم بالإنجليزية" value={draft.name ?? ''} onChangeText={(value) => updateDraft({ name: value })} colors={colors} containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} />
+            <AdminField label="الاسم بالعربية" value={draft.name_ar ?? ''} onChangeText={(value) => updateDraft({ name_ar: value })} colors={colors} containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} />
+            {kind !== 'providerTypes' ? <AdminField label="الرابط المختصر" value={draft.slug ?? ''} onChangeText={(value) => updateDraft({ slug: value })} colors={colors} autoCapitalize="none" containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} /> : null}
+            {kind === 'subcategories' ? <AdminField label="اسم البحث" value={draft.search_name ?? ''} onChangeText={(value) => updateDraft({ search_name: value })} colors={colors} containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} /> : null}
+            {kind === 'cities' || kind === 'providerTypes' ? <AdminField label="الأيقونة" value={draft.icon ?? ''} onChangeText={(value) => updateDraft({ icon: value })} colors={colors} containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} /> : null}
             {kind === 'categories' || kind === 'subcategories' || kind === 'providerTypes' ? (
-              <Field label="الترتيب" value={String(draft.sort_order ?? 0)} onChangeText={(value) => updateDraft({ sort_order: Number(value) || 0 })} colors={colors} keyboardType="number-pad" />
+              <AdminField label="الترتيب" value={String(draft.sort_order ?? 0)} onChangeText={(value) => updateDraft({ sort_order: Number(value) || 0 })} colors={colors} keyboardType="number-pad" containerStyle={styles.fieldContainer} inputStyle={[styles.fieldInput, { backgroundColor: colors.surface }]} />
             ) : null}
 
             <View style={[styles.switchRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
@@ -290,9 +315,7 @@ export default function AdminCatalogScreen() {
               <Pressable onPress={closeModal} style={[styles.cancelBtn, { borderColor: colors.border }]}>
                 <Text style={[styles.cancelText, { color: colors.textMuted }]}>إلغاء</Text>
               </Pressable>
-              <Pressable onPress={save} disabled={busy} style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: busy ? 0.65 : 1 }]}>
-                {busy ? <ActivityIndicator size="small" color={colors.textOnPrimary} /> : <Text style={[styles.saveText, { color: colors.textOnPrimary }]}>حفظ</Text>}
-              </Pressable>
+              <PremiumButton title="حفظ" loading={busy} onPress={save} style={styles.saveBtnWrap} />
             </View>
           </View>
         </View>
@@ -303,44 +326,19 @@ export default function AdminCatalogScreen() {
   );
 }
 
-function Field({
-  label,
-  value,
-  onChangeText,
-  colors,
-  keyboardType,
-  autoCapitalize = 'sentences',
-}: {
-  label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  colors: ReturnType<typeof useTheme>['colors'];
-  keyboardType?: 'default' | 'number-pad';
-  autoCapitalize?: 'none' | 'sentences';
-}) {
-  return (
-    <View style={{ marginBottom: 10 }}>
-      <Text style={[styles.fieldLabel, { color: colors.textMuted }]}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surface }]}
-      />
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 10, flexDirection: 'row-reverse', alignItems: 'center' },
-  headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
-  headerDot: { fontSize: 28, fontFamily: 'Cairo-Black' },
-  resourceRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
+  fieldContainer: { marginBottom: 10 },
+  fieldInput: { fontSize: 14 },
+  header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, flexDirection: 'row-reverse', alignItems: 'center' },
+  titleWrap: { alignItems: 'flex-end' },
+  titleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
+  headerTitle: { fontSize: 26, fontFamily: 'Cairo-Black' },
+  headerDot: { fontSize: 26, fontFamily: 'Cairo-Black' },
+  headerSubtitle: { marginTop: 1, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
+  resourceRow: { direction: 'rtl', flexDirection: 'row', flexWrap: 'wrap', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
   resourceChip: { minHeight: 34, borderRadius: 999, borderWidth: 1, paddingHorizontal: 11, flexDirection: 'row-reverse', alignItems: 'center', gap: 5 },
   resourceText: { fontSize: 11, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
-  searchBox: { marginHorizontal: 20, minHeight: 46, borderRadius: 14, flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
+  searchBox: { marginHorizontal: 20, minHeight: 46, borderRadius: 14, borderWidth: 1, flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 14, gap: 8 },
   searchInput: { flex: 1, fontSize: 13, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl', paddingVertical: 10 },
   card: { minHeight: 72, borderRadius: 18, borderWidth: 1, padding: 12, flexDirection: 'row-reverse', alignItems: 'center', gap: 10 },
   cardBody: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', gap: 11 },
@@ -350,18 +348,17 @@ const styles = StyleSheet.create({
   cardMeta: { marginTop: 1, fontSize: 12, fontFamily: 'Cairo-Regular', writingDirection: 'rtl', textAlign: 'right' },
   deleteBtn: { width: 40, height: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  modalSheet: { maxHeight: '88%', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, paddingBottom: 34 },
+  modalSheet: { maxHeight: '88%', borderTopLeftRadius: 26, borderTopRightRadius: 26, borderWidth: 1, padding: 20, paddingBottom: 34 },
   modalTitle: { fontSize: 18, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl', marginBottom: 14 },
   fieldLabel: { fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl', marginBottom: 6 },
   input: { minHeight: 46, borderRadius: 14, borderWidth: 1, paddingHorizontal: 13, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
-  categoryChips: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 7 },
+  categoryChips: { direction: 'rtl', flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   smallChip: { minHeight: 32, borderRadius: 999, borderWidth: 1, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   smallChipText: { fontSize: 11, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
   switchRow: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 },
   switchLabel: { fontSize: 14, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
-  modalActions: { marginTop: 16, flexDirection: 'row-reverse', gap: 10 },
-  saveBtn: { flex: 1, minHeight: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  saveText: { fontSize: 14, fontFamily: 'Cairo-Bold' },
-  cancelBtn: { minHeight: 48, borderRadius: 14, borderWidth: 1, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
+  modalActions: { marginTop: 16, flexDirection: 'row-reverse', gap: 10, alignItems: 'center' },
+  saveBtnWrap: { flex: 1 },
+  cancelBtn: { height: 58, borderRadius: 14, borderWidth: 1, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center' },
   cancelText: { fontSize: 14, fontFamily: 'Cairo-Bold' },
 });

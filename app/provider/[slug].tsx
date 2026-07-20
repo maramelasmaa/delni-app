@@ -10,6 +10,7 @@ import { StarRating } from '../../components/ui/StarRating';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { useProvider, useProviderReviews, useToggleFavorite, useSubmitReview, useFlagReview } from '../../src/hooks/useApi';
+import { useReportProvider } from '../../src/hooks/useProviderManagement';
 import { useTheme } from '../../src/hooks/useTheme';
 import { useAuthStore } from '../../src/store/auth';
 import type { ThemeColors } from '../../src/theme/tokens';
@@ -982,11 +983,62 @@ export default function ProviderScreen() {
   const toggleFavorite = useToggleFavorite();
   const submitReview = useSubmitReview();
   const flagReview = useFlagReview();
+  const reportProvider = useReportProvider();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const user = useAuthStore((s) => s.user);
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { alert, showAlert: showRTLAlert, hideAlert } = useRTLAlert();
+
+  const [showProviderReportModal, setShowProviderReportModal] = useState(false);
+  const [providerReportReason, setProviderReportReason] = useState('');
+  const [providerReportError, setProviderReportError] = useState('');
+
+  const handleReportProviderPress = useCallback(() => {
+    if (!isAuthenticated) {
+      showRTLAlert(
+        'تسجيل الدخول مطلوب',
+        'يجب عليك تسجيل الدخول لتتمكن من الإبلاغ عن مقدم الخدمة. هل تريد الانتقال إلى صفحة تسجيل الدخول؟',
+        [
+          { text: 'إلغاء', style: 'cancel' },
+          {
+            text: 'تسجيل الدخول',
+            onPress: () => router.push({
+              pathname: '/(auth)/login',
+              params: { redirectTo: `/provider/${String(slug)}` },
+            }),
+          },
+        ],
+      );
+      return;
+    }
+    setProviderReportReason('');
+    setProviderReportError('');
+    setShowProviderReportModal(true);
+  }, [isAuthenticated, slug, showRTLAlert]);
+
+  const handleProviderReportSubmit = useCallback(() => {
+    if (!provider) return;
+    const reason = providerReportReason.trim();
+    if (reason.length < 10) {
+      setProviderReportError('تفاصيل البلاغ يجب أن تكون 10 أحرف على الأقل.');
+      return;
+    }
+    reportProvider.mutate(
+      { profileId: provider.slug, reason },
+      {
+        onSuccess: () => {
+          setShowProviderReportModal(false);
+          setProviderReportReason('');
+          setProviderReportError('');
+          showRTLAlert('تم إرسال البلاغ', 'شكرا لك. سيراجع فريقنا هذا البلاغ.', [{ text: 'حسنا', style: 'default' }]);
+        },
+        onError: (error) => {
+          setProviderReportError(parseReportError(error));
+        },
+      },
+    );
+  }, [provider, providerReportReason, reportProvider, showRTLAlert]);
 
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReviewIdState, setReportReviewIdState] = useState<number | null>(null);
@@ -1250,17 +1302,26 @@ export default function ProviderScreen() {
               <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
             </Pressable>
 
-            <Pressable
-              onPress={handleFavorite}
-              style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
-              hitSlop={8}
-            >
-              <Ionicons
-                name={profile.isFavorited ? 'heart' : 'heart-outline'}
-                size={20}
-                color={profile.isFavorited ? colors.gold : '#FFFFFF'}
-              />
-            </Pressable>
+            <View style={{ ...rtlRow(), alignItems: 'center', gap: 10 }}>
+              <Pressable
+                onPress={handleReportProviderPress}
+                style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                hitSlop={8}
+              >
+                <Ionicons name="flag-outline" size={19} color="#FFFFFF" />
+              </Pressable>
+              <Pressable
+                onPress={handleFavorite}
+                style={{ width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(0,0,0,0.4)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                hitSlop={8}
+              >
+                <Ionicons
+                  name={profile.isFavorited ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={profile.isFavorited ? colors.gold : '#FFFFFF'}
+                />
+              </Pressable>
+            </View>
           </View>
 
           {/* Avatar Overlapping Hero & Card */}
@@ -1613,6 +1674,52 @@ export default function ProviderScreen() {
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
               </Pressable>
               <Pressable onPress={() => setShowReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
+                <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : colors.textSecondary }}>إلغاء</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ═══ REPORT PROVIDER MODAL ═══ */}
+      <Modal visible={showProviderReportModal} transparent animationType="slide" onRequestClose={() => setShowProviderReportModal(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ width: '100%', backgroundColor: colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, borderWidth: 1, borderColor: colors.border }}>
+            <View style={{ ...rtlRow(), justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'Cairo-Bold', color: colors.textPrimary, textAlign: 'right' }}>الإبلاغ عن مقدم الخدمة</Text>
+              <Pressable onPress={() => setShowProviderReportModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </Pressable>
+            </View>
+
+            <Text style={{ fontSize: 13, fontFamily: 'Cairo-Bold', color: colors.textSecondary, textAlign: 'right', marginBottom: 8 }}>سبب البلاغ</Text>
+            <TextInput
+              value={providerReportReason}
+              onChangeText={(text) => { setProviderReportReason(text); setProviderReportError(''); }}
+              placeholder="اكتب سبب البلاغ هنا... (10 أحرف على الأقل)"
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={4}
+              style={{ width: '100%', minHeight: 100, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: 14, textAlign: 'right', fontFamily: 'Cairo-Regular', color: colors.textPrimary, backgroundColor: colors.surfaceAlt, marginBottom: 16 }}
+            />
+
+            {providerReportError ? (
+              <Text style={{ color: colors.error, fontFamily: 'Cairo-Bold', fontSize: 12, textAlign: 'right', marginBottom: 12 }}>{providerReportError}</Text>
+            ) : null}
+
+            <View style={{ ...rtlRow(), gap: 12 }}>
+              <Pressable
+                onPress={handleProviderReportSubmit}
+                disabled={reportProvider.isPending}
+                style={{ flex: 1, backgroundColor: colors.primary, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', opacity: reportProvider.isPending ? 0.7 : 1 }}
+              >
+                {reportProvider.isPending ? (
+                  <ActivityIndicator size="small" color={colors.textOnPrimary} />
+                ) : (
+                  <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: colors.textOnPrimary }}>إرسال البلاغ</Text>
+                )}
+              </Pressable>
+              <Pressable onPress={() => setShowProviderReportModal(false)} style={{ flex: 1, backgroundColor: colors.surfaceAlt, borderRadius: 14, height: 48, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border }}>
                 <Text style={{ fontSize: 14, fontFamily: 'Cairo-Bold', color: isDark ? '#FFFFFF' : colors.textSecondary }}>إلغاء</Text>
               </Pressable>
             </View>
