@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../store/auth';
 import * as providerService from '../services/provider';
 import type { CredentialInput, ProviderProfileUpdateInput } from '../types';
@@ -37,11 +37,16 @@ export function useUpdateProviderProfile() {
   });
 }
 
-export function useMyReviews(status?: string) {
+export function useMyReviews() {
   const enabled = useIsProvider();
-  return useQuery({
-    queryKey: ['provider-reviews', status ?? 'all'],
-    queryFn: () => providerService.getMyReviews(1, status),
+  return useInfiniteQuery({
+    queryKey: ['provider-reviews'],
+    queryFn: ({ pageParam }) => providerService.getMyReviews(pageParam),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.current_page < lastPage.pagination.last_page
+        ? lastPage.pagination.current_page + 1
+        : undefined,
     enabled,
     retry: false,
   });

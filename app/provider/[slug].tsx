@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, Dimensions, Modal, Pressable, ScrollView, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
+import { ActivityIndicator, Dimensions, FlatList, Modal, Pressable, ScrollView, Text, TextInput, View, KeyboardAvoidingView, Platform } from 'react-native';
 import type { ViewStyle } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1523,11 +1523,35 @@ export default function ProviderScreen() {
                 <Ionicons name="close" size={24} color="#FFFFFF" />
               </Pressable>
             </View>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <View style={{ flex: 1, justifyContent: 'center' }}>
               {galleryItem?.images && galleryItem.images.length > 0 && (
-                <Image source={{ uri: galleryItem.images[galleryIndex] }} style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.2 }} contentFit="contain" />
+                <FlatList
+                  data={galleryItem.images}
+                  keyExtractor={(uri, idx) => `${idx}-${uri}`}
+                  horizontal
+                  inverted
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  initialScrollIndex={galleryIndex}
+                  getItemLayout={(_, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })}
+                  onMomentumScrollEnd={(e) => {
+                    const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                    setGalleryIndex(Math.max(0, Math.min((galleryItem.images?.length ?? 1) - 1, idx)));
+                  }}
+                  style={{ flexGrow: 0 }}
+                  renderItem={({ item: uri }) => (
+                    <View style={{ width: SCREEN_WIDTH, justifyContent: 'center', alignItems: 'center' }}>
+                      <Image source={{ uri }} style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 1.2 }} contentFit="contain" />
+                    </View>
+                  )}
+                />
               )}
             </View>
+            {galleryItem?.images && galleryItem.images.length > 1 ? (
+              <Text style={{ textAlign: 'center', color: 'rgba(255,255,255,0.8)', fontFamily: 'Cairo-Bold', fontSize: 13, paddingTop: 12 }}>
+                {galleryIndex + 1} / {galleryItem.images.length}
+              </Text>
+            ) : null}
             {galleryItem?.title ? (
               <Text style={{ textAlign: 'center', color: '#FFFFFF', fontFamily: 'Cairo-SemiBold', fontSize: 15, paddingVertical: 20, paddingHorizontal: 24, writingDirection: 'rtl' }}>
                 {galleryItem.title}

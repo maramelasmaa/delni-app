@@ -5,6 +5,7 @@ import type {
   AdminCatalogFilters,
   AdminCatalogInput,
   AdminCatalogKind,
+  AdminProviderInput,
   AdminProviderFilters,
   AdminReviewFilters,
   AdminUserFilters,
@@ -56,6 +57,59 @@ export function useAdminProviders(filters: AdminProviderFilters) {
     enabled,
     retry: false,
   });
+}
+
+export function useAdminProvider(id?: number) {
+  const enabled = useIsAdmin();
+  return useQuery({
+    queryKey: ['admin-provider', id],
+    queryFn: () => adminService.getProvider(id as number),
+    enabled: enabled && !!id,
+    retry: false,
+  });
+}
+
+export function useAdminProviderMutations() {
+  const queryClient = useQueryClient();
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin-providers'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-provider'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-dashboard'] });
+  };
+
+  const create = useMutation({
+    mutationFn: (input: AdminProviderInput) => adminService.createProvider(input),
+    onSuccess: invalidate,
+  });
+
+  const update = useMutation({
+    mutationFn: ({ id, input }: { id: number; input: AdminProviderInput }) =>
+      adminService.updateProvider(id, input),
+    onSuccess: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => adminService.deleteProvider(id),
+    onSuccess: invalidate,
+  });
+
+  const extendAccess = useMutation({
+    mutationFn: ({ id, days }: { id: number; days: number }) =>
+      adminService.extendProviderAccess(id, days),
+    onSuccess: invalidate,
+  });
+
+  const clearSecurityFlag = useMutation({
+    mutationFn: (id: number) => adminService.clearProviderSecurityFlag(id),
+    onSuccess: invalidate,
+  });
+
+  const onboardingLink = useMutation({
+    mutationFn: (id: number) => adminService.generateProviderOnboardingLink(id),
+    onSuccess: invalidate,
+  });
+
+  return { create, update, remove, extendAccess, clearSecurityFlag, onboardingLink };
 }
 
 export function useAdminCatalog(kind: AdminCatalogKind, filters: AdminCatalogFilters) {

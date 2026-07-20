@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import {
   ActivityIndicator,
+  FlatList,
   KeyboardAvoidingView,
+  Modal,
+  PanResponder,
   Platform,
   Pressable,
+  Image as RNImage,
   ScrollView,
   StyleSheet,
   Switch,
@@ -16,6 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PremiumButton } from '../../components/auth/premiumAuth';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner';
 import { RTLAlert, useRTLAlert } from '../../components/ui/RTLAlert';
@@ -26,19 +33,81 @@ import { parseApiError } from '../../src/lib/error-parser';
 import type { LocalImage } from '../../src/services/provider';
 import type { ThemeColors } from '../../src/theme/tokens';
 
-async function pickOne(aspect: [number, number]): Promise<LocalImage | null> {
+const ACCEPTED_PROFILE_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const MAX_COVER_BYTES = 4 * 1024 * 1024;
+const LOGO_EDITOR_FRAME = 240;
+const LOGO_OUTPUT_SIZE = 512;
+const COVER_EDITOR_WIDTH = 300;
+const COVER_EDITOR_HEIGHT = 188;
+const COVER_OUTPUT_WIDTH = 1280;
+const COVER_OUTPUT_HEIGHT = 800;
+
+type EditableImage = LocalImage & {
+  width: number;
+  height: number;
+};
+
+function getGestureTouches(event: { nativeEvent?: { touches?: Array<{ pageX: number; pageY: number }>; changedTouches?: Array<{ pageX: number; pageY: number }> } }) {
+  return event.nativeEvent?.touches ?? event.nativeEvent?.changedTouches ?? [];
+}
+
+function getImageSize(uri: string) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    RNImage.getSize(uri, (width, height) => resolve({ width, height }), reject);
+  });
+}
+
+async function cacheRemoteImageForEditing(uri: string) {
+  if (!FileSystem.cacheDirectory) return uri;
+
+  const dir = `${FileSystem.cacheDirectory}profile-logo-editor/`;
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => undefined);
+  const extension = uri.split('?')[0].match(/\.(jpe?g|png|webp)$/i)?.[1]?.toLowerCase() ?? 'png';
+  const target = `${dir}logo-${Date.now()}.${extension === 'jpg' ? 'jpeg' : extension}`;
+  const downloaded = await FileSystem.downloadAsync(uri, target);
+
+  return downloaded.uri;
+}
+
+async function pickOne({
+  aspect,
+  maxSizeBytes,
+  allowsEditing = true,
+  onInvalid,
+}: {
+  aspect: [number, number];
+  maxSizeBytes: number;
+  allowsEditing?: boolean;
+  onInvalid: (message: string) => void;
+}): Promise<EditableImage | null> {
   const result = await ImagePicker.launchImageLibraryAsync({
     mediaTypes: ['images'],
-    allowsEditing: true,
+    allowsEditing,
     aspect,
     quality: 0.85,
   });
   if (result.canceled || !result.assets[0]) return null;
   const asset = result.assets[0];
+  const mimeType = asset.mimeType ?? 'image/jpeg';
+
+  if (!ACCEPTED_PROFILE_IMAGE_TYPES.includes(mimeType)) {
+    onInvalid('الصورة يجب أن تكون بصيغة JPG أو PNG أو WEBP.');
+    return null;
+  }
+
+  if (asset.fileSize && asset.fileSize > maxSizeBytes) {
+    const maxMb = Math.round(maxSizeBytes / 1024 / 1024);
+    onInvalid(`حجم الصورة يجب ألا يتجاوز ${maxMb} ميجابايت.`);
+    return null;
+  }
+
   return {
     uri: asset.uri,
     name: asset.fileName ?? `image-${Date.now()}.jpg`,
-    type: asset.mimeType ?? 'image/jpeg',
+    type: mimeType,
+    width: asset.width,
+    height: asset.height,
   };
 }
 
@@ -70,6 +139,8 @@ function SectionHeading({
   );
 }
 
+const CHIP_SCROLL_THRESHOLD = 6;
+
 function ChipSelect<T extends string | number>({
   options,
   selected,
@@ -83,24 +154,38 @@ function ChipSelect<T extends string | number>({
   colors: ThemeColors;
   multi?: boolean;
 }) {
-  return (
-    <View style={styles.chipWrap}>
-      {options.map((option) => {
-        const active = selected.includes(option.value);
-        return (
-          <Pressable
-            key={String(option.value)}
-            onPress={() => onSelect(option.value)}
-            style={[styles.chip, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
-          >
-            <Text style={[styles.chipText, { color: active ? colors.textOnPrimary : colors.textPrimary }]}>
-              {option.label}{multi && active ? ' ✓' : ''}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
+  const renderChip = (option: { value: T; label: string }) => {
+    const active = selected.includes(option.value);
+    return (
+      <Pressable
+        key={String(option.value)}
+        onPress={() => onSelect(option.value)}
+        style={[styles.chip, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
+      >
+        <Text style={[styles.chipText, { color: active ? colors.textOnPrimary : colors.textPrimary }]}>
+          {option.label}{multi && active ? ' ✓' : ''}
+        </Text>
+      </Pressable>
+    );
+  };
+
+  // Long lists scroll horizontally (same pattern as the search filters);
+  // short ones wrap so everything stays visible.
+  if (options.length > CHIP_SCROLL_THRESHOLD) {
+    return (
+      <FlatList
+        horizontal
+        inverted
+        showsHorizontalScrollIndicator={false}
+        data={options}
+        keyExtractor={(item) => String(item.value)}
+        contentContainerStyle={styles.chipScrollRow}
+        renderItem={({ item }) => renderChip(item)}
+      />
+    );
+  }
+
+  return <View style={styles.chipWrap}>{options.map(renderChip)}</View>;
 }
 
 export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }) {
@@ -130,7 +215,23 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
   const [github, setGithub] = useState('');
   const [mapUrl, setMapUrl] = useState('');
   const [logo, setLogo] = useState<LocalImage | null>(null);
+  const [logoDraft, setLogoDraft] = useState<EditableImage | null>(null);
+  const [logoEditorOpen, setLogoEditorOpen] = useState(false);
+  const [logoZoom, setLogoZoom] = useState(1);
+  const [logoOffsetX, setLogoOffsetX] = useState(0);
+  const [logoOffsetY, setLogoOffsetY] = useState(0);
+  const logoDragStart = useRef({ x: 0, y: 0 });
+  const logoPinchStartDistance = useRef<number | null>(null);
+  const logoPinchStartZoom = useRef(1);
   const [cover, setCover] = useState<LocalImage | null>(null);
+  const [coverDraft, setCoverDraft] = useState<EditableImage | null>(null);
+  const [coverEditorOpen, setCoverEditorOpen] = useState(false);
+  const [coverZoom, setCoverZoom] = useState(1);
+  const [coverOffsetX, setCoverOffsetX] = useState(0);
+  const [coverOffsetY, setCoverOffsetY] = useState(0);
+  const coverDragStart = useRef({ x: 0, y: 0 });
+  const coverPinchStartDistance = useRef<number | null>(null);
+  const coverPinchStartZoom = useRef(1);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -204,7 +305,7 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
       {
         onSuccess: () => {
           showAlert('تم الحفظ', 'تم تحديث ملفك بنجاح.', [
-            { text: 'حسناً', onPress: asTab ? undefined : () => router.back() },
+            { text: 'حسناً', onPress: asTab ? undefined : () => router.replace('/(provider)/' as never) },
           ]);
         },
         onError: (err) => showAlert('تعذر الحفظ', parseApiError(err).message, [{ text: 'حسناً' }]),
@@ -213,46 +314,353 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
   };
 
   const inputStyle = [styles.input, { color: colors.textPrimary, borderColor: colors.border, backgroundColor: colors.surface }];
+  const currentLogoUri = logoDraft?.uri ?? logo?.uri ?? profile.logo_url ?? undefined;
+  const logoDraftBaseScale = logoDraft ? Math.max(LOGO_EDITOR_FRAME / logoDraft.width, LOGO_EDITOR_FRAME / logoDraft.height) : 1;
+  const logoEditorRenderedWidth = logoDraft ? logoDraft.width * logoDraftBaseScale * logoZoom : 180;
+  const logoEditorRenderedHeight = logoDraft ? logoDraft.height * logoDraftBaseScale * logoZoom : 180;
+  const currentCoverUri = coverDraft?.uri ?? cover?.uri ?? profile.cover_url ?? undefined;
+  const coverDraftBaseScale = coverDraft ? Math.max(COVER_EDITOR_WIDTH / coverDraft.width, COVER_EDITOR_HEIGHT / coverDraft.height) : 1;
+  const coverEditorRenderedWidth = coverDraft ? coverDraft.width * coverDraftBaseScale * coverZoom : COVER_EDITOR_WIDTH;
+  const coverEditorRenderedHeight = coverDraft ? coverDraft.height * coverDraftBaseScale * coverZoom : COVER_EDITOR_HEIGHT;
+
+  const resetLogoEditorTransform = () => {
+    setLogoZoom(1);
+    setLogoOffsetX(0);
+    setLogoOffsetY(0);
+  };
+
+  const resetCoverEditorTransform = () => {
+    setCoverZoom(1);
+    setCoverOffsetX(0);
+    setCoverOffsetY(0);
+  };
+
+  const openLogoEditor = async () => {
+    resetLogoEditorTransform();
+
+    if (logo?.uri) {
+      setLogoDraft({
+        ...logo,
+        width: 'width' in logo ? (logo as EditableImage).width : LOGO_OUTPUT_SIZE,
+        height: 'height' in logo ? (logo as EditableImage).height : LOGO_OUTPUT_SIZE,
+      });
+      setLogoEditorOpen(true);
+      return;
+    }
+
+    if (profile.logo_url) {
+      try {
+        const [{ width, height }, localUri] = await Promise.all([
+          getImageSize(profile.logo_url),
+          cacheRemoteImageForEditing(profile.logo_url),
+        ]);
+        setLogoDraft({
+          uri: localUri,
+          name: `logo-current-${profile.id}.png`,
+          type: 'image/png',
+          width,
+          height,
+        });
+        setLogoEditorOpen(true);
+      } catch {
+        setLogoEditorOpen(true);
+        void pickLogoDraft();
+      }
+      return;
+    }
+
+    setLogoEditorOpen(true);
+    void pickLogoDraft();
+  };
+
+  const logoPanResponder = PanResponder.create({
+        onStartShouldSetPanResponder: () => Boolean(logoDraft),
+        onMoveShouldSetPanResponder: (event, gestureState) =>
+          Boolean(logoDraft) && (getGestureTouches(event).length >= 2 || Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2),
+        onPanResponderGrant: (event) => {
+          logoDragStart.current = { x: logoOffsetX, y: logoOffsetY };
+          const touches = getGestureTouches(event);
+          if (touches.length >= 2) {
+            logoPinchStartDistance.current = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+            logoPinchStartZoom.current = logoZoom;
+          }
+        },
+        onPanResponderMove: (event, gestureState) => {
+          const touches = getGestureTouches(event);
+          if (touches.length >= 2) {
+            const distance = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+            if (!logoPinchStartDistance.current) {
+              logoPinchStartDistance.current = distance;
+              logoPinchStartZoom.current = logoZoom;
+            }
+            const nextZoom = logoPinchStartZoom.current * (distance / logoPinchStartDistance.current);
+            setLogoZoom(Math.max(1, Math.min(3, Number(nextZoom.toFixed(2)))));
+            return;
+          }
+
+          logoPinchStartDistance.current = null;
+          setLogoOffsetX(Math.max(-LOGO_EDITOR_FRAME, Math.min(LOGO_EDITOR_FRAME, logoDragStart.current.x + gestureState.dx)));
+          setLogoOffsetY(Math.max(-LOGO_EDITOR_FRAME, Math.min(LOGO_EDITOR_FRAME, logoDragStart.current.y + gestureState.dy)));
+        },
+        onPanResponderRelease: () => {
+          logoPinchStartDistance.current = null;
+        },
+        onPanResponderTerminate: () => {
+          logoPinchStartDistance.current = null;
+        },
+      });
+
+  const pickLogoDraft = async () => {
+    const picked = await pickOne({
+      aspect: [1, 1],
+      maxSizeBytes: MAX_LOGO_BYTES,
+      allowsEditing: false,
+      onInvalid: (message) => showAlert('تعذر اختيار الشعار', message, [{ text: 'حسناً' }]),
+    });
+    if (picked) {
+      setLogoDraft(picked);
+      resetLogoEditorTransform();
+    }
+  };
+
+  const closeLogoEditor = () => {
+    setLogoDraft(null);
+    resetLogoEditorTransform();
+    setLogoEditorOpen(false);
+  };
+
+  const saveLogoDraft = async () => {
+    if (!logoDraft) return;
+    const baseScale = Math.max(LOGO_EDITOR_FRAME / logoDraft.width, LOGO_EDITOR_FRAME / logoDraft.height);
+    const renderedScale = baseScale * logoZoom;
+    const cropSize = Math.min(logoDraft.width, logoDraft.height, LOGO_EDITOR_FRAME / renderedScale);
+    const maxOriginX = logoDraft.width - cropSize;
+    const maxOriginY = logoDraft.height - cropSize;
+    const rawOriginX = (logoDraft.width - cropSize) / 2 - logoOffsetX / renderedScale;
+    const rawOriginY = (logoDraft.height - cropSize) / 2 - logoOffsetY / renderedScale;
+    const originX = Math.max(0, Math.min(maxOriginX, rawOriginX));
+    const originY = Math.max(0, Math.min(maxOriginY, rawOriginY));
+
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        logoDraft.uri,
+        [
+          {
+            crop: {
+              originX: Math.round(originX),
+              originY: Math.round(originY),
+              width: Math.round(cropSize),
+              height: Math.round(cropSize),
+            },
+          },
+          { resize: { width: LOGO_OUTPUT_SIZE, height: LOGO_OUTPUT_SIZE } },
+        ],
+        { compress: 0.92, format: ImageManipulator.SaveFormat.PNG },
+      );
+      setLogo({
+        uri: result.uri,
+        name: `logo-${Date.now()}.png`,
+        type: 'image/png',
+      });
+    } catch {
+      showAlert('تعذر تعديل الشعار', 'لم نتمكن من حفظ تعديل الصورة. حاول بصورة أخرى.', [{ text: 'حسناً' }]);
+      return;
+    }
+    closeLogoEditor();
+  };
+
+  const openCoverEditor = async () => {
+    resetCoverEditorTransform();
+
+    if (cover?.uri) {
+      setCoverDraft({
+        ...cover,
+        width: 'width' in cover ? (cover as EditableImage).width : COVER_OUTPUT_WIDTH,
+        height: 'height' in cover ? (cover as EditableImage).height : COVER_OUTPUT_HEIGHT,
+      });
+      setCoverEditorOpen(true);
+      return;
+    }
+
+    if (profile.cover_url) {
+      try {
+        const [{ width, height }, localUri] = await Promise.all([
+          getImageSize(profile.cover_url),
+          cacheRemoteImageForEditing(profile.cover_url),
+        ]);
+        setCoverDraft({
+          uri: localUri,
+          name: `cover-current-${profile.id}.png`,
+          type: 'image/png',
+          width,
+          height,
+        });
+        setCoverEditorOpen(true);
+      } catch {
+        setCoverEditorOpen(true);
+        void pickCoverDraft();
+      }
+      return;
+    }
+
+    setCoverEditorOpen(true);
+    void pickCoverDraft();
+  };
+
+  const coverPanResponder = PanResponder.create({
+        onStartShouldSetPanResponder: () => Boolean(coverDraft),
+        onMoveShouldSetPanResponder: (event, gestureState) =>
+          Boolean(coverDraft) && (getGestureTouches(event).length >= 2 || Math.abs(gestureState.dx) > 2 || Math.abs(gestureState.dy) > 2),
+        onPanResponderGrant: (event) => {
+          coverDragStart.current = { x: coverOffsetX, y: coverOffsetY };
+          const touches = getGestureTouches(event);
+          if (touches.length >= 2) {
+            coverPinchStartDistance.current = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+            coverPinchStartZoom.current = coverZoom;
+          }
+        },
+        onPanResponderMove: (event, gestureState) => {
+          const touches = getGestureTouches(event);
+          if (touches.length >= 2) {
+            const distance = Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
+            if (!coverPinchStartDistance.current) {
+              coverPinchStartDistance.current = distance;
+              coverPinchStartZoom.current = coverZoom;
+            }
+            const nextZoom = coverPinchStartZoom.current * (distance / coverPinchStartDistance.current);
+            setCoverZoom(Math.max(1, Math.min(3, Number(nextZoom.toFixed(2)))));
+            return;
+          }
+
+          coverPinchStartDistance.current = null;
+          setCoverOffsetX(Math.max(-COVER_EDITOR_WIDTH, Math.min(COVER_EDITOR_WIDTH, coverDragStart.current.x + gestureState.dx)));
+          setCoverOffsetY(Math.max(-COVER_EDITOR_HEIGHT, Math.min(COVER_EDITOR_HEIGHT, coverDragStart.current.y + gestureState.dy)));
+        },
+        onPanResponderRelease: () => {
+          coverPinchStartDistance.current = null;
+        },
+        onPanResponderTerminate: () => {
+          coverPinchStartDistance.current = null;
+        },
+      });
+
+  const pickCoverDraft = async () => {
+    const picked = await pickOne({
+      aspect: [8, 5],
+      maxSizeBytes: MAX_COVER_BYTES,
+      allowsEditing: false,
+      onInvalid: (message) => showAlert('تعذر اختيار الغلاف', message, [{ text: 'حسناً' }]),
+    });
+    if (picked) {
+      setCoverDraft(picked);
+      resetCoverEditorTransform();
+    }
+  };
+
+  const closeCoverEditor = () => {
+    setCoverDraft(null);
+    resetCoverEditorTransform();
+    setCoverEditorOpen(false);
+  };
+
+  const saveCoverDraft = async () => {
+    if (!coverDraft) return;
+    const baseScale = Math.max(COVER_EDITOR_WIDTH / coverDraft.width, COVER_EDITOR_HEIGHT / coverDraft.height);
+    const renderedScale = baseScale * coverZoom;
+    const visibleWidth = COVER_EDITOR_WIDTH / renderedScale;
+    const visibleHeight = COVER_EDITOR_HEIGHT / renderedScale;
+    const coverRatio = COVER_OUTPUT_WIDTH / COVER_OUTPUT_HEIGHT;
+    const visibleRatio = visibleWidth / visibleHeight;
+    const rawCropWidth = visibleRatio > coverRatio ? visibleHeight * coverRatio : visibleWidth;
+    const rawCropHeight = visibleRatio > coverRatio ? visibleHeight : visibleWidth / coverRatio;
+    const cropWidth = Math.max(1, Math.min(coverDraft.width, rawCropWidth));
+    const cropHeight = Math.max(1, Math.min(coverDraft.height, rawCropHeight));
+    const maxOriginX = coverDraft.width - cropWidth;
+    const maxOriginY = coverDraft.height - cropHeight;
+    const rawOriginX = (coverDraft.width - cropWidth) / 2 - coverOffsetX / renderedScale;
+    const rawOriginY = (coverDraft.height - cropHeight) / 2 - coverOffsetY / renderedScale;
+    const originX = Math.max(0, Math.min(maxOriginX, rawOriginX));
+    const originY = Math.max(0, Math.min(maxOriginY, rawOriginY));
+
+    try {
+      const result = await ImageManipulator.manipulateAsync(
+        coverDraft.uri,
+        [
+          {
+            crop: {
+              originX: Math.round(originX),
+              originY: Math.round(originY),
+              width: Math.round(cropWidth),
+              height: Math.round(cropHeight),
+            },
+          },
+          { resize: { width: COVER_OUTPUT_WIDTH, height: COVER_OUTPUT_HEIGHT } },
+        ],
+        { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG },
+      );
+      setCover({
+        uri: result.uri,
+        name: `cover-${Date.now()}.jpg`,
+        type: 'image/jpeg',
+      });
+    } catch {
+      showAlert('تعذر تعديل الغلاف', 'لم نتمكن من حفظ تعديل الغلاف. حاول بصورة أخرى.', [{ text: 'حسناً' }]);
+      return;
+    }
+    closeCoverEditor();
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{asTab ? 'ملفي' : 'تعديل ملفي التجاري'}</Text>
+            <View style={styles.headerTitleRow}>
+              <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{asTab ? 'ملفي' : 'تعديل ملفي التجاري'}</Text>
+              <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
+            </View>
             <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>حدّث المعلومات التي تظهر للعملاء</Text>
           </View>
           {!asTab ? (
-            <Pressable onPress={() => router.back()} hitSlop={10} style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <Pressable onPress={() => router.replace('/(provider)/' as never)} hitSlop={10} style={[styles.backButton, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <Ionicons name="arrow-forward" size={24} color={colors.textPrimary} />
             </Pressable>
           ) : null}
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: asTab ? 140 : 40 }} showsVerticalScrollIndicator={false}>
           <SectionHeading title="الهوية البصرية" icon="images-outline" colors={colors} />
 
           <View style={[styles.mediaCard, { borderColor: colors.border, backgroundColor: colors.surface }]}>
-            <Pressable onPress={async () => setCover((await pickOne([8, 5])) ?? cover)} style={styles.coverPick}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="تعديل الغلاف"
+              onPress={openCoverEditor}
+              style={styles.coverPick}
+            >
               <Image
                 source={{ uri: cover?.uri ?? profile.cover_url ?? undefined }}
                 style={[styles.coverPreview, { backgroundColor: colors.surfaceAlt }]}
                 contentFit="cover"
               />
               <View style={[styles.coverAction, { backgroundColor: colors.surface }]}>
-                <Ionicons name="camera-outline" size={15} color={colors.primary} />
-                <Text style={[styles.coverActionText, { color: colors.primary }]}>تغيير الغلاف</Text>
+                <Text style={[styles.coverActionText, { color: colors.primary }]}>تعديل الغلاف</Text>
               </View>
             </Pressable>
 
-            <Pressable onPress={async () => setLogo((await pickOne([1, 1])) ?? logo)} style={[styles.logoPick, { borderColor: colors.surface }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="تعديل الشعار أو الصورة الشخصية"
+              onPress={openLogoEditor}
+              style={[styles.logoPick, { borderColor: colors.surface }]}
+            >
               <Image
                 source={{ uri: logo?.uri ?? profile.logo_url ?? undefined }}
                 style={[styles.logoPreview, { backgroundColor: colors.surfaceAlt }]}
                 contentFit="cover"
               />
               <View style={[styles.logoBadge, { backgroundColor: colors.primary }]}>
-                <Ionicons name="camera" size={13} color={colors.textOnPrimary} />
+                <Ionicons name="create" size={13} color={colors.textOnPrimary} />
               </View>
             </Pressable>
           </View>
@@ -369,22 +777,169 @@ export function ProviderProfileEditScreen({ asTab = false }: { asTab?: boolean }
             <TextInput value={mapUrl} onChangeText={setMapUrl} placeholder="https://maps.google.com/..." placeholderTextColor={colors.textMuted} style={inputStyle} autoCapitalize="none" keyboardType="url" maxLength={255} />
           </Field>
 
-          <Pressable
-            onPress={submit}
-            disabled={updateProfile.isPending}
-            style={({ pressed }) => [styles.saveBtn, { backgroundColor: colors.primary, opacity: updateProfile.isPending || pressed ? 0.7 : 1 }]}
-          >
-            {updateProfile.isPending ? (
-              <ActivityIndicator size="small" color={colors.textOnPrimary} />
-            ) : (
-              <>
-                <Ionicons name="checkmark-circle-outline" size={19} color={colors.textOnPrimary} />
-                <Text style={[styles.saveText, { color: colors.textOnPrimary }]}>حفظ التعديلات</Text>
-              </>
-            )}
-          </Pressable>
+          <View style={styles.saveActionWrap}>
+            <PremiumButton
+              title="حفظ التعديلات"
+              loadingTitle="جاري الحفظ..."
+              loading={updateProfile.isPending}
+              icon="checkmark-circle-outline"
+              onPress={submit}
+            />
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal visible={logoEditorOpen} transparent animationType="fade" onRequestClose={closeLogoEditor}>
+        <View style={styles.logoEditorOverlay}>
+          <View style={[styles.logoEditorSheet, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderStrong }]}>
+            <View style={[styles.logoEditorHandle, { backgroundColor: colors.textDisabled }]} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="إغلاق تعديل الصورة"
+              onPress={closeLogoEditor}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.logoEditorClose,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={[styles.logoEditorTitle, { color: colors.textPrimary }]}>تعديل الصورة</Text>
+            <Text style={[styles.logoEditorHint, { color: colors.textMuted }]}>اختر صورتك ثم عدّل الحجم والمكان داخل الدائرة.</Text>
+
+            <View style={[styles.logoEditorPreview, { backgroundColor: colors.surfaceAlt }]}>
+              <View style={styles.logoEditorPreviewClip} {...logoPanResponder.panHandlers}>
+                {currentLogoUri ? (
+                <Image
+                  source={{ uri: currentLogoUri }}
+                  style={[
+                    styles.logoEditorImage,
+                    logoDraft
+                      ? {
+                        width: logoEditorRenderedWidth,
+                        height: logoEditorRenderedHeight,
+                        transform: [{ translateX: logoOffsetX }, { translateY: logoOffsetY }],
+                      }
+                      : null,
+                  ]}
+                  contentFit="cover"
+                />
+              ) : (
+                <Ionicons name="person-circle-outline" size={72} color={colors.textMuted} />
+              )}
+                <View pointerEvents="none" style={[styles.logoEditorCircleGuide, { borderColor: colors.primary }]} />
+                <View pointerEvents="none" style={[styles.logoEditorCenterLineVertical, { backgroundColor: colors.borderStrong }]} />
+                <View pointerEvents="none" style={[styles.logoEditorCenterLineHorizontal, { backgroundColor: colors.borderStrong }]} />
+              </View>
+            </View>
+
+            <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="اختيار شعار"
+                onPress={pickLogoDraft}
+                style={({ pressed }) => [
+                  styles.logoEditorReplaceButton,
+                  { backgroundColor: colors.surface, borderColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+                ]}
+              >
+                <Text style={[styles.logoEditorReplaceText, { color: colors.primary }]}>تغيير الصورة</Text>
+            </Pressable>
+
+            <View style={styles.logoEditorActions}>
+              <PremiumButton
+                title="حفظ الصورة"
+                disabled={!logoDraft}
+                onPress={saveLogoDraft}
+                style={styles.logoEditorMainAction}
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={closeLogoEditor}
+                style={({ pressed }) => [
+                  styles.logoEditorCancelButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.logoEditorCancelText, { color: colors.textMuted }]}>إلغاء</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={coverEditorOpen} transparent animationType="fade" onRequestClose={closeCoverEditor}>
+        <View style={styles.logoEditorOverlay}>
+          <View style={[styles.logoEditorSheet, { backgroundColor: colors.surfaceElevated, borderColor: colors.borderStrong }]}>
+            <View style={[styles.logoEditorHandle, { backgroundColor: colors.textDisabled }]} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="إغلاق تعديل الغلاف"
+              onPress={closeCoverEditor}
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.logoEditorClose,
+                { backgroundColor: colors.surfaceAlt, borderColor: colors.border, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Ionicons name="close" size={24} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={[styles.logoEditorTitle, { color: colors.textPrimary }]}>تعديل الغلاف</Text>
+            <Text style={[styles.logoEditorHint, { color: colors.textMuted }]}>حرّك الصورة بإصبعك وكبّرها أو صغّرها باللمس داخل الإطار.</Text>
+
+            <View style={[styles.coverEditorPreview, { backgroundColor: colors.surfaceAlt }]}>
+              <View style={styles.coverEditorPreviewClip} {...coverPanResponder.panHandlers}>
+                {currentCoverUri ? (
+                  <Image
+                    source={{ uri: currentCoverUri }}
+                    style={[
+                      styles.coverEditorImage,
+                      coverDraft
+                        ? {
+                          width: coverEditorRenderedWidth,
+                          height: coverEditorRenderedHeight,
+                          transform: [{ translateX: coverOffsetX }, { translateY: coverOffsetY }],
+                        }
+                        : null,
+                    ]}
+                    contentFit="cover"
+                  />
+                ) : (
+                  <Ionicons name="image-outline" size={64} color={colors.textMuted} />
+                )}
+                <View pointerEvents="none" style={[styles.coverEditorCenterLineVertical, { backgroundColor: colors.borderStrong }]} />
+                <View pointerEvents="none" style={[styles.coverEditorCenterLineHorizontal, { backgroundColor: colors.borderStrong }]} />
+              </View>
+            </View>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="اختيار غلاف جديد"
+              onPress={pickCoverDraft}
+              style={({ pressed }) => [
+                styles.logoEditorReplaceButton,
+                { backgroundColor: colors.surface, borderColor: colors.primary, opacity: pressed ? 0.78 : 1 },
+              ]}
+            >
+              <Text style={[styles.logoEditorReplaceText, { color: colors.primary }]}>تغيير الغلاف</Text>
+            </Pressable>
+
+            <View style={styles.logoEditorActions}>
+              <PremiumButton title="حفظ الغلاف" disabled={!coverDraft} onPress={saveCoverDraft} style={styles.logoEditorMainAction} />
+              <Pressable
+                accessibilityRole="button"
+                onPress={closeCoverEditor}
+                style={({ pressed }) => [
+                  styles.logoEditorCancelButton,
+                  { opacity: pressed ? 0.7 : 1 },
+                ]}
+              >
+                <Text style={[styles.logoEditorCancelText, { color: colors.textMuted }]}>إلغاء</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <RTLAlert alert={alert} onDismiss={hideAlert} />
     </SafeAreaView>
@@ -399,6 +954,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, minHeight: 78, justifyContent: 'center' },
   headerCopy: { alignItems: 'flex-end', paddingLeft: 56 },
   headerTitle: { fontSize: 22, fontFamily: 'Cairo-Black', writingDirection: 'rtl' },
+  headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   headerSubtitle: { marginTop: 2, fontSize: 12, fontFamily: 'Cairo-SemiBold', writingDirection: 'rtl' },
   backButton: { position: 'absolute', left: 20, top: 22, width: 42, height: 42, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   mediaCard: { minHeight: 190, borderRadius: 18, borderWidth: 1, padding: 8, marginTop: 12, marginBottom: 20 },
@@ -413,7 +969,8 @@ const styles = StyleSheet.create({
   input: { minHeight: 50, borderRadius: 14, borderWidth: 1, paddingHorizontal: 14, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
   chipWrap: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8 },
-  chip: { paddingHorizontal: 14, height: 36, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  chipScrollRow: { gap: 8, paddingVertical: 4 },
+  chip: { paddingHorizontal: 14, minHeight: 36, paddingVertical: 6, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   chipText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
   sectionHeadingRow: { marginTop: 26, flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
   sectionIcon: { width: 32, height: 32, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
@@ -422,6 +979,42 @@ const styles = StyleSheet.create({
   sectionHeading: { fontSize: 16, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
   switchLabel: { fontSize: 14, fontFamily: 'Cairo-Bold' },
   switchHint: { marginTop: 2, fontSize: 11, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
-  saveBtn: { marginTop: 24, minHeight: 52, borderRadius: 16, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  saveText: { fontSize: 15, fontFamily: 'Cairo-Bold' },
+  saveActionWrap: { marginTop: 34 },
+  logoEditorOverlay: { flex: 1, backgroundColor: 'rgba(5,12,24,0.62)', justifyContent: 'center', paddingHorizontal: 24 },
+  logoEditorSheet: { width: '100%', maxWidth: 430, alignSelf: 'center', borderRadius: 30, borderWidth: 1, paddingTop: 16, paddingHorizontal: 18, paddingBottom: 18, maxHeight: '93%' },
+  logoEditorHandle: { alignSelf: 'center', width: 52, height: 6, borderRadius: 999, opacity: 0.62, marginBottom: 18 },
+  logoEditorClose: { position: 'absolute', left: 18, top: 38, width: 46, height: 46, borderRadius: 14, borderWidth: 1, alignItems: 'center', justifyContent: 'center', shadowColor: '#001733', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 4 },
+  logoEditorTitle: { fontSize: 27, lineHeight: 38, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
+  logoEditorHint: { marginTop: 1, marginBottom: 16, fontSize: 13, lineHeight: 21, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
+  logoEditorPreview: { width: LOGO_EDITOR_FRAME, height: LOGO_EDITOR_FRAME, borderRadius: 22, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  logoEditorPreviewClip: { width: '100%', height: '100%', borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  logoEditorImage: { width: LOGO_EDITOR_FRAME, height: LOGO_EDITOR_FRAME },
+  coverEditorPreview: { width: COVER_EDITOR_WIDTH, height: COVER_EDITOR_HEIGHT, borderRadius: 22, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+  coverEditorPreviewClip: { width: '100%', height: '100%', borderRadius: 22, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  coverEditorImage: { width: COVER_EDITOR_WIDTH, height: COVER_EDITOR_HEIGHT },
+  coverEditorCenterLineVertical: { position: 'absolute', width: 1, height: COVER_EDITOR_HEIGHT, opacity: 0.42 },
+  coverEditorCenterLineHorizontal: { position: 'absolute', height: 1, width: COVER_EDITOR_WIDTH, opacity: 0.42 },
+  logoEditorCircleGuide: { position: 'absolute', width: LOGO_EDITOR_FRAME - 14, height: LOGO_EDITOR_FRAME - 14, borderRadius: (LOGO_EDITOR_FRAME - 14) / 2, borderWidth: 2, opacity: 0.94 },
+  logoEditorCenterLineVertical: { position: 'absolute', width: 1, height: LOGO_EDITOR_FRAME, opacity: 0.42 },
+  logoEditorCenterLineHorizontal: { position: 'absolute', height: 1, width: LOGO_EDITOR_FRAME, opacity: 0.42 },
+  logoEditorReplaceButton: { alignSelf: 'center', marginTop: 10, minHeight: 42, borderRadius: 999, borderWidth: 1.5, paddingHorizontal: 18, alignItems: 'center', justifyContent: 'center', shadowColor: '#001733', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  logoEditorReplaceText: { fontSize: 13, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
+  logoEditorZoomCard: { width: '88%', maxWidth: 330, alignSelf: 'center', marginTop: 12, minHeight: 56, borderRadius: 15, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 12, shadowColor: '#001733', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 12, elevation: 2 },
+  logoEditorZoomMiddle: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  logoEditorTool: { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  logoEditorControlText: { marginBottom: 2, minWidth: 54, fontSize: 13, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
+  logoEditorZoomTrack: { width: '100%', height: 4, borderRadius: 999 },
+  logoEditorZoomFill: { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 999 },
+  logoEditorZoomThumb: { position: 'absolute', top: -5, width: 14, height: 14, marginLeft: -7, borderRadius: 7 },
+  logoEditorMoveGrid: { marginTop: 12, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', gap: 0 },
+  logoEditorMoveMiddle: { marginTop: -2, marginBottom: -2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  logoEditorMoveButton: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, alignItems: 'center', justifyContent: 'center', shadowColor: '#001733', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 2 },
+  logoEditorMoveCenterButton: { width: 54, height: 54, borderRadius: 27, borderWidth: 1, alignItems: 'center', justifyContent: 'center', shadowColor: '#001733', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 10, elevation: 4 },
+  logoEditorActions: { marginTop: 16, gap: 10 },
+  logoEditorMainAction: { width: '100%' },
+  logoEditorSecondaryActions: { gap: 10 },
+  logoEditorSecondaryButton: { alignSelf: 'stretch', minHeight: 52, borderRadius: 14, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+  logoEditorSecondaryText: { fontSize: 15, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
+  logoEditorCancelButton: { minHeight: 34, alignItems: 'center', justifyContent: 'center' },
+  logoEditorCancelText: { fontSize: 14, fontFamily: 'Cairo-Bold', textAlign: 'center', writingDirection: 'rtl' },
 });

@@ -106,7 +106,7 @@ export const darkColors: ThemeColors = {
   textSecondary: '#C5D2E6',
   textMuted: '#8FA6C5',
   textDisabled: '#60789A',
-  textOnPrimary: '#FFFFFF',
+  textOnPrimary: '#071A33', // navy on mustard fills — white fails contrast on #F5CB3A
 
   border: 'rgba(245, 203, 58, 0.18)',
   borderStrong: 'rgba(245, 203, 58, 0.34)',

@@ -4,10 +4,12 @@ import { useState, type RefObject } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  type StyleProp,
   Text,
   TextInput,
   type KeyboardTypeOptions,
   type TextInputProps,
+  type ViewStyle,
   View,
 } from 'react-native';
 import { useTheme } from '../../src/hooks/useTheme';
@@ -179,7 +181,7 @@ export function PremiumButton({
   disabled?: boolean;
   onPress: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
-  style?: object;
+  style?: StyleProp<ViewStyle>;
 }) {
   const C = usePremiumAuthColors();
   const isDisabled = disabled || loading;
@@ -196,12 +198,14 @@ export function PremiumButton({
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={{
+          width: '100%',
           height: 58,
           borderRadius: 20,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
+          paddingHorizontal: 18,
           shadowColor: C.orange,
           shadowOffset: { width: 0, height: 6 },
           shadowOpacity: 0,
@@ -210,7 +214,12 @@ export function PremiumButton({
         }}
       >
         {loading ? <ActivityIndicator size="small" color={C.onAccent} /> : icon ? <Ionicons name={icon} size={18} color={C.onAccent} /> : null}
-        <Text style={{ color: C.onAccent, fontFamily: 'Cairo-Bold', fontSize: 16, writingDirection: 'rtl' }}>
+        <Text
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.82}
+          style={{ color: C.onAccent, fontFamily: 'Cairo-Bold', fontSize: 16, writingDirection: 'rtl' }}
+        >
           {loading ? loadingTitle ?? title : title}
         </Text>
       </LinearGradient>
@@ -219,12 +228,13 @@ export function PremiumButton({
 }
 
 export function OutlineButton({
-  title, onPress, tone = 'blue', icon,
+  title, onPress, tone = 'blue', icon, style,
 }: {
   title: string;
   onPress: () => void;
   tone?: 'blue' | 'muted';
   icon?: keyof typeof Ionicons.glyphMap;
+  style?: StyleProp<ViewStyle>;
 }) {
   const C = usePremiumAuthColors();
   const isBlue = tone === 'blue';
@@ -232,23 +242,26 @@ export function OutlineButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      style={({ pressed }) => ({
-        height: 58,
-        borderRadius: 20,
-        borderWidth: 1.5,
-        borderColor: isBlue ? C.outlineBlue : C.outlineMuted,
-        backgroundColor: 'transparent',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        opacity: pressed ? 0.85 : 1,
-        shadowColor: C.shadow,
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0,
-        shadowRadius: 6,
-        elevation: 0,
-      })}
+      style={({ pressed }) => [
+        {
+          height: 58,
+          borderRadius: 20,
+          borderWidth: 1.5,
+          borderColor: isBlue ? C.outlineBlue : C.outlineMuted,
+          backgroundColor: 'transparent',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          opacity: pressed ? 0.85 : 1,
+          shadowColor: C.shadow,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0,
+          shadowRadius: 6,
+          elevation: 0,
+        },
+        style,
+      ]}
     >
       {icon ? <Ionicons name={icon} size={18} color={isBlue ? C.blue : C.text2} /> : null}
       <Text style={{ color: isBlue ? C.blue : C.text2, fontFamily: 'Cairo-Bold', fontSize: 16, writingDirection: 'rtl' }}>

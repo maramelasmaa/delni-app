@@ -23,19 +23,6 @@ import { useTheme } from '../../src/hooks/useTheme';
 import { parseReportError } from '../../src/lib/report-errors';
 import type { Review } from '../../src/types';
 
-const FILTERS = [
-  { key: undefined, label: 'الكل' },
-  { key: 'approved', label: 'منشور' },
-  { key: 'pending', label: 'قيد المراجعة' },
-  { key: 'rejected', label: 'مرفوض' },
-] as const;
-
-const STATUS_LABELS: Record<string, string> = {
-  approved: 'منشور',
-  pending: 'قيد المراجعة',
-  rejected: 'مرفوض',
-};
-
 const FLAG_RESPONSE_LABELS: Record<string, string> = {
   pending: 'بانتظار رد الإدارة',
   accepted: 'تم قبول البلاغ',
@@ -45,11 +32,21 @@ const FLAG_RESPONSE_LABELS: Record<string, string> = {
 export default function ProviderReviewsScreen() {
   const { colors } = useTheme();
   const { alert, showAlert, hideAlert } = useRTLAlert();
-  const [status, setStatus] = useState<string | undefined>(undefined);
   const [reportReview, setReportReview] = useState<Review | null>(null);
   const [reportReason, setReportReason] = useState('');
   const [reportError, setReportError] = useState('');
-  const { data, isLoading, isError, error, refetch, isRefetching } = useMyReviews(status);
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMyReviews();
+  const reviews = data?.pages.flatMap((page) => page.reviews) ?? [];
   const flagReview = useFlagReview();
 
   const closeReport = () => {
@@ -88,30 +85,24 @@ export default function ProviderReviewsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
         <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>التقييمات</Text>
-      </View>
-
-      <View style={styles.filterRow}>
-        {FILTERS.map((f) => {
-          const active = status === f.key;
-          return (
-            <Pressable
-              key={f.label}
-              onPress={() => setStatus(f.key)}
-              style={[styles.chip, { backgroundColor: active ? colors.primary : colors.surface, borderColor: active ? colors.primary : colors.border }]}
-            >
-              <Text style={[styles.chipText, { color: active ? colors.textOnPrimary : colors.textMuted }]}>{f.label}</Text>
-            </Pressable>
-          );
-        })}
+        <Text style={[styles.headerDot, { color: colors.gold }]}>.</Text>
       </View>
 
       <FlatList
-        data={data.reviews}
+        data={reviews}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 20, gap: 12, paddingTop: 4 }}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.primary} colors={[colors.primary]} />}
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+        }}
+        onEndReachedThreshold={0.4}
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <ActivityIndicator size="small" color={colors.primary} style={{ paddingVertical: 16 }} />
+          ) : null
+        }
         ListEmptyComponent={
           <EmptyState icon="star-outline" title="لا توجد تقييمات" message="عندما يقيمك العملاء ستظهر تقييماتهم هنا." />
         }
@@ -119,10 +110,20 @@ export default function ProviderReviewsScreen() {
           <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.cardTop}>
               <Text style={[styles.reviewer, { color: colors.textPrimary }]}>{item.user_name}</Text>
-              {item.status ? (
-                <View style={[styles.statusPill, { backgroundColor: colors.surfaceAlt }]}>
-                  <Text style={[styles.statusText, { color: colors.textMuted }]}>{STATUS_LABELS[item.status] ?? item.status}</Text>
-                </View>
+              {item.can_flag ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="الإبلاغ عن التقييم"
+                  hitSlop={8}
+                  onPress={() => {
+                    setReportReview(item);
+                    setReportReason('');
+                    setReportError('');
+                  }}
+                  style={({ pressed }) => [styles.flagIconButton, { borderColor: colors.border, opacity: pressed ? 0.6 : 1 }]}
+                >
+                  <Ionicons name="flag-outline" size={15} color={colors.textMuted} />
+                </Pressable>
               ) : null}
             </View>
             <StarRating value={item.rating} size={14} />
@@ -151,26 +152,8 @@ export default function ProviderReviewsScreen() {
                 </Text>
               </View>
             ) : null}
-            {item.flagged_reason ? (
-              <Text style={[styles.decisionText, { color: colors.textMuted }]}>سبب البلاغ: {item.flagged_reason}</Text>
-            ) : null}
             {item.moderation_note ? (
               <Text style={[styles.decisionText, { color: colors.textMuted }]}>سبب القرار: {item.moderation_note}</Text>
-            ) : null}
-            {item.can_flag ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="الإبلاغ عن التقييم"
-                onPress={() => {
-                  setReportReview(item);
-                  setReportReason('');
-                  setReportError('');
-                }}
-                style={({ pressed }) => [styles.reportButton, { borderColor: colors.goldBorder, opacity: pressed ? 0.72 : 1 }]}
-              >
-                <Ionicons name="flag-outline" size={16} color={colors.goldText} />
-                <Text style={[styles.reportButtonText, { color: colors.goldText }]}>الإبلاغ عن التقييم</Text>
-              </Pressable>
             ) : null}
           </View>
         )}
@@ -219,21 +202,15 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 12, flexDirection: 'row-reverse', alignItems: 'center' },
   headerTitle: { fontSize: 28, fontFamily: 'Cairo-Black' },
   headerDot: { fontSize: 28, fontFamily: 'Cairo-Black' },
-  filterRow: { flexDirection: 'row-reverse', gap: 8, paddingHorizontal: 20, paddingBottom: 12 },
-  chip: { paddingHorizontal: 14, height: 34, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  chipText: { fontSize: 12, fontFamily: 'Cairo-Bold' },
   card: { borderRadius: 18, borderWidth: 1, padding: 14, alignItems: 'flex-end', gap: 6 },
   cardTop: { width: '100%', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between' },
+  flagIconButton: { width: 30, height: 30, borderRadius: 999, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   reviewer: { fontSize: 14, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
-  statusPill: { paddingHorizontal: 10, height: 24, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  statusText: { fontSize: 11, fontFamily: 'Cairo-Bold' },
   comment: { fontSize: 13, lineHeight: 22, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' },
   reviewDate: { fontSize: 11, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' },
   flagStatus: { marginTop: 4, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
   flagStatusText: { fontSize: 11, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   decisionText: { width: '100%', fontSize: 12, lineHeight: 19, fontFamily: 'Cairo-Regular', textAlign: 'right', writingDirection: 'rtl' },
-  reportButton: { minHeight: 38, marginTop: 6, borderRadius: 8, borderWidth: 1, paddingHorizontal: 12, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  reportButtonText: { fontSize: 12, fontFamily: 'Cairo-Bold', writingDirection: 'rtl' },
   modalOverlay: { flex: 1, justifyContent: 'center', paddingHorizontal: 22, backgroundColor: 'rgba(0,0,0,0.48)' },
   reportSheet: { borderRadius: 8, padding: 20 },
   modalTitle: { fontSize: 19, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },

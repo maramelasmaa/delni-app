@@ -3,6 +3,7 @@ import { ENDPOINTS } from '../constants/api';
 import type {
   AdminReview,
   AdminUser,
+  AdminProviderDetail,
   ApiResponse,
   PaginationMeta,
   Provider,
@@ -99,12 +100,77 @@ export interface AdminProviderFilters {
   page?: number;
 }
 
+export interface AdminProviderInput {
+  name: string;
+  email: string;
+  phone?: string | null;
+  password?: string;
+  is_active?: boolean;
+  is_suspended?: boolean;
+  business_name?: string | null;
+  provider_type?: string | null;
+  category_id?: number | null;
+  subcategory_id?: number | null;
+  city_id?: number | null;
+  bio?: string | null;
+  profile_phone?: string | null;
+  whatsapp?: string | null;
+  offers_remote_work?: boolean;
+  travels_to_cities?: boolean;
+  service_area_note?: string | null;
+  map_url?: string | null;
+  website?: string | null;
+  instagram_handle?: string | null;
+  facebook_slug?: string | null;
+  linkedin_slug?: string | null;
+  github_username?: string | null;
+  experience_years?: number | null;
+  provider_access_ends_at?: string | null;
+  has_venue_calendar?: boolean;
+  homepage_featured?: boolean;
+  homepage_featured_until?: string | null;
+}
+
 export async function getProviders(filters: AdminProviderFilters = {}) {
   const res = await api.get<ApiResponse<Provider[]> & { pagination: PaginationMeta }>(
     ENDPOINTS.admin.providers,
     { params: filters },
   );
   return { providers: res.data.data, pagination: res.data.pagination };
+}
+
+export async function getProvider(id: number): Promise<AdminProviderDetail> {
+  const res = await api.get<ApiResponse<AdminProviderDetail>>(ENDPOINTS.admin.provider(id));
+  return res.data.data;
+}
+
+export async function createProvider(input: AdminProviderInput): Promise<AdminProviderDetail> {
+  const res = await api.post<ApiResponse<AdminProviderDetail>>(ENDPOINTS.admin.providers, input);
+  return res.data.data;
+}
+
+export async function updateProvider(id: number, input: AdminProviderInput): Promise<AdminProviderDetail> {
+  const res = await api.patch<ApiResponse<AdminProviderDetail>>(ENDPOINTS.admin.provider(id), input);
+  return res.data.data;
+}
+
+export async function deleteProvider(id: number): Promise<void> {
+  await api.delete(ENDPOINTS.admin.provider(id));
+}
+
+export async function extendProviderAccess(id: number, days: number): Promise<AdminProviderDetail> {
+  const res = await api.post<ApiResponse<AdminProviderDetail>>(ENDPOINTS.admin.extendProviderAccess(id), { days });
+  return res.data.data;
+}
+
+export async function clearProviderSecurityFlag(id: number): Promise<AdminProviderDetail> {
+  const res = await api.post<ApiResponse<AdminProviderDetail>>(ENDPOINTS.admin.clearProviderSecurityFlag(id));
+  return res.data.data;
+}
+
+export async function generateProviderOnboardingLink(id: number): Promise<{ setup_url: string; provider: AdminProviderDetail }> {
+  const res = await api.post<ApiResponse<{ setup_url: string; provider: AdminProviderDetail }>>(ENDPOINTS.admin.providerOnboardingLink(id));
+  return res.data.data;
 }
 
 export async function getCatalog(kind: AdminCatalogKind, filters: AdminCatalogFilters = {}) {

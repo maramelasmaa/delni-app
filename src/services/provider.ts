@@ -59,10 +59,10 @@ export async function updateMyProfile(
   return res.data.data;
 }
 
-export async function getMyReviews(page = 1, status?: string) {
+export async function getMyReviews(page = 1) {
   const res = await api.get<ApiResponse<Review[]> & { pagination: PaginationMeta }>(
     ENDPOINTS.provider.reviews,
-    { params: { page, ...(status ? { status } : {}) } },
+    { params: { page } },
   );
   return { reviews: res.data.data, pagination: res.data.pagination };
 }

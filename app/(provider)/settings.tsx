@@ -41,7 +41,6 @@ export default function ProviderSettingsScreen() {
             <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>إعدادات مقدم الخدمة</Text>
             <Text style={[styles.headerTitle, { color: colors.gold }]}>.</Text>
           </View>
-          <Text style={[styles.headerSubtitle, { color: colors.textMuted }]}>كل ما يخص حسابك وملفك داخل التطبيق</Text>
         </View>
 
         <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>الحساب</Text>
@@ -65,7 +64,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 12 },
   headerTitleRow: { flexDirection: 'row-reverse', alignItems: 'center', flexShrink: 1 },
   headerTitle: { fontSize: 26, lineHeight: 36, fontFamily: 'Cairo-Black', textAlign: 'right', writingDirection: 'rtl' },
-  headerSubtitle: { marginTop: 4, fontSize: 14, fontFamily: 'Cairo-SemiBold', textAlign: 'right', writingDirection: 'rtl' },
   sectionTitle: { paddingHorizontal: 24, marginTop: 14, marginBottom: 12, fontSize: 12, fontFamily: 'Cairo-Bold', textAlign: 'right', writingDirection: 'rtl' },
   menuRow: { marginHorizontal: 16, marginBottom: 12, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   menuText: { flex: 1, marginRight: 16, marginLeft: 12, alignItems: 'flex-end' },

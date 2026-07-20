@@ -3,16 +3,13 @@ import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ProfileCompletionCard } from '../../components/provider/ProfileCompletionCard';
+import { PremiumButton } from '../../components/auth/premiumAuth';
 import { ProviderStatItem } from '../../components/provider/ProviderStatItem';
-import { ProviderStatusBadge } from '../../components/provider/ProviderStatusBadge';
 import { ErrorView } from '../../components/ui/ErrorView';
 import { useProviderDashboard } from '../../src/hooks/useProviderDashboard';
 import { useTheme } from '../../src/hooks/useTheme';
 import type { ThemeColors } from '../../src/theme/tokens';
 import { getProviderLogo } from '../../src/utils/imageFallback';
-
-type ProviderManageRoute = '/(provider)/profile-edit' | '/(provider)/portfolio' | '/(provider)/credentials' | '/(provider)/reviews';
 
 function formatRating(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value)) return '—';
@@ -32,42 +29,6 @@ function formatAccessRemaining(accessEndsAt: string | null | undefined) {
   return `${days} يومًا`;
 }
 
-function ManageRow({
-  icon,
-  title,
-  subtitle,
-  route,
-  isLast = false,
-  colors,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  route: ProviderManageRoute;
-  isLast?: boolean;
-  colors: ThemeColors;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      onPress={() => router.push(route as never)}
-      style={({ pressed }) => ({ opacity: pressed ? 0.76 : 1 })}
-    >
-      <View style={[styles.manageRow, { borderBottomColor: colors.border, borderBottomWidth: isLast ? 0 : 1 }]}>
-        <Ionicons name="chevron-back" size={17} color={colors.textMuted} style={styles.manageChevron} />
-        <View style={styles.manageText}>
-          <Text numberOfLines={1} style={[styles.manageTitle, { color: colors.textPrimary }]}>{title}</Text>
-          <Text numberOfLines={1} style={[styles.manageSubtitle, { color: colors.textMuted }]}>{subtitle}</Text>
-        </View>
-        <View style={[styles.manageIcon, { backgroundColor: colors.surfaceAlt, borderColor: colors.border }]}>
-          <Ionicons name={icon} size={19} color={colors.primary} />
-        </View>
-      </View>
-    </Pressable>
-  );
-}
-
 function DashboardSkeleton({ colors }: { colors: ThemeColors }) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
@@ -79,7 +40,6 @@ function DashboardSkeleton({ colors }: { colors: ThemeColors }) {
           <View style={[styles.skeletonLogo, { backgroundColor: colors.surfaceAlt }]} />
           <View style={styles.identityText}>
             <View style={[styles.skeletonLine, { width: '72%', backgroundColor: colors.surfaceAlt }]} />
-            <View style={[styles.skeletonLine, { width: '52%', marginTop: 10, backgroundColor: colors.surfaceAlt }]} />
           </View>
         </View>
         <View style={[styles.skeletonCard, { backgroundColor: colors.surface, borderColor: colors.border }]} />
@@ -89,6 +49,48 @@ function DashboardSkeleton({ colors }: { colors: ThemeColors }) {
         <View style={[styles.skeletonCard, { height: 142, backgroundColor: colors.surface, borderColor: colors.border }]} />
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function GuideStep({
+  step,
+  title,
+  body,
+  status,
+  icon,
+  onPress,
+  colors,
+}: {
+  step: string;
+  title: string;
+  body: string;
+  status: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  colors: ThemeColors;
+}) {
+  return (
+    <View style={[styles.guideStep, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+      <View style={styles.guideStepTop}>
+        <View style={[styles.stepNumber, { backgroundColor: colors.goldSoft, borderColor: colors.goldBorder }]}>
+          <Text style={[styles.stepNumberText, { color: colors.goldText }]}>{step}</Text>
+        </View>
+        <View style={[styles.guideIcon, { backgroundColor: colors.primarySoft }]}>
+          <Ionicons name={icon} size={22} color={colors.primary} />
+        </View>
+      </View>
+      <View style={styles.guideText}>
+        <Text style={[styles.guideStepTitle, { color: colors.textPrimary }]}>{title}</Text>
+        <Text style={[styles.guideStepBody, { color: colors.textMuted }]}>{body}</Text>
+        <Text style={[styles.guideStepStatus, { color: colors.goldText }]}>{status}</Text>
+      </View>
+      <PremiumButton
+        title="اضغط هنا"
+        icon="arrow-back"
+        onPress={onPress}
+        style={styles.guideAction}
+      />
+    </View>
   );
 }
 
@@ -111,7 +113,10 @@ export default function ProviderDashboardScreen() {
         contentContainerStyle={{ paddingBottom: 116 }}
       >
         <View style={styles.header}>
-          <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>لوحة التحكم</Text>
+          <View style={styles.pageTitleRow}>
+            <Text style={[styles.pageTitle, { color: colors.textPrimary }]}>لوحة التحكم</Text>
+            <Text style={[styles.pageTitle, { color: colors.gold }]}>.</Text>
+          </View>
           <Text style={[styles.pageSubtitle, { color: colors.textMuted }]}>ملخص أداء ملفك التجاري</Text>
         </View>
 
@@ -119,10 +124,44 @@ export default function ProviderDashboardScreen() {
           <Image source={{ uri: logo }} style={styles.logo} contentFit="cover" />
           <View style={styles.identityText}>
             <Text numberOfLines={2} style={[styles.businessName, { color: colors.textPrimary }]}>{profile.name}</Text>
-            <View style={styles.identityBadgeRow}>
-              <ProviderStatusBadge isComplete={stats.is_complete} isDiscoverable={stats.is_discoverable} />
-            </View>
           </View>
+        </View>
+
+        <View style={[styles.guideCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.guideHeader}>
+            <Text style={[styles.guideKicker, { color: colors.gold }]}>دليل تجهيز حسابك</Text>
+            <Text style={[styles.guideTitle, { color: colors.textPrimary }]}>جهّز ملفك بخطوات واضحة</Text>
+            <Text style={[styles.guideIntro, { color: colors.textMuted }]}>
+              حدّث بياناتك، أضف أعمالك، ثم أضف شهاداتك حتى يظهر ملفك بشكل أقوى للعملاء.
+            </Text>
+          </View>
+          <GuideStep
+            step="1"
+            title="الملف التجاري"
+            body="حدّث الاسم، الصور، التصنيف، المدينة، أرقام التواصل، والروابط التي تظهر للعميل."
+            status={`اكتمال الملف: ${stats.completion_percentage}%`}
+            icon="person-circle-outline"
+            onPress={() => router.push('/(provider)/profile-edit' as never)}
+            colors={colors}
+          />
+          <GuideStep
+            step="2"
+            title="الأعمال والمشاريع"
+            body="أضف صور مشاريعك السابقة حتى يفهم العميل مستوى شغلك قبل التواصل."
+            status={`المشاريع الحالية: ${stats.portfolio_items_count}`}
+            icon="images-outline"
+            onPress={() => router.push('/(provider)/portfolio' as never)}
+            colors={colors}
+          />
+          <GuideStep
+            step="3"
+            title="الشهادات والخبرات"
+            body="أضف الشهادات، الخبرات، وروابط التحقق التي ترفع الثقة في ملفك."
+            status={`الشهادات الحالية: ${stats.credentials_count}`}
+            icon="ribbon-outline"
+            onPress={() => router.push('/(provider)/credentials' as never)}
+            colors={colors}
+          />
         </View>
 
         <View style={styles.sectionHeader}>
@@ -132,27 +171,9 @@ export default function ProviderDashboardScreen() {
           </View>
         </View>
         <View style={styles.statsGrid}>
-          <ProfileCompletionCard
-            percentage={stats.completion_percentage}
-            isComplete={stats.is_complete}
-            onCompletePress={() => router.push('/(provider)/profile-edit' as never)}
-          />
           <ProviderStatItem label="متوسط التقييم" value={formatRating(stats.rating_average)} icon="star" />
           <ProviderStatItem label="إجمالي التقييمات" value={String(stats.reviews_count)} icon="chatbubbles" />
           <ProviderStatItem label="المدة المتبقية" value={formatAccessRemaining(stats.provider_access_ends_at)} icon="time" />
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <View style={styles.sectionHeading}>
-            <View style={[styles.sectionMarker, { backgroundColor: colors.gold }]} />
-            <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>إدارة الملف</Text>
-          </View>
-        </View>
-        <View style={[styles.manageCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <ManageRow icon="create-outline" title="تعديل بيانات الملف" subtitle="الاسم والوصف ومعلومات التواصل" route="/(provider)/profile-edit" colors={colors} />
-          <ManageRow icon="images-outline" title="الأعمال والمعرض" subtitle="إدارة الأعمال وصور المشاريع" route="/(provider)/portfolio" colors={colors} />
-          <ManageRow icon="ribbon-outline" title="الشهادات والخبرات" subtitle="إضافة الشهادات والاعتمادات" route="/(provider)/credentials" colors={colors} />
-          <ManageRow icon="chatbubbles-outline" title="التقييمات" subtitle="مراجعة تقييمات العملاء" route="/(provider)/reviews" isLast colors={colors} />
         </View>
 
         {showVisibilityNotice ? (
@@ -185,6 +206,7 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     alignItems: 'flex-end',
   },
+  pageTitleRow: { flexDirection: 'row-reverse', alignItems: 'center' },
   pageTitle: {
     fontSize: 26,
     lineHeight: 36,
@@ -204,7 +226,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     borderRadius: 18,
     borderWidth: 1,
-    padding: 14,
+    padding: 16,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 12,
@@ -225,7 +247,99 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-  identityBadgeRow: { marginTop: 7, alignItems: 'flex-end' },
+  guideCard: {
+    marginHorizontal: 20,
+    marginTop: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 14,
+    gap: 12,
+  },
+  guideHeader: {
+    alignItems: 'flex-end',
+    paddingBottom: 2,
+  },
+  guideKicker: {
+    fontSize: 12,
+    fontFamily: 'Cairo-Bold',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideTitle: {
+    marginTop: 2,
+    fontSize: 20,
+    lineHeight: 29,
+    fontFamily: 'Cairo-Black',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideIntro: {
+    marginTop: 4,
+    fontSize: 12.5,
+    lineHeight: 21,
+    fontFamily: 'Cairo-SemiBold',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideStep: {
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    gap: 10,
+  },
+  guideStepTop: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stepNumber: {
+    minWidth: 34,
+    height: 34,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    fontSize: 14,
+    fontFamily: 'Cairo-Black',
+  },
+  guideIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideText: {
+    alignItems: 'flex-end',
+  },
+  guideStepTitle: {
+    fontSize: 16,
+    fontFamily: 'Cairo-Black',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideStepBody: {
+    marginTop: 3,
+    fontSize: 12.5,
+    lineHeight: 21,
+    fontFamily: 'Cairo-Regular',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideStepStatus: {
+    marginTop: 5,
+    fontSize: 12,
+    fontFamily: 'Cairo-Bold',
+    textAlign: 'right',
+    writingDirection: 'rtl',
+  },
+  guideAction: {
+    width: 142,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
   sectionHeader: {
     marginTop: 24,
     marginBottom: 10,
@@ -257,57 +371,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
     gap: 10,
-  },
-  manageCard: {
-    marginHorizontal: 20,
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  manageRow: {
-    minHeight: 68,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  manageText: {
-    marginRight: 52,
-    marginLeft: 29,
-    alignItems: 'flex-end',
-  },
-  manageIcon: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    transform: [{ translateY: -20 }],
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  manageChevron: {
-    position: 'absolute',
-    left: 12,
-    top: '50%',
-    transform: [{ translateY: -8.5 }],
-  },
-  manageTitle: {
-    fontSize: 14,
-    lineHeight: 21,
-    fontFamily: 'Cairo-Bold',
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  manageSubtitle: {
-    marginTop: 1,
-    fontSize: 11,
-    lineHeight: 17,
-    fontFamily: 'Cairo-Regular',
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
   notice: {
     marginHorizontal: 20,
@@ -354,6 +417,7 @@ const styles = StyleSheet.create({
   skeletonLine: {
     height: 16,
     borderRadius: 999,
+    alignSelf: 'center',
   },
   skeletonTitle: {
     width: 86,
